@@ -32,14 +32,14 @@ const LandingPage: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center gap-12 relative z-10">
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl lg:text-6xl font-bold text-green-800 mb-4 leading-tight">
+            <h1 className="text-5xl lg:text-7xl font-bold text-green-800 mb-4 leading-tight">
               Transforme sua saúde através da{" "}
-              <span className="text-green-600">nutrição inteligente</span>
+              <span className="text-green-600">nutrição</span>
             </h1>
-            <p className="text-xl text-gray-700 mb-8 max-w-2xl">
+            <p className="sm:text-lg text-gray-700 mb-8 max-w-2xl">
               Descubra o poder de uma alimentação personalizada com a Dra.
               Andreina Cawanne, especialista em nutrição clínica e esportiva com
-              mais de 10 anos de experiência.
+              mais de 6 anos de experiência.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <Link to="/questionario">
@@ -47,14 +47,13 @@ const LandingPage: React.FC = () => {
                   Comece Agora
                 </Button>
               </Link>
-              <a href="#planos">
-                <Button
-                  variant="secondary"
-                  className="px-8 py-4 text-lg font-semibold w-full sm:w-auto border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  Ver Planos
-                </Button>
-              </a>
+              <Button
+                variant="secondary"
+                className="px-8 py-4 text-lg font-semibold w-full sm:w-auto border-green-600 text-green-600 hover:bg-green-50"
+                onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+              >
+                Ver Planos
+              </Button>
             </div>
           </div>
           <div className="flex-1 relative">
@@ -63,7 +62,7 @@ const LandingPage: React.FC = () => {
                 <img
                   src="/nutricionista.png"
                   alt="Dra. Andreina Cawanne - Especialista em Nutrição"
-                  className="w-full h-auto"
+                  className="max-w-xs h-auto"
                 />
               </div>
               <div className="absolute -z-10 top-6 -right-6 w-32 h-32 bg-green-50 rounded-full opacity-80"></div>
@@ -74,13 +73,13 @@ const LandingPage: React.FC = () => {
       </section>
 
       {/* Serviços Section */}
-      <section id="servicos" className="py-20 bg-white">
+      <section id="servicos" className="py-10 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
             <h2 className="text-3xl font-bold text-green-800 mb-4">
               Serviços
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Oferecemos soluções completas em nutrição para ajudar você a
               alcançar seus objetivos de saúde
             </p>
@@ -105,7 +104,7 @@ const LandingPage: React.FC = () => {
               <h3 className="text-xl font-bold text-green-800 mb-4">
                 Plano Alimentar Personalizado
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 sm:text-lg">
                 Dietas personalizadas baseadas no seu perfil, objetivos e
                 preferências alimentares.
               </p>
@@ -129,7 +128,7 @@ const LandingPage: React.FC = () => {
               <h3 className="text-xl font-bold text-green-800 mb-4">
                 Acompanhamento Contínuo
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 sm:text-lg">
                 Suporte constante e ajustes periódicos para maximizar seus
                 resultados.
               </p>
@@ -153,7 +152,7 @@ const LandingPage: React.FC = () => {
               <h3 className="text-xl font-bold text-green-800 mb-4">
                 Consultas Online
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 sm:text-lg">
                 Atendimento flexível e conveniente, onde e quando você precisar.
               </p>
             </Card>
@@ -181,11 +180,11 @@ const LandingPage: React.FC = () => {
               objetivos
             </p>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
             <Card className="flex flex-col items-center p-8 border border-green-200 hover:shadow-lg transition-all duration-300">
               <h3 className="font-bold text-2xl text-green-800 mb-2">Básico</h3>
               <div className="text-4xl font-bold text-green-600 mb-4">
-                R$99<span className="text-lg font-normal">/mês</span>
+                R$150<span className="text-lg font-normal"></span>
               </div>
               <p className="text-gray-600 mb-6 text-center">
                 Ideal para quem busca orientação inicial e um plano alimentar
@@ -206,7 +205,7 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  1 consulta inicial
+                  1 consulta
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -224,22 +223,6 @@ const LandingPage: React.FC = () => {
                   </svg>
                   Plano alimentar personalizado
                 </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Acesso ao aplicativo
-                </li>
               </ul>
               <Link to="/questionario" className="w-full">
                 <Button
@@ -255,9 +238,9 @@ const LandingPage: React.FC = () => {
               <div className="absolute -top-4 bg-green-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-md">
                 MAIS POPULAR
               </div>
-              <h3 className="font-bold text-2xl text-green-800 mb-2">Mensal</h3>
+              <h3 className="font-bold text-2xl text-green-800 mb-2">Premium</h3>
               <div className="text-4xl font-bold text-green-600 mb-4">
-                R$249<span className="text-lg font-normal">/mês</span>
+                R$250<span className="text-lg font-normal"></span>
               </div>
               <p className="text-gray-600 mb-6 text-center">
                 Acompanhamento mensal completo com ajustes e suporte contínuo.
@@ -277,7 +260,7 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  4 consultas mensais
+                  2 consultas mensais
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -311,112 +294,9 @@ const LandingPage: React.FC = () => {
                   </svg>
                   Suporte por WhatsApp
                 </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Acesso premium ao aplicativo
-                </li>
               </ul>
               <Link to="/questionario" className="w-full">
                 <Button className="w-full py-3">Começar</Button>
-              </Link>
-            </Card>
-
-            <Card className="flex flex-col items-center p-8 border border-green-200 hover:shadow-lg transition-all duration-300">
-              <h3 className="font-bold text-2xl text-green-800 mb-2">
-                Trimestral
-              </h3>
-              <div className="text-4xl font-bold text-green-600 mb-4">
-                R$599<span className="text-lg font-normal">/trimestre</span>
-              </div>
-              <p className="text-gray-600 mb-6 text-center">
-                Plano completo para resultados duradouros e transformação de
-                hábitos.
-              </p>
-              <ul className="mb-8 space-y-3 flex-1">
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  12 consultas (1 por semana)
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Plano alimentar semanal
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Suporte prioritário 24/7
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Acesso a workshops exclusivos
-                </li>
-              </ul>
-              <Link to="/questionario" className="w-full">
-                <Button
-                  variant="secondary"
-                  className="w-full py-3 border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  Começar
-                </Button>
               </Link>
             </Card>
           </div>
@@ -427,12 +307,12 @@ const LandingPage: React.FC = () => {
       <section id="sobre" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex flex-col lg:flex-row items-center gap-16">
-            <div className="flex-1 relative">
-              <div className="relative z-10 rounded-2xl overflow-hidden shadow-2xl">
+            <div className="flex-1 relative flex justify-center items-center">
+              <div className="relative z-10 rounded-2xl overflow-hidden">
                 <img
                   src="/nutricionista.png"
                   alt="Dra. Andreina Cawanne"
-                  className="w-full h-auto transform hover:scale-105 transition-transform duration-700"
+                  className="max-w-xs max-h-xs transform hover:scale-105 transition-transform duration-700"
                 />
               </div>
               <div className="absolute -bottom-6 -left-6 w-40 h-40 bg-green-100 rounded-full -z-10"></div>
@@ -442,8 +322,8 @@ const LandingPage: React.FC = () => {
               <h2 className="text-3xl font-bold text-green-800 mb-6">
                 Dra. Andreina Cawanne
               </h2>
-              <p className="text-gray-700 mb-6 leading-relaxed">
-                Com mais de 10 anos de experiência em nutrição clínica e
+              <p className="text-gray-700 mb-6 leading-relaxed sm:text-lg">
+                Com mais de 6 anos de experiência em nutrição clínica e
                 esportiva, ajudo pessoas a alcançarem seus objetivos através de
                 uma alimentação equilibrada e sustentável. Minha abordagem
                 combina ciência nutricional com um olhar individualizado para
@@ -537,10 +417,10 @@ const LandingPage: React.FC = () => {
       <section className="py-20 bg-green-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-green-800 mb-4">
+            <h2 className="text-4xl font-bold text-green-800 mb-4">
               O que nossos pacientes dizem
             </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+            <p className="text-gray-700 max-w-3xl mx-auto text-lg">
               Resultados reais de pessoas reais que transformaram sua saúde
             </p>
           </div>

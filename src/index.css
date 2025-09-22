@@ -35,7 +35,6 @@ body {
 .image-container {
   position: relative;
   overflow: hidden;
-  border-radius: 20px;
 }
 
 .image-container::before {

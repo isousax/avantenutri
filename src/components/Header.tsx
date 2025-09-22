@@ -14,6 +14,23 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
     setIsScrolled(scrollPosition > 10);
   }, [scrollPosition]);
 
+  const scrollToSection = (sectionId: string) => {
+    const element = document.getElementById(sectionId);
+    if (element) {
+      setIsMenuOpen(false); // Fecha o menu mobile se estiver aberto
+      const offset = 80; // Ajuste para o header fixo
+      const bodyRect = document.body.getBoundingClientRect().top;
+      const elementRect = element.getBoundingClientRect().top;
+      const elementPosition = elementRect - bodyRect;
+      const offsetPosition = elementPosition - offset;
+
+      window.scrollTo({
+        top: offsetPosition,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -24,8 +41,8 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
         isScrolled ? "bg-white shadow-md py-1" : "bg-transparent py-2"
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4">
-        <div className="flex items-center justify-between h-16">
+      <div className="max-w-7xl mx-auto px-2">
+        <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link to="/" className="flex items-center">
             <div className="flex items-center">
@@ -39,30 +56,24 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8 items-center">
-            <Link
-              to="/#servicos"
-              className={`font-medium transition-colors hover:text-green-600 ${
-                isScrolled ? "text-gray-700" : "text-white"
-              }`}
+            <button
+              onClick={() => scrollToSection('servicos')}
+              className={`font-medium transition-colors hover:text-green-600 text-gray-700`}
             >
               Serviços
-            </Link>
-            <Link
-              to="/#planos"
-              className={`font-medium transition-colors hover:text-green-600 ${
-                isScrolled ? "text-gray-700" : "text-white"
-              }`}
+            </button>
+            <button
+              onClick={() => scrollToSection('planos')}
+              className={`font-medium transition-colors hover:text-green-600 text-gray-700`}
             >
               Planos
-            </Link>
-            <Link
-              to="/#sobre"
-              className={`font-medium transition-colors hover:text-green-600 ${
-                isScrolled ? "text-gray-700" : "text-white"
-              }`}
+            </button>
+            <button
+              onClick={() => scrollToSection('sobre')}
+              className={`font-medium transition-colors hover:text-green-600 text-gray-700`}
             >
               Sobre
-            </Link>
+            </button>
             <Link to="/login">
               <Button
                 variant={isScrolled ? "secondary" : "primary"}
@@ -76,9 +87,7 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
           {/* Mobile Menu Button */}
           <button
             type="button"
-            className={`md:hidden p-2 rounded-md focus:outline-none ${
-              isScrolled ? "text-gray-700" : "text-white"
-            }`}
+            className={`md:hidden p-2 rounded-md focus:outline-none text-gray-700`}
             onClick={toggleMenu}
           >
             <span className="sr-only">Open menu</span>
@@ -112,27 +121,24 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
       {isMenuOpen && (
         <div className="md:hidden bg-white shadow-lg rounded-b-lg">
           <div className="px-4 pt-2 pb-4 space-y-1">
-            <Link
-              to="/#servicos"
-              className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            <button
+              onClick={() => scrollToSection('servicos')}
+              className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
             >
               Serviços
-            </Link>
-            <Link
-              to="/#planos"
-              className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button
+              onClick={() => scrollToSection('planos')}
+              className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
             >
               Planos
-            </Link>
-            <Link
-              to="/#sobre"
-              className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
-              onClick={() => setIsMenuOpen(false)}
+            </button>
+            <button
+              onClick={() => scrollToSection('sobre')}
+              className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
             >
               Sobre
-            </Link>
+            </button>
             <Link
               to="/login"
               className="block px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
