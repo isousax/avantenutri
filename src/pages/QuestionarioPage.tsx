@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Card from '../components/Card';
 import Button from '../components/Button';
 import ProgressBar from '../components/ProgressBar';
+import { useQuestionario } from '../contexts/useQuestionario';
 
 // Dados do questionário
 const categorias = [
@@ -101,10 +102,8 @@ const etapas = ['Contato', 'Categoria', 'Questionário', 'Plano', 'Confirmação
 
 const QuestionarioPage: React.FC = () => {
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [categoria, setCategoria] = useState('');
-  const [planoSelecionado, setPlanoSelecionado] = useState<number | null>(null);
-  const [respostas, setRespostas] = useState<Record<string, string>>({});
+  const { questionarioData, updateQuestionario, clearQuestionario } = useQuestionario();
+  const { step, categoria, planoSelecionado, respostas } = questionarioData;
   const [erros, setErros] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -145,14 +144,16 @@ const QuestionarioPage: React.FC = () => {
 
   const handleNext = () => {
     if (validarEtapa(step)) {
-      setStep((s) => Math.min(s + 1, etapas.length - 1));
+      updateQuestionario({ step: Math.min(step + 1, etapas.length - 1) });
     }
   };
 
-  const handleBack = () => setStep((s) => Math.max(s - 1, 0));
+  const handleBack = () => {
+    updateQuestionario({ step: Math.max(step - 1, 0) });
+  };
 
   const handleInputChange = (campo: string, valor: string) => {
-    setRespostas(prev => ({ ...prev, [campo]: valor }));
+    updateQuestionario({ respostas: { ...respostas, [campo]: valor } });
     // Remove erro do campo quando usuário começar a digitar
     if (erros[campo]) {
       setErros(prev => ({ ...prev, [campo]: '' }));
@@ -168,7 +169,11 @@ const QuestionarioPage: React.FC = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 2000));
       console.log('Dados enviados:', { categoria, plano: planos[planoSelecionado!], respostas });
-      setStep(etapas.length - 1);
+      updateQuestionario({ step: etapas.length - 1 });
+      // Após o envio bem-sucedido, limpa os dados
+      setTimeout(() => {
+        clearQuestionario();
+      }, 5000); // Limpa após 5 segundos para dar tempo de ver a confirmação
     } catch (error) {
       console.error('Erro ao enviar:', error);
     } finally {
@@ -253,7 +258,7 @@ const QuestionarioPage: React.FC = () => {
                   ? 'border-green-500 bg-green-50 shadow-md' 
                   : 'border-gray-200 hover:border-green-300 hover:bg-green-25'
               }`}
-              onClick={() => setCategoria(cat.value)}
+              onClick={() => updateQuestionario({ categoria: cat.value })}
             >
               <div className="flex items-center gap-4">
                 <span className="text-3xl">{cat.icon}</span>
@@ -384,7 +389,7 @@ const QuestionarioPage: React.FC = () => {
                   ? 'border-green-500 bg-green-50 shadow-lg transform scale-105' 
                   : 'border-gray-200 hover:border-green-300 hover:shadow-md'
               } ${plano.popular ? 'relative' : ''}`}
-              onClick={() => setPlanoSelecionado(index)}
+              onClick={() => updateQuestionario({ planoSelecionado: index })}
             >
               {plano.popular && (
                 <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
@@ -493,7 +498,7 @@ const QuestionarioPage: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-green-800 mb-2">Agendamento de Consulta</h1>
+          <h1 className="text-3xl font-bold text-green-800 mb-2">Formulário</h1>
           <p className="text-gray-600">Preencha o formulário para começarmos seu acompanhamento</p>
         </div>
 
@@ -511,10 +516,13 @@ const QuestionarioPage: React.FC = () => {
         </Card>
 
         {/* Botão para voltar ao início */}
-        {step === 4 && !isSubmitting && (
+        {step === etapas.length - 1 && !isSubmitting && (
           <div className="text-center mt-6">
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => {
+                clearQuestionario();
+                navigate('/');
+              }}
               className="text-green-600 hover:text-green-800 font-medium"
             >
               ← Voltar para a página inicial
