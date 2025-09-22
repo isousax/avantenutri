@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts';
 import { useNavigate } from 'react-router-dom';
 
 export function useProtectedRoute(role: 'paciente' | 'admin' = 'paciente') {

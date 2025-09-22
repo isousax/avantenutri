@@ -51,7 +51,7 @@ const pacientes = [
 ];
 
 const AdminPage: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { logout } = useAuth();
   const [tab, setTab] = useState<'pacientes' | 'consultas' | 'relatorios'>('pacientes');
   const [selected, setSelected] = useState<string | null>(null);
   const [pdf, setPdf] = useState<File | null>(null);

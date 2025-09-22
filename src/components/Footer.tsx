@@ -10,11 +10,12 @@ const Footer: React.FC = () => {
           <div className="col-span-1 md:col-span-2">
             <Link to="/" className="flex items-center mb-4">
               <div className="flex items-center">
-                <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center text-white font-bold text-lg mr-3">
-                  AN
-                </div>
-                <span className="text-xl font-bold text-white">Avante Nutris</span>
-              </div>
+              <img
+                src="/logocroped.png"
+                alt="Nutricionista em consulta"
+                className="relative rounded-lg w-32 sm:w-40 transform hover:scale-105 transition-transform duration-700"
+              />
+            </div>  
             </Link>
             <p className="text-gray-400 mb-6 max-w-md">
               Transformando vidas através da nutrição personalizada e 
@@ -34,18 +35,7 @@ const Footer: React.FC = () => {
                 </svg>
               </a>
               <a 
-                href="https://facebook.com/avantenutris" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-gray-400 hover:text-green-400 transition-colors p-2 bg-gray-800 rounded-full hover:bg-gray-700"
-              >
-                <span className="sr-only">Facebook</span>
-                <svg className="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                  <path fillRule="evenodd" d="M22 12c0-5.523-4.477-10-10-10S2 6.477 2 12c0 4.991 3.657 9.128 8.438 9.878v-6.987h-2.54V12h2.54V9.797c0-2.506 1.492-3.89 3.777-3.89 1.094 0 2.238.195 2.238.195v2.46h-1.26c-1.243 0-1.63.771-1.63 1.562V12h2.773l-.443 2.89h-2.33v6.988C18.343 21.128 22 16.991 22 12z" clipRule="evenodd" />
-                </svg>
-              </a>
-              <a 
-                href="https://wa.me/5561987654321" 
+                href="https://wa.me/558186653214"
                 target="_blank" 
                 rel="noopener noreferrer"
                 className="text-gray-400 hover:text-green-400 transition-colors p-2 bg-gray-800 rounded-full hover:bg-gray-700"
@@ -60,7 +50,7 @@ const Footer: React.FC = () => {
 
           {/* Links */}
           <div>
-            <h3 className="text-lg font-semibold mb-4">Links Rápidos</h3>
+            <h3 className="text-lg font-semibold mb-4">Navegação</h3>
             <ul className="space-y-3">
               <li>
                 <Link to="/#servicos" className="text-gray-400 hover:text-green-400 transition-colors">
@@ -93,27 +83,27 @@ const Footer: React.FC = () => {
                 <svg className="h-5 w-5 mr-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2 3a1 1 0 011-1h2.153a1 1 0 01.986.836l.74 4.435a1 1 0 01-.54 1.06l-1.548.773a11.037 11.037 0 006.105 6.105l.774-1.548a1 1 0 011.059-.54l4.435.74a1 1 0 01.836.986V17a1 1 0 01-1 1h-2C7.82 18 2 12.18 2 5V3z" />
                 </svg>
-                (61) 98765-4321
+                (81) 8665-3214
               </li>
               <li className="flex items-center text-gray-400">
                 <svg className="h-5 w-5 mr-3 text-green-400" fill="currentColor" viewBox="0 0 20 20">
                   <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
                   <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
                 </svg>
-                <a href="mailto:dra.nutri@avantenutris.com.br">dra.nutri@avantenutris.com.br</a>
+                <a href="mailto:dra.nutri@avantenutris.com.br">souzacawanne@gmail.com</a>
               </li>
               <li className="flex items-start text-gray-400 mt-4">
                 <svg className="h-5 w-5 mr-3 text-green-400 mt-1 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clipRule="evenodd" />
                 </svg>
-                <span>Brasília - DF<br />Asa Sul, CLN 102</span>
+                <span>Recife - PE</span>
               </li>
             </ul>
           </div>
         </div>
 
         <div className="mt-12 pt-8 border-t border-gray-800 text-center text-gray-400">
-          <p>&copy; {new Date().getFullYear()} Avante Nutris. Todos os direitos reservados.</p>
+          <p>&copy; {new Date().getFullYear()} Avante Nutri. Todos os direitos reservados.</p>
         </div>
       </div>
     </footer>

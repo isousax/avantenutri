@@ -18,3 +18,32 @@ body {
     @apply h-full m-0 p-0;
   }
 }
+
+@keyframes subtle-float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+.floating-image {
+  animation: subtle-float 6s ease-in-out infinite;
+}
+
+.image-container {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+}
+
+.image-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+}
