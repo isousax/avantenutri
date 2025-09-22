@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 import Button from "../components/Button";
 import Card from "../components/Card";
 import Header from "../components/Header";
-import Footer from "../components/Footer";
 import "../styles/placeholder-images.css";
 
 const LandingPage: React.FC = () => {
@@ -83,7 +82,7 @@ const LandingPage: React.FC = () => {
             <h2 className="text-3xl font-bold text-green-800 mb-4">Serviços</h2>
             <p className="sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Oferecemos soluções completas em nutrição para ajudar você a
-              alcançar seus objetivos de saúde
+              alcançar seus objetivos
             </p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
@@ -510,8 +509,6 @@ const LandingPage: React.FC = () => {
           </Link>
         </div>
       </section>
-
-      <Footer />
     </div>
   );
 };

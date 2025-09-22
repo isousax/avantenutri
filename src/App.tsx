@@ -5,6 +5,7 @@ import RegisterPage from "./pages/RegisterPage.tsx";
 import DashboardPage from "./pages/DashboardPage.tsx";
 import QuestionarioPage from "./pages/QuestionarioPage.tsx";
 import AdminPage from "./pages/AdminPage.tsx";
+import Footer from "./components/Footer.tsx";
 
 function App() {
   return (
@@ -17,6 +18,8 @@ function App() {
         <Route path="/admin" element={<AdminPage />} />
         <Route path="/register" element={<RegisterPage />} />
       </Routes>
+
+      <Footer />
     </BrowserRouter>
   );
 }
