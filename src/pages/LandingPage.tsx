@@ -32,7 +32,7 @@ const LandingPage: React.FC = () => {
 
         <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center gap-12 relative z-10">
           <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-5xl lg:text-7xl font-bold text-green-800 mb-4 leading-tight">
+            <h1 className="text-4xl lg:text-7xl font-bold text-green-800 mb-4 leading-tight">
               Transforme sua saúde através da{" "}
               <span className="text-green-600">nutrição</span>
             </h1>
