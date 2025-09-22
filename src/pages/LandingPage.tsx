@@ -50,7 +50,11 @@ const LandingPage: React.FC = () => {
               <Button
                 variant="secondary"
                 className="px-8 py-4 text-lg font-semibold w-full sm:w-auto border-green-600 text-green-600 hover:bg-green-50"
-                onClick={() => document.getElementById('planos')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                onClick={() =>
+                  document
+                    .getElementById("planos")
+                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
               >
                 Ver Planos
               </Button>
@@ -76,9 +80,7 @@ const LandingPage: React.FC = () => {
       <section id="servicos" className="py-10 sm:py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-green-800 mb-4">
-              Serviços
-            </h2>
+            <h2 className="text-3xl font-bold text-green-800 mb-4">Serviços</h2>
             <p className="sm:text-lg text-gray-600 max-w-3xl mx-auto">
               Oferecemos soluções completas em nutrição para ajudar você a
               alcançar seus objetivos de saúde
@@ -238,7 +240,9 @@ const LandingPage: React.FC = () => {
               <div className="absolute -top-4 bg-green-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-md">
                 MAIS POPULAR
               </div>
-              <h3 className="font-bold text-2xl text-green-800 mb-2">Premium</h3>
+              <h3 className="font-bold text-2xl text-green-800 mb-2">
+                Premium
+              </h3>
               <div className="text-4xl font-bold text-green-600 mb-4">
                 R$250<span className="text-lg font-normal"></span>
               </div>
@@ -319,9 +323,12 @@ const LandingPage: React.FC = () => {
               <div className="absolute -top-6 -right-6 w-28 h-28 bg-yellow-100 rounded-full -z-10"></div>
             </div>
             <div className="flex-1">
-              <h2 className="text-3xl font-bold text-green-800 mb-6">
+              <h2 className="text-3xl font-bold text-green-800 mb-1">
                 Dra. Andreina Cawanne
               </h2>
+
+              <p className="text-gray-500 mb-5 text-sm">CRN: 43669/P</p>
+              
               <p className="text-gray-700 mb-6 leading-relaxed sm:text-lg">
                 Com mais de 6 anos de experiência em nutrição clínica e
                 esportiva, ajudo pessoas a alcançarem seus objetivos através de
