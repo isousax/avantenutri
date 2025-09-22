@@ -817,8 +817,8 @@ const QuestionarioPage: React.FC = () => {
         </Card>
 
         {/* Botão para voltar ao início */}
-        {step === etapas.length - 1 && !isSubmitting && (
-          <div className="text-center mt-6">
+        {!isSubmitting && (
+          <div className="text-center mt-6 text-xs">
             <button
               onClick={() => {
                 navigate("/");
