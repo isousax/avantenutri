@@ -1,0 +1,20 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+#root,
+html,
+body {
+  height: 100dvh;
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full m-0 p-0;
+  }
+}
