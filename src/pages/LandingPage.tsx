@@ -345,7 +345,7 @@ const LandingPage: React.FC = () => {
                     />
                   </svg>
                   <span className="text-gray-700">
-                    Especialista em Nutrição Clínica pela USP
+                    Especialista em Nutrição Clínica pela Unibra
                   </span>
                 </div>
                 <div className="flex items-start">
