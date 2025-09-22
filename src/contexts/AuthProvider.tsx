@@ -1,61 +1,80 @@
 import { useState, type ReactNode } from "react";
 import type { User, AuthContextType } from "../types/auth";
 import { AuthContext } from "./AuthContext";
+import { MOCK_CREDENTIALS, MOCK_USERS } from "../mocks/users";
 
-// Usuários padrão para simulação
-const defaultAdminUser: User = {
-  id: "1",
-  name: "Dra. Nutri Avante",
-  email: "admin@nutri.com",
-  role: "admin",
-  photoUrl: "https://ui-avatars.com/api/?name=Dra+Nutri&background=22c55e&color=fff"
-};
-
-const defaultPatientUser: User = {
-  id: "2",
-  name: "Maria Silva",
-  email: "maria@example.com",
-  role: "paciente",
-  photoUrl: "https://ui-avatars.com/api/?name=Maria+Silva&background=22c55e&color=fff",
-  phone: "(61) 98765-4321",
-  birthDate: "1990-05-15",
-  weight: 72.5,
-  targetWeight: 70,
-  calorieGoal: 2000,
-  dailyWaterGoal: 8
-};
+const STORAGE_KEY = "@AvanteNutri:user";
+const SESSION_EXPIRY = 24 * 60 * 60 * 1000; // 24 horas em milissegundos
 
 /**
  * Provedor de autenticação que gerencia o estado do usuário e funções de autenticação.
  */
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<User | null>(() => {
+    // Tenta recuperar usuário do localStorage na inicialização
+    const storedData = localStorage.getItem(STORAGE_KEY);
+    if (storedData) {
+      const { user, expiresAt, rememberMe } = JSON.parse(storedData);
+      if (expiresAt > Date.now() || rememberMe) {
+        return user;
+      } else {
+        localStorage.removeItem(STORAGE_KEY);
+      }
+    }
+    return null;
+  });
+
+  const saveUserToStorage = (userData: User, rememberMe: boolean) => {
+    const data = {
+      user: userData,
+      expiresAt: Date.now() + SESSION_EXPIRY,
+      rememberMe,
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  };
 
   const contextValue: AuthContextType = {
     user,
-    login: async (email: string, password: string) => {
-      if (email === "admin@nutri.com" && password === "admin") {
-        setUser(defaultAdminUser);
-        return true;
-      } else if (email && password) {
-        setUser(defaultPatientUser);
+    login: async (
+      email: string,
+      password: string,
+      rememberMe: boolean = false
+    ) => {
+      let userData: User | null = null;
+
+
+      if (email === MOCK_CREDENTIALS.admin.email && password === MOCK_CREDENTIALS.admin.password) {
+        userData = MOCK_USERS.admin;
+      } else if (email === MOCK_CREDENTIALS.patient.email && password === MOCK_CREDENTIALS.patient.password) {
+        userData = MOCK_USERS.patient;
+      }
+
+      if (userData) {
+        setUser(userData);
+        saveUserToStorage(userData, rememberMe);
         return true;
       }
       return false;
     },
     logout: () => {
       setUser(null);
+      localStorage.removeItem(STORAGE_KEY);
     },
     updateUser: (userData: Partial<User>) => {
       if (user) {
-        setUser({ ...user, ...userData });
+        const updatedUser = { ...user, ...userData };
+        setUser(updatedUser);
+        // Mantém as configurações de rememberMe ao atualizar usuário
+        const storedData = localStorage.getItem(STORAGE_KEY);
+        if (storedData) {
+          const { rememberMe } = JSON.parse(storedData);
+          saveUserToStorage(updatedUser, rememberMe);
+        }
       }
-    }
+    },
   };
 
   return (
-    <AuthContext.Provider value={contextValue}>
-      {children}
-    </AuthContext.Provider>
+    <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>
   );
 };

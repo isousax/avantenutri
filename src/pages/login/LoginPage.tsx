@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+type LocationState = {
+  from: {
+    pathname: string;
+  };
+};
 import { useAuth } from "../../contexts";
+import { MOCK_CREDENTIALS } from "../../mocks/users";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
@@ -23,7 +29,9 @@ const LoginPage: React.FC = () => {
   // Redirecionar se já estiver logado
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      // Redireciona baseado no tipo de usuário
+      const redirectPath = user.role === "admin" ? "/admin" : "/dashboard";
+      navigate(redirectPath);
     }
   }, [user, navigate]);
 
@@ -70,6 +78,10 @@ const LoginPage: React.FC = () => {
     return !newErrors.email && !newErrors.password;
   };
 
+  const location = useLocation();
+  const state = location.state as LocationState;
+  const from = state?.from?.pathname || "/dashboard";
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -79,13 +91,13 @@ const LoginPage: React.FC = () => {
     setErrors((prev) => ({ ...prev, general: "" }));
 
     try {
-      const success = await login(formData.email, formData.password);
+      const success = await login(formData.email, formData.password, rememberMe);
 
       if (success) {
         // Feedback visual de sucesso
         document.body.classList.add("fade-out");
         setTimeout(() => {
-          navigate("/dashboard");
+          navigate(from, { replace: true });
         }, 400);
       } else {
         setErrors((prev) => ({
@@ -103,17 +115,9 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, []);
-
+  // Usa as credenciais mock centralizadas
   const handleDemoLogin = (type: "patient" | "admin") => {
-    const demoCredentials = {
-      patient: { email: "paciente@demo.com", password: "demo123" },
-      admin: { email: "admin@demo.com", password: "admin123" },
-    };
-
-    setFormData(demoCredentials[type]);
+    setFormData(MOCK_CREDENTIALS[type]);
   };
 
   return (

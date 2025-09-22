@@ -1,4 +1,6 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { PrivateRoute } from "./components/auth/PrivateRoute";
+import { AdminRoute } from "./components/auth/AdminRoute";
 import LandingPage from "./pages/LandingPage";
 import LoginPage from "./pages/login/LoginPage.tsx";
 import RegisterPage from "./pages/login/RegisterPage.tsx";
@@ -20,24 +22,29 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Rotas públicas */}
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/questionario" element={<QuestionarioPage />} />
-        <Route path="/admin" element={<AdminPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-        <Route
-          path="/recuperar-senha/confirmacao"
-          element={<CheckEmailPage />}
-        />
+        <Route path="/recuperar-senha/confirmacao" element={<CheckEmailPage />} />
         <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
         <Route path="/termos" element={<TermosServicoPage />} />
         <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
-        <Route path="/registro-refeicao" element={<RefeicaoRegistroPage />} />
-        <Route path="/registro-peso" element={<PesoRegistroPage />} />
-        <Route path="/registro-agua" element={<AguaRegistroPage />} />
-        <Route path="/agendar-consulta" element={<AgendarConsultaPage />} />
+        <Route path="/questionario" element={<QuestionarioPage />} />
+
+        {/* Rotas protegidas (requer login) */}
+        <Route path="/dashboard" element={<PrivateRoute><DashboardPage /></PrivateRoute>} />
+        <Route path="/registro-refeicao" element={<PrivateRoute><RefeicaoRegistroPage /></PrivateRoute>} />
+        <Route path="/registro-peso" element={<PrivateRoute><PesoRegistroPage /></PrivateRoute>} />
+        <Route path="/registro-agua" element={<PrivateRoute><AguaRegistroPage /></PrivateRoute>} />
+        <Route path="/agendar-consulta" element={<PrivateRoute><AgendarConsultaPage /></PrivateRoute>} />
+
+        {/* Rotas administrativas */}
+        <Route path="/admin" element={<AdminRoute><AdminPage /></AdminRoute>} />
+
+        {/* Rota para página não encontrada */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
 
       <Footer />
