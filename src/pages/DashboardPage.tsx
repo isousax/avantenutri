@@ -1,262 +1,632 @@
-import React, { useState } from 'react';
-import { useAuth } from '../contexts';
-import Button from '../components/Button';
-import Card from '../components/Card';
-import StatsCard from '../components/StatsCard';
-import NotificationBell from '../components/NotificationBell';
-import Progress from '../components/Progress';
-import { RoleRoute } from '../components/RoleRoute';
+import React, { useState, useEffect } from "react";
+import { useAuth } from "../contexts";
+import { useNavigate } from "react-router-dom";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import StatsCard from "../components/StatsCard";
+import NotificationBell from "../components/NotificationBell";
+import Progress from "../components/ui/Progress";
+import LogoCroped from "../components/ui/LogoCroped";
+
+// Componentes novos que vamos criar
+type DietPlan = {
+  id: string;
+  name: string;
+  description: string;
+  startDate: string;
+  endDate?: string;
+  duration: string;
+  results?: string;
+  isCurrent?: boolean;
+};
+
+const DietPlanCard: React.FC<{ diet: DietPlan; isCurrent?: boolean }> = ({
+  diet,
+  isCurrent = false,
+}) => (
+  <Card
+    className={`p-6 hover:shadow-lg transition-all duration-300 ${
+      isCurrent ? "border-l-4 border-l-green-500" : ""
+    }`}
+  >
+    <div className="flex items-start justify-between mb-4">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">{diet.name}</h3>
+        <p className="text-sm text-gray-500">{diet.description}</p>
+      </div>
+      <span
+        className={`px-3 py-1 text-xs font-medium rounded-full ${
+          isCurrent
+            ? "bg-green-100 text-green-800"
+            : "bg-gray-100 text-gray-800"
+        }`}
+      >
+        {isCurrent ? "Ativa" : "Concluída"}
+      </span>
+    </div>
+
+    <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+      <div>
+        <span className="text-gray-500">Início:</span>
+        <p className="font-medium">{diet.startDate}</p>
+      </div>
+      <div>
+        <span className="text-gray-500">
+          {isCurrent ? "Término:" : "Duração:"}
+        </span>
+        <p className="font-medium">
+          {isCurrent ? diet.endDate : diet.duration}
+        </p>
+      </div>
+    </div>
+
+    {diet.results && (
+      <div className="mb-4 p-3 bg-green-50 rounded-lg">
+        <p className="text-sm font-medium text-green-800">
+          Resultados: {diet.results}
+        </p>
+      </div>
+    )}
+
+    <div className="flex gap-2">
+      <Button className="flex-1">Ver Detalhes</Button>
+      <Button variant="secondary" className="px-3">
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
+          />
+        </svg>
+      </Button>
+    </div>
+  </Card>
+);
+
+interface QuickActionProps {
+  icon: string;
+  label: string;
+  description: string;
+  onClick: () => void;
+  color?: string;
+}
+
+const QuickAction: React.FC<QuickActionProps> = ({
+  icon,
+  label,
+  description,
+  onClick,
+  color = "green",
+}) => (
+  <div onClick={onClick}>
+    <Card className="p-4 cursor-pointer hover:shadow-md transition-all duration-200">
+      <div className="flex items-center">
+        <div
+          className={`p-3 rounded-lg bg-${color}-100 text-${color}-600 mr-4`}
+        >
+          {icon}
+        </div>
+        <div>
+          <h4 className="font-semibold text-gray-900">{label}</h4>
+          <p className="text-sm text-gray-600">{description}</p>
+        </div>
+      </div>
+    </Card>
+  </div>
+);
 
 const DashboardPage: React.FC = () => {
-  const { user, logout } = useAuth();
-  const [tab, setTab] = useState<'dietas' | 'perfil' | 'suporte'>('dietas');
-  
-  // Exemplo de notificações - substituir por dados reais
+  const { user = { name: "", email: "", photoUrl: "" }, logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate("/login");
+  };
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
+  const [activeTab, setActiveTab] = useState<
+    "overview" | "dietas" | "perfil" | "suporte" | "consultas"
+  >("overview");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  // Dados de exemplo
   const notifications = [
     {
-      id: '1',
-      title: 'Nova Dieta Disponível',
-      message: 'Sua dieta foi atualizada. Confira as mudanças!',
-      time: 'Há 1 hora',
+      id: "1",
+      title: "Nova Dieta Disponível",
+      message: "Sua dieta foi atualizada com base na última consulta",
+      time: "Há 1 hora",
       read: false,
+      type: "diet",
     },
     {
-      id: '2',
-      title: 'Lembrete de Consulta',
-      message: 'Você tem uma consulta marcada para amanhã às 14h',
-      time: 'Há 2 horas',
+      id: "2",
+      title: "Lembrete de Consulta",
+      message: "Você tem uma consulta marcada para amanhã às 14h",
+      time: "Há 2 horas",
       read: true,
+      type: "appointment",
+    },
+    {
+      id: "3",
+      title: "Dica de Nutrição",
+      message: "Confira novas receitas saudáveis para esta semana",
+      time: "Há 1 dia",
+      read: true,
+      type: "tip",
     },
   ];
 
+  const dietPlans = [
+    {
+      id: "1",
+      name: "Plano de Emagrecimento",
+      description: "Foco em perda de peso saudável",
+      startDate: "01/09/2025",
+      endDate: "01/10/2025",
+      duration: "30 dias",
+      results: "-2.3kg conquistados",
+      isCurrent: true,
+    },
+    {
+      id: "2",
+      name: "Plano de Manutenção",
+      description: "Manutenção do peso ideal",
+      startDate: "01/08/2025",
+      duration: "30 dias",
+      results: "-1.5kg no período",
+      isCurrent: false,
+    },
+  ];
+
+  const upcomingAppointments = [
+    {
+      id: "1",
+      date: "15/09/2025",
+      time: "14:00",
+      type: "Consulta de Acompanhamento",
+      status: "confirmada",
+    },
+    {
+      id: "2",
+      date: "01/10/2025",
+      time: "10:30",
+      type: "Reavaliação Completa",
+      status: "agendada",
+    },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Atualiza a cada minuto
+
+    return () => clearInterval(timer);
+  }, []);
+
   const handleNotificationClick = (id: string) => {
     console.log(`Notification ${id} clicked`);
-    // Implementar lógica de marcar como lida
+  };
+
+  const quickActions = [
+    {
+      icon: "📋",
+      label: "Registrar Refeição",
+      description: "Adicione o que comeu hoje",
+      onClick: () => navigate("/registro-refeicao"),
+      color: "blue",
+    },
+    {
+      icon: "⚖️",
+      label: "Registrar Peso",
+      description: "Atualize seu peso atual",
+      onClick: () => navigate("/registro-peso"),
+      color: "green",
+    },
+    {
+      icon: "💧",
+      label: "Registrar Água",
+      description: "Controle sua hidratação",
+      onClick: () => navigate("/registro-agua"),
+      color: "cyan",
+    },
+    {
+      icon: "📅",
+      label: "Agendar Consulta",
+      description: "Marque nova consulta",
+      onClick: () => navigate("/agendar-consulta"),
+      color: "purple",
+    },
+  ];
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString("pt-BR", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
   };
 
   return (
-    <RoleRoute role="paciente">
-      <div className="min-h-screen flex bg-brand-50">
-        {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-md p-6 hidden md:flex flex-col justify-between">
-          <div>
-            <div className="mb-6">
-              <img src="/logo.svg" alt="Avante Nutris" className="h-8 w-auto mb-2" />
-              <p className="text-sm text-gray-500">Bem-vindo(a),</p>
-              <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-            </div>
-            <nav className="flex flex-col gap-4">
-              <Button variant={tab === 'dietas' ? 'primary' : 'secondary'} className="w-full text-left" onClick={() => setTab('dietas')}>
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                  Minhas Dietas
-                </div>
-              </Button>
-              <Button variant={tab === 'perfil' ? 'primary' : 'secondary'} className="w-full text-left" onClick={() => setTab('perfil')}>
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                  </svg>
-                  Perfil
-                </div>
-              </Button>
-              <Button variant={tab === 'suporte' ? 'primary' : 'secondary'} className="w-full text-left" onClick={() => setTab('suporte')}>
-                <div className="flex items-center">
-                  <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Suporte
-                </div>
-              </Button>
-            </nav>
-          </div>
-          <Button variant="secondary" className="w-full mt-8" onClick={logout}>
-            <div className="flex items-center justify-center">
-              <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-              </svg>
-              Sair
-            </div>
-          </Button>
-        </aside>
-        <main className="flex-1 p-6">
-          {/* Header */}
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-brand-700">
-              {tab === 'dietas' && 'Minhas Dietas'}
-              {tab === 'perfil' && 'Meu Perfil'}
-              {tab === 'suporte' && 'Suporte'}
-            </h1>
-            <div className="flex items-center space-x-4">
-              <NotificationBell
-                notifications={notifications}
-                onNotificationClick={handleNotificationClick}
-              />
-              <div className="relative">
-                <img
-                  src={user?.photoUrl || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=22c55e&color=fff`}
-                  alt={user?.name}
-                  className="h-8 w-8 rounded-full"
-                />
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar Mobile Overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+        fixed md:static inset-y-0 left-0 z-50 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
+        ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+      `}
+      >
+        <div className="flex flex-col h-full">
+          {/* Logo */}
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center">
+              <div className="flex items-center pr-4 border-r border-gray-300">
+                <LogoCroped />
+              </div>
+              <div className="pl-4">
+                <p className="text-xs text-gray-500">Área do Paciente</p>
               </div>
             </div>
           </div>
 
-          {tab === 'dietas' && (
-            <>
-              {/* Stats Cards */}
-              <div className="grid gap-4 md:grid-cols-3 mb-6">
+          {/* User Info */}
+          <div className="p-6 border-b border-gray-100">
+            <div className="flex items-center">
+              <img
+                src={
+                  user?.photoUrl ||
+                  `https://ui-avatars.com/api/?name=${
+                    user?.name || "User"
+                  }&background=22c55e&color=fff`
+                }
+                alt={user?.name}
+                className="h-16 w-16 rounded-full border-4 border-green-100"
+              />
+              <div className="ml-4">
+                <h3 className="font-semibold text-gray-900">{user?.name}</h3>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+                <p className="text-xs text-green-600 font-medium">
+                  Plano Ativo
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Navigation */}
+          <nav className="flex-1 p-4">
+            {[
+              { id: "overview", label: "Visão Geral", icon: "📊" },
+              { id: "dietas", label: "Minhas Dietas", icon: "🍽️" },
+              { id: "consultas", label: "Consultas", icon: "📅" },
+              { id: "perfil", label: "Meu Perfil", icon: "👤" },
+              { id: "suporte", label: "Suporte", icon: "💬" },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(
+                    item.id as
+                      | "overview"
+                      | "dietas"
+                      | "perfil"
+                      | "suporte"
+                      | "consultas"
+                  );
+                  setSidebarOpen(false);
+                }}
+                className={`w-full flex items-center px-4 py-3 rounded-lg mb-2 transition-all duration-200 ${
+                  activeTab === item.id
+                    ? "bg-green-50 text-green-700 border-l-4 border-l-green-500"
+                    : "text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                <span className="text-xl mr-3">{item.icon}</span>
+                <span className="font-medium">{item.label}</span>
+              </button>
+            ))}
+          </nav>
+
+          {/* Footer */}
+          <div className="p-4 border-t border-gray-100 ">
+            <Button
+              variant="secondary"
+              className="w-full flex justify-center text-center"
+              onClick={handleLogout}
+            >
+              <svg
+                className="w-5 h-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Sair
+            </Button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 min-w-0">
+        {/* Header */}
+        <header className="bg-white shadow-sm border-b border-gray-100">
+          <div className="px-6 py-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <button
+                  className="md:hidden p-2 mr-2 rounded-lg hover:bg-gray-100"
+                  onClick={() => setSidebarOpen(true)}
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  </svg>
+                </button>
+                <div>
+                  <h1 className="text-2xl font-bold text-gray-900 capitalize">
+                    {activeTab === "overview" && "Visão Geral"}
+                    {activeTab === "dietas" && "Minhas Dietas"}
+                    {activeTab === "consultas" && "Minhas Consultas"}
+                    {activeTab === "perfil" && "Meu Perfil"}
+                    {activeTab === "suporte" && "Suporte"}
+                  </h1>
+                  <p className="text-gray-600 text-xs sm:text-sm">
+                    {formatDate(currentTime)}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <NotificationBell
+                  notifications={notifications}
+                  onNotificationClick={handleNotificationClick}
+                />
+                <div className="hidden md:flex items-center space-x-3">
+                  <div className="text-right">
+                    <p className="font-medium text-gray-900">{user?.name}</p>
+                    <p className="text-sm text-gray-500">Paciente</p>
+                  </div>
+                  <img
+                    src={
+                      user?.photoUrl ||
+                      `https://ui-avatars.com/api/?name=${
+                        user?.name || "User"
+                      }&background=22c55e&color=fff`
+                    }
+                    alt={user?.name}
+                    className="h-10 w-10 rounded-full border-2 border-green-200"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <div className="p-6">
+          {activeTab === "overview" && (
+            <div className="space-y-6">
+              {/* Quick Actions */}
+              <div>
+                <h2 className="text-lg font-semibold text-gray-900 mb-4">
+                  Ações Rápidas
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {quickActions.map((action, index) => (
+                    <QuickAction key={index} {...action} />
+                  ))}
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="grid gap-6 md:grid-cols-3">
                 <StatsCard
                   title="Dias de Dieta"
                   value="15"
                   trend={{ value: 12, isPositive: true }}
-                  icon={
-                    <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                  }
+                  icon="📅"
                 />
                 <StatsCard
                   title="Peso Atual"
                   value="72.5 kg"
                   trend={{ value: 2.3, isPositive: false }}
                   description="Meta: 70kg"
-                  icon={
-                    <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                  }
+                  icon="⚖️"
                 />
                 <StatsCard
                   title="Calorias Diárias"
                   value="1850 kcal"
                   description="Meta: 2000 kcal"
-                  icon={
-                    <svg className="h-6 w-6 text-brand-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                    </svg>
-                  }
+                  icon="🔥"
                 />
               </div>
 
-              {/* Progress Tracking */}
-              <Card className="mb-6">
-                <div className="p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4">Progresso dos Objetivos</h2>
+              {/* Progress and Diet Plans */}
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Progresso dos Objetivos
+                  </h3>
                   <div className="space-y-4">
-                    <Progress current={72.5} target={70} label="Meta de Peso" unit="kg" />
-                    <Progress current={1850} target={2000} label="Meta de Calorias" unit=" kcal" />
-                    <Progress current={7} target={8} label="Copos de Água" unit="" />
-                  </div>
-                </div>
-              </Card>
-
-              {/* Latest Diets */}
-              <div className="grid gap-4 md:grid-cols-2">
-                <Card className="bg-white overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Dieta Atual</h3>
-                      <span className="px-2.5 py-0.5 text-xs font-medium bg-brand-100 text-brand-800 rounded-full">Ativa</span>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-500">Enviada em: 01/09/2025</p>
-                      <p className="text-sm text-gray-500">Válida até: 01/10/2025</p>
-                      <div className="flex items-center mt-4 space-x-2">
-                        <Button className="flex-1">Ver Detalhes</Button>
-                        <Button variant="secondary" className="flex items-center">
-                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                        </Button>
-                      </div>
-                    </div>
+                    <Progress
+                      current={72.5}
+                      target={70}
+                      label="Meta de Peso"
+                      unit="kg"
+                    />
+                    <Progress
+                      current={1850}
+                      target={2000}
+                      label="Meta de Calorias"
+                      unit="kcal"
+                    />
+                    <Progress
+                      current={7}
+                      target={8}
+                      label="Copos de Água"
+                      unit=""
+                    />
+                    <Progress
+                      current={85}
+                      target={100}
+                      label="Adesão à Dieta"
+                      unit="%"
+                    />
                   </div>
                 </Card>
 
-                <Card className="bg-white overflow-hidden">
-                  <div className="p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <h3 className="text-lg font-semibold text-gray-900">Dieta Anterior</h3>
-                      <span className="px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800 rounded-full">Arquivada</span>
-                    </div>
-                    <div className="space-y-2">
-                      <p className="text-sm text-gray-500">Período: 01/08/2025 - 31/08/2025</p>
-                      <p className="text-sm text-gray-500">Resultados: -2kg</p>
-                      <div className="flex items-center mt-4 space-x-2">
-                        <Button variant="secondary" className="flex-1">Ver Histórico</Button>
-                        <Button variant="secondary" className="flex items-center">
-                          <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                          </svg>
-                        </Button>
-                      </div>
-                    </div>
+                <Card className="p-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Dietas Recentes
+                    </h3>
+                    <Button variant="secondary">Ver Todas</Button>
+                  </div>
+                  <div className="space-y-4">
+                    {dietPlans.map((diet) => (
+                      <DietPlanCard
+                        key={diet.id}
+                        diet={diet}
+                        isCurrent={diet.isCurrent}
+                      />
+                    ))}
                   </div>
                 </Card>
               </div>
-            </>
-          )}
 
-          {tab === 'perfil' && (
-            <div className="max-w-2xl">
-              <Card className="overflow-hidden">
-                <div className="p-6">
-                  <div className="flex items-center mb-6">
-                    <img
-                      src={user?.photoUrl || `https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=22c55e&color=fff`}
-                      alt={user?.name}
-                      className="h-20 w-20 rounded-full"
-                    />
-                    <div className="ml-4">
-                      <h2 className="text-xl font-semibold text-gray-900">{user?.name}</h2>
-                      <p className="text-gray-500">{user?.email}</p>
+              {/* Upcoming Appointments */}
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Próximas Consultas
+                </h3>
+                <div className="space-y-3">
+                  {upcomingAppointments.map((appointment) => (
+                    <div
+                      key={appointment.id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900">
+                          {appointment.type}
+                        </p>
+                        <p className="text-sm text-gray-600">
+                          {appointment.date} às {appointment.time}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-2 py-1 text-xs font-medium rounded-full ${
+                          appointment.status === "confirmada"
+                            ? "bg-green-100 text-green-800"
+                            : "bg-yellow-100 text-yellow-800"
+                        }`}
+                      >
+                        {appointment.status}
+                      </span>
                     </div>
-                  </div>
-
-                  <div className="border-t border-gray-200 pt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">Informações Pessoais</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Nome</label>
-                        <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" value={user?.name || ''} readOnly />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">E-mail</label>
-                        <input type="email" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" value={user?.email || ''} readOnly />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Telefone</label>
-                        <input type="tel" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" value={user?.phone || ''} readOnly />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700">Data de Nascimento</label>
-                        <input type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500" value={user?.birthDate || ''} readOnly />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <Button>Editar Perfil</Button>
-                    <Button variant="secondary" className="ml-3">Alterar Senha</Button>
-                  </div>
+                  ))}
                 </div>
               </Card>
             </div>
           )}
-          {tab === 'suporte' && (
-            <>
-              <h1 className="text-2xl font-bold text-green-700 mb-4">Suporte</h1>
-              <Card>
-                <p className="text-gray-700 mb-2">Precisa de ajuda? Envie sua dúvida para <a href="mailto:support@nutri.com" className="text-green-600 underline">support@nutri.com</a></p>
-              </Card>
-            </>
+
+          {activeTab === "dietas" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Minhas Dietas
+                </h2>
+                <Button>Nova Dieta</Button>
+              </div>
+
+              <div className="grid gap-6 md:grid-cols-2">
+                {dietPlans.map((diet) => (
+                  <DietPlanCard
+                    key={diet.id}
+                    diet={diet}
+                    isCurrent={diet.isCurrent}
+                  />
+                ))}
+              </div>
+            </div>
           )}
-        </main>
-      </div>
-    </RoleRoute>
+
+          {activeTab === "consultas" && (
+            <div className="space-y-6">
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Minhas Consultas
+                </h2>
+                <Button>Agendar Consulta</Button>
+              </div>
+
+              <Card className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                  Próximas Consultas
+                </h3>
+                {/* Conteúdo das consultas */}
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "perfil" && (
+            <div className="max-w-4xl">
+              <Card className="p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Meu Perfil
+                </h2>
+                {/* Conteúdo do perfil */}
+              </Card>
+            </div>
+          )}
+
+          {activeTab === "suporte" && (
+            <div className="max-w-4xl">
+              <Card className="p-6">
+                <h2 className="text-2xl font-bold text-gray-900 mb-6">
+                  Suporte
+                </h2>
+                {/* Conteúdo do suporte */}
+              </Card>
+            </div>
+          )}
+        </div>
+      </main>
+    </div>
   );
 };
 

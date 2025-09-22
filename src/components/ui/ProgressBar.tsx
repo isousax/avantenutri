@@ -32,7 +32,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, max, labels, currentSt
               }`}>
                 {index + 1}
               </div>
-              <span className={`text-xs font-medium text-center max-w-20 ${
+              <span className={`text-[11px] sm:text-xs font-medium text-center max-w-20 ${
                 index <= currentStep ? 'text-green-700' : 'text-gray-500'
               }`}>
                 {label}

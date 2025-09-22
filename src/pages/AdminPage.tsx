@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import Card from '../components/Card';
-import Button from '../components/Button';
+import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 import { useAuth } from '../contexts';
 import { RoleRoute } from '../components/RoleRoute';
 

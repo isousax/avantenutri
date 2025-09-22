@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Button from "../components/Button";
-import Card from "../components/Card";
-import Header from "../components/Header";
+import Button from "../components/ui/Button";
+import Card from "../components/ui/Card";
+import Header from "../components/layout/Header";
 import "../styles/placeholder-images.css";
 
 const LandingPage: React.FC = () => {
@@ -15,6 +15,13 @@ const LandingPage: React.FC = () => {
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  useEffect(() => {
+    // Só faz scroll para o topo se não houver âncora na URL
+    if (!window.location.hash) {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
   }, []);
 
   return (
@@ -263,7 +270,7 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  2 consultas mensais
+                  2 consultas
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -279,7 +286,23 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  Plano alimentar atualizado
+                  Plano alimentar personalizado
+                </li>
+                <li className="flex items-center">
+                  <svg
+                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                  Acompanhamento Completo
                 </li>
                 <li className="flex items-center">
                   <svg
@@ -313,7 +336,7 @@ const LandingPage: React.FC = () => {
             <div className="flex-1 relative flex justify-center items-center">
               <div className="relative z-10 rounded-2xl overflow-hidden">
                 <img
-                  src="/nutricionista.png"
+                  src="/nutricionista2.png"
                   alt="Dra. Andreina Cawanne"
                   className="max-w-xs max-h-xs transform hover:scale-105 transition-transform duration-700"
                 />

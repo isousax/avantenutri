@@ -1,5 +1,5 @@
-import React from 'react';
-import Card from './Card';
+import React from "react";
+import Card from "./ui/Card";
 
 interface StatsCardProps {
   title: string;
@@ -12,7 +12,14 @@ interface StatsCardProps {
   };
 }
 
-const StatsCard: React.FC<StatsCardProps> = ({ title, value, description, icon, trend }) => {
+const StatsCard: React.FC<StatsCardProps> = ({
+  title,
+  value,
+  description,
+  icon,
+  trend,
+}) => {
+
   return (
     <Card className="overflow-hidden">
       <div className="px-4 py-5 sm:p-6">
@@ -31,12 +38,14 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, description, icon, 
                 {value}
               </div>
               {trend && (
-                <div className={`ml-2 flex items-baseline text-sm font-semibold ${
-                  trend.isPositive ? 'text-green-600' : 'text-red-600'
-                }`}>
+                <div
+                  className={`ml-2 flex items-baseline text-sm font-semibold ${
+                    trend.isPositive ? "text-green-600" : "text-red-600"
+                  }`}
+                >
                   <svg
                     className={`self-center flex-shrink-0 h-5 w-5 ${
-                      trend.isPositive ? 'text-green-500' : 'text-red-500'
+                      trend.isPositive ? "text-green-500" : "text-red-500"
                     }`}
                     fill="currentColor"
                     viewBox="0 0 20 20"
@@ -44,15 +53,16 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, description, icon, 
                   >
                     <path
                       fillRule="evenodd"
-                      d={trend.isPositive
-                        ? "M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
-                        : "M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
+                      d={
+                        trend.isPositive
+                          ? "M5.293 9.707a1 1 0 010-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 01-1.414 1.414L11 7.414V15a1 1 0 11-2 0V7.414L6.707 9.707a1 1 0 01-1.414 0z"
+                          : "M14.707 10.293a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 12.586V5a1 1 0 012 0v7.586l2.293-2.293a1 1 0 011.414 0z"
                       }
                       clipRule="evenodd"
                     />
                   </svg>
                   <span className="sr-only">
-                    {trend.isPositive ? 'Aumentou' : 'Diminuiu'} em
+                    {trend.isPositive ? "Aumentou" : "Diminuiu"} em
                   </span>
                   {trend.value}%
                 </div>

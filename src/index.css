@@ -46,3 +46,67 @@ body {
   bottom: 0;
   z-index: 2;
 }
+
+/* Estilos para as páginas legais */
+.prose {
+  line-height: 1.75;
+}
+
+.prose h2 {
+  margin-top: 2em;
+  margin-bottom: 1em;
+}
+
+.prose h3 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+}
+
+.prose ul {
+  margin-top: 1em;
+  margin-bottom: 1em;
+}
+
+.prose p {
+  margin-bottom: 1em;
+}
+
+/* Animações suaves para scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.5s ease-out;
+}
+
+.bg-green-25 {
+  background-color: rgba(16, 185, 129, 0.05);
+}
+
+
+.fade-out {
+  animation: fade-out 0.4s ease-in-out forwards;
+}
+
+/* Efeito de shake para erros */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  75% { transform: translateX(5px); }
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}

@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Card from "../components/Card";
-import Button from "../components/Button";
-import ProgressBar from "../components/ProgressBar";
+import Card from "../components/ui/Card";
+import Button from "../components/ui/Button";
+import ProgressBar from "../components/ui/ProgressBar";
 import { useQuestionario } from "../contexts/useQuestionario";
 
 // Dados do questionário
@@ -35,7 +35,13 @@ const categorias = [
 
 const perguntasPorCategoria: Record<
   string,
-  Array<{ pergunta: string; tipo: string; expansivel?: boolean; placeholderExt?: string; opcoes?: string[] }>
+  Array<{
+    pergunta: string;
+    tipo: string;
+    expansivel?: boolean;
+    placeholderExt?: string;
+    opcoes?: string[];
+  }>
 > = {
   infantil: [
     { pergunta: "Nome da criança", tipo: "texto" },
@@ -44,7 +50,7 @@ const perguntasPorCategoria: Record<
     { pergunta: "Altura (cm)", tipo: "numero" },
     {
       pergunta: "Possui alguma restrição alimentar?",
-      tipo: "select",      
+      tipo: "select",
       expansivel: true,
       placeholderExt: "Descreva a restrição alimentar",
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
@@ -194,25 +200,21 @@ const planos = [
 const etapas = ["Contato", "Categoria", "Questionário", "Plano", "Confirmação"];
 
 const formatarTelefone = (value: string) => {
-  // Remove tudo que não é número
-  const numero = value.replace(/\D/g, '');
-  
-  // Aplica a máscara conforme o tamanho do número
-  if (numero.length <= 10) { // Telefone fixo
-    return numero.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3').trim();
-  } else { // Celular
-    return numero.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3').trim();
+  const numero = value.replace(/\D/g, "");
+  if (numero.length <= 10) {
+    return numero.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3").trim();
+  } else {
+    return numero.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3").trim();
   }
 };
 
 const limparFormatacaoTelefone = (value: string) => {
-  return value.replace(/\D/g, '');
+  return value.replace(/\D/g, "");
 };
 
 const QuestionarioPage: React.FC = () => {
   const navigate = useNavigate();
-  const { questionarioData, updateQuestionario } =
-    useQuestionario();
+  const { questionarioData, updateQuestionario } = useQuestionario();
   const { step, categoria, planoSelecionado, respostas } = questionarioData;
   const [erros, setErros] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -300,9 +302,7 @@ const QuestionarioPage: React.FC = () => {
         respostas,
       });
       updateQuestionario({ step: etapas.length - 1 });
-      // Após o envio bem-sucedido, limpa os dados
-      setTimeout(() => {
-      }, 5000); // Limpa após 5 segundos para dar tempo de ver a confirmação
+      setTimeout(() => {}, 3000);
     } catch (error) {
       console.error("Erro ao enviar:", error);
     } finally {
@@ -416,16 +416,16 @@ const QuestionarioPage: React.FC = () => {
               }`}
               onClick={() => {
                 // Atualiza a categoria
-                updateQuestionario({ 
+                updateQuestionario({
                   categoria: cat.value,
                   // Se não for categoria infantil, replica o nome nas respostas
                   respostas: {
                     ...respostas,
-                    ...(cat.value !== 'infantil' && respostas.nome 
-                      ? { 'Nome completo': respostas.nome }
-                      : {})
-                  }
-                })
+                    ...(cat.value !== "infantil" && respostas.nome
+                      ? { "Nome completo": respostas.nome }
+                      : {}),
+                  },
+                });
               }}
             >
               <div className="flex items-center gap-4">
@@ -537,17 +537,27 @@ const QuestionarioPage: React.FC = () => {
                     ))}
                   </select>
                   {perguntaObj.expansivel &&
-                    (respostas[perguntaObj.pergunta] === "Sim - Outras" || respostas[perguntaObj.pergunta] === "Outros") && (
+                    (respostas[perguntaObj.pergunta] === "Sim - Outras" ||
+                      respostas[perguntaObj.pergunta] === "Outros") && (
                       <input
                         className={`mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
                           erros[perguntaObj.pergunta]
                             ? "border-red-500"
                             : "border-gray-300"
                         }`}
-                        placeholder={`${perguntaObj.placeholderExt ? perguntaObj.placeholderExt : ""}`}
-                        value={respostas[perguntaObj.pergunta + " - Detalhe"] || ""}
+                        placeholder={`${
+                          perguntaObj.placeholderExt
+                            ? perguntaObj.placeholderExt
+                            : ""
+                        }`}
+                        value={
+                          respostas[perguntaObj.pergunta + " - Detalhe"] || ""
+                        }
                         onChange={(e) =>
-                          handleInputChange(perguntaObj.pergunta + " - Detalhe", e.target.value)
+                          handleInputChange(
+                            perguntaObj.pergunta + " - Detalhe",
+                            e.target.value
+                          )
                         }
                       />
                     )}

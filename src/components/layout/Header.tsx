@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Button from "./Button";
+import Button from "../ui/Button";
 
 interface HeaderProps {
   scrollPosition: number;
@@ -47,7 +47,7 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
           <Link to="/" className="flex items-center">
             <div className="flex items-center">
               <img
-                src="/logo.png"
+                src="/logocroped.png"
                 alt="Nutricionista em consulta"
                 className="relative rounded-lg w-32 sm:w-40 h-auto transform hover:scale-105 transition-transform duration-700"
               />
