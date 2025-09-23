@@ -82,7 +82,7 @@ const LandingPage: React.FC = () => {
             <div className="relative mx-auto max-w-md floating-image">
               <div className="image-container">
                 <img
-                  src="/nutricionista.png"
+                  src="/nutricionista.webp"
                   alt="Dra. Andreina Cawanne - Especialista em Nutrição"
                   className="max-w-xs h-auto"
                 />
@@ -348,7 +348,7 @@ const LandingPage: React.FC = () => {
             <div className="flex-1 relative flex justify-center items-center">
               <div className="relative z-10 rounded-2xl overflow-hidden">
                 <img
-                  src="/nutricionista2.png"
+                  src="/nutricionista2.webp"
                   alt="Dra. Andreina Cawanne"
                   className="max-w-xs max-h-xs transform hover:scale-105 transition-transform duration-700"
                 />

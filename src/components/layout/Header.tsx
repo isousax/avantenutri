@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Button from "../ui/Button";
+import LogoCroped from "../ui/LogoCroped";
 
 interface HeaderProps {
   scrollPosition: number;
@@ -26,7 +27,7 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
 
       window.scrollTo({
         top: offsetPosition,
-        behavior: 'smooth'
+        behavior: "smooth",
       });
     }
   };
@@ -45,31 +46,25 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <Link to="/" className="flex items-center">
-            <div className="flex items-center">
-              <img
-                src="/logocroped.png"
-                alt="Nutricionista em consulta"
-                className="relative rounded-lg w-32 sm:w-40 h-auto transform hover:scale-105 transition-transform duration-700"
-              />
-            </div>
+            <LogoCroped />
           </Link>
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8 items-center">
             <button
-              onClick={() => scrollToSection('servicos')}
+              onClick={() => scrollToSection("servicos")}
               className={`font-medium transition-colors hover:text-green-600 text-gray-700`}
             >
               Serviços
             </button>
             <button
-              onClick={() => scrollToSection('planos')}
+              onClick={() => scrollToSection("planos")}
               className={`font-medium transition-colors hover:text-green-600 text-gray-700`}
             >
               Planos
             </button>
             <button
-              onClick={() => scrollToSection('sobre')}
+              onClick={() => scrollToSection("sobre")}
               className={`font-medium transition-colors hover:text-green-600 text-gray-700`}
             >
               Sobre
@@ -122,19 +117,19 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
         <div className="md:hidden bg-white shadow-lg rounded-b-lg">
           <div className="px-4 pt-2 pb-4 space-y-1">
             <button
-              onClick={() => scrollToSection('servicos')}
+              onClick={() => scrollToSection("servicos")}
               className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
             >
               Serviços
             </button>
             <button
-              onClick={() => scrollToSection('planos')}
+              onClick={() => scrollToSection("planos")}
               className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
             >
               Planos
             </button>
             <button
-              onClick={() => scrollToSection('sobre')}
+              onClick={() => scrollToSection("sobre")}
               className="block w-full text-left px-4 py-2 text-base font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md"
             >
               Sobre
