@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import Card from '../components/ui/Card';
-import Button from '../components/ui/Button';
-import { useAuth } from '../contexts';
-import { RoleRoute } from '../components/RoleRoute';
+import Card from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import { useAuth } from '../../contexts';
+import { RoleRoute } from '../../components/RoleRoute';
 
 // Simulação de pacientes
 const pacientes = [

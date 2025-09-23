@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Card from "../components/ui/Card";
-import Button from "../components/ui/Button";
-import ProgressBar from "../components/ui/ProgressBar";
-import { useQuestionario } from "../contexts/useQuestionario";
-import { SEO } from "../components/comum/SEO";
+import Card from "../../components/ui/Card";
+import Button from "../../components/ui/Button";
+import ProgressBar from "../../components/ui/ProgressBar";
+import { useQuestionario } from "../../contexts/useQuestionario";
+import { SEO } from "../../components/comum/SEO";
 
 // Dados do questionário
 const categorias = [

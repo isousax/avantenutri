@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import Button from "../../components/ui/Button";
-import Card from "../../components/ui/Card";
-import { SEO } from "../../components/comum/SEO";
+import Button from "../../../components/ui/Button";
+import Card from "../../../components/ui/Card";
+import { SEO } from "../../../components/comum/SEO";
 
 const AguaRegistroPage: React.FC = () => {
   useEffect(() => {

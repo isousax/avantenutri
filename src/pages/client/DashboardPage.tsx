@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../contexts";
+import { useAuth } from "../../contexts";
 import { useNavigate } from "react-router-dom";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
-import StatsCard from "../components/StatsCard";
-import NotificationBell from "../components/NotificationBell";
-import Progress from "../components/ui/Progress";
-import LogoCroped from "../components/ui/LogoCroped";
-import { SEO } from "../components/comum/SEO";
-import Perfil from "../components/dashboard/Perfil";
-import Consultas from "../components/dashboard/Consultas";
-import Suporte from "../components/dashboard/Suporte";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import StatsCard from "../../components/StatsCard";
+import NotificationBell from "../../components/NotificationBell";
+import Progress from "../../components/ui/Progress";
+import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from "../../components/comum/SEO";
+import Perfil from "../../components/dashboard/Perfil";
+import Consultas from "../../components/dashboard/Consultas";
+import Suporte from "../../components/dashboard/Suporte";
 
 // Componentes novos que vamos criar
 type DietPlan = {

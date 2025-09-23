@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import Button from "../components/ui/Button";
-import Card from "../components/ui/Card";
-import Header from "../components/layout/Header";
-import "../styles/placeholder-images.css";
-import { SEO } from "../components/comum/SEO";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import Header from "../../components/layout/Header";
+import "../../styles/placeholder-images.css";
+import { SEO } from "../../components/comum/SEO";
+import StatsSectionSimple from "../../components/home/StatsSectionSimple";
 
 const LandingPage: React.FC = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -19,7 +20,6 @@ const LandingPage: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    // Só faz scroll para o topo se não houver âncora na URL
     if (!window.location.hash) {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
@@ -40,141 +40,219 @@ const LandingPage: React.FC = () => {
       />
       <Header scrollPosition={scrollPosition} />
 
-      {/* Hero Section */}
-      <section className="pt-24 lg:pt-32 pb-16 bg-gradient-to-b from-green-50 to-white relative overflow-hidden">
-        <div className="absolute top-0 left-0 w-full h-full opacity-5">
+      {/* Hero Section Inspirada */}
+      <section className="relative pt-24 lg:pt-32 pb-16 md:pb-20 flex items-center justify-center overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-green-50/60 to-white"></div>
+
+        {/* Elementos decorativos de fundo */}
+        <div className="absolute inset-0 opacity-10">
           <div className="absolute top-1/4 left-1/4 w-64 h-64 bg-green-300 rounded-full mix-blend-multiply filter blur-xl animate-blob"></div>
           <div className="absolute top-1/3 right-1/4 w-64 h-64 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-2000"></div>
-          <div className="absolute bottom-1/4 left-1/2 w-64 h-64 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
+          <div className="absolute bottom-1/4 left-1/2 w-64 h-64 bg-emerald-300 rounded-full mix-blend-multiply filter blur-xl animate-blob animation-delay-4000"></div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 flex flex-col lg:flex-row items-center gap-12 relative z-10">
-          <div className="flex-1 text-center lg:text-left">
-            <h1 className="text-4xl lg:text-7xl font-bold text-green-800 mb-4 leading-tight">
-              Transforme sua saúde através da{" "}
-              <span className="text-green-600">nutrição</span>
-            </h1>
-            <p className="sm:text-lg text-gray-700 mb-8 max-w-2xl">
-              Descubra o poder de uma alimentação personalizada com a Dra.
-              Andreina Cawanne, especialista em nutrição clínica e esportiva com
-              mais de 6 anos de experiência.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
-              <Link to="/questionario">
-                <Button className="px-8 py-4 text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-300 w-full sm:w-auto">
-                  Comece Agora
-                </Button>
-              </Link>
-              <Button
-                variant="secondary"
-                className="px-8 py-4 text-lg font-semibold w-full sm:w-auto border-green-600 text-green-600 hover:bg-green-50"
-                onClick={() =>
-                  document
-                    .getElementById("planos")
-                    ?.scrollIntoView({ behavior: "smooth", block: "start" })
-                }
-              >
-                Ver Planos
-              </Button>
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="md:flex md:items-center md:gap-8 max-w-7xl mx-auto">
+            {/* Imagem - lado esquerdo no desktop */}
+            <div className="hidden md:flex md:w-2/5 lg:w-2/5 xl:w-2/5 justify-center items-center self-end mb-8 md:mb-0">
+              <div className="relative floating-image">
+                <div className="image-container">
+                  <img
+                    alt="Dra. Andreina Cawanne - Especialista em Nutrição"
+                    width="400"
+                    height="500"
+                    decoding="async"
+                    className="object-contain mx-auto shadow-lg transform hover:scale-105 transition-transform duration-700"
+                    src="/nutricionista.webp"
+                    style={{ color: "transparent" }}
+                  />
+                </div>
+                <div className="absolute -z-10 top-6 -right-2 w-32 h-32 bg-green-100 rounded-full opacity-50 animate-pulse"></div>
+                <div className="absolute -z-10 bottom-6 -left-6 w-24 h-24 bg-amber-50 rounded-full opacity-100"></div>
+              </div>
+            </div>
+
+            {/* Conteúdo principal - lado direito no desktop */}
+            <div className="md:w-3/5 lg:w-3/5 xl:w-3/5 text-center md:text-left">
+              <div className="inline-flex items-center space-x-2 mb-4 lg:mb-6 animate-fade-in">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="24"
+                  height="24"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="lucide lucide-sparkles h-4 w-4 lg:h-5 lg:w-5 text-green-800 animate-pulse"
+                >
+                  <path d="M9.937 15.5A2 2 0 0 0 8.5 14.063l-6.135-1.582a.5.5 0 0 1 0-.962L8.5 9.936A2 2 0 0 0 9.937 8.5l1.582-6.135a.5.5 0 0 1 .963 0L14.063 8.5A2 2 0 0 0 15.5 9.937l6.135 1.581a.5.5 0 0 1 0 .964L15.5 14.063a2 2 0 0 0-1.437 1.437l-1.582 6.135a.5.5 0 0 1-.963 0z"></path>
+                  <path d="M20 3v4"></path>
+                  <path d="M22 5h-4"></path>
+                  <path d="M4 17v2"></path>
+                  <path d="M5 18H3"></path>
+                </svg>
+                <span className="text-xs lg:text-sm font-light text-green-800 animate-slide-in">
+                  Nutrição personalizada com resultados comprovados
+                </span>
+              </div>
+
+              <div className="hidden md:block">
+                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight text-green-800">
+                  Transforme sua saúde com uma{" "}
+                  <span className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-600 bg-clip-text text-transparent animate-gradient">
+                    nutrição inteligente
+                  </span>
+                </h1>
+                <p className="text-xl lg:text-2xl xl:text-3xl font-light text-gray-700 mt-2 lg:mt-3">
+                  sua dieta, do seu jeito!
+                </p>
+                <div className="mt-6 lg:mt-8 flex justify-center md:justify-start">
+                  <Link to="/register">
+                    <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 py-3 bg-[#16a34a] hover:bg-[#15803d] text-white px-8 lg:px-10 xl:px-12 h-12 lg:h-12 xl:h-14 text-sm lg:text-sm xl:text-base font-normal transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+                      Começar minha transformação
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-arrow-right ml-2 h-4 w-4"
+                      >
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                      </svg>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Versão Mobile */}
+              <div className="md:hidden text-center">
+                <h1 className="text-3xl font-bold tracking-tight leading-tight mb-2 text-green-800">
+                  Transforme sua saúde
+                </h1>
+                <p className="text-lg font-light text-gray-700 mb-6">
+                  com nutrição personalizada
+                </p>
+                <div className="mt-4 mb-0 relative w-full mx-auto overflow-hidden">
+                  <img
+                    alt="Dra. Andreina Cawanne"
+                    width="300"
+                    height="300"
+                    decoding="async"
+                    className="rounded-2xl mx-auto"
+                    src="/nutricionista.webp"
+                    style={{ color: "transparent" }}
+                  />
+                </div>
+                <div className="flex pt-6 justify-center">
+                  <Link to="/register">
+                    <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white px-8 h-12 text-sm font-normal">
+                      Começar agora
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        className="lucide lucide-arrow-right ml-2 h-4 w-4"
+                      >
+                        <path d="M5 12h14"></path>
+                        <path d="m12 5 7 7-7 7"></path>
+                      </svg>
+                    </Button>
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
-          <div className="flex-1 relative">
-            <div className="relative mx-auto max-w-md floating-image">
-              <div className="image-container">
-                <img
-                  src="/nutricionista.webp"
-                  alt="Dra. Andreina Cawanne - Especialista em Nutrição"
-                  className="max-w-xs h-auto"
-                />
+
+          {/* Texto animado abaixo do hero */}
+          <div className="mt-8 lg:mt-12 text-base sm:text-lg lg:text-lg xl:text-xl font-light text-gray-800 max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto text-center">
+            <div className="relative h-16 flex items-center justify-center">
+              <div className="absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out opacity-100 transform translate-y-0">
+                <p className="text-center">
+                  Acompanhamento personalizado com Dra. Andreina Cawanne
+                </p>
               </div>
-              <div className="absolute -z-10 top-6 -right-6 w-32 h-32 bg-green-50 rounded-full opacity-80"></div>
-              <div className="absolute -z-10 bottom-6 -left-6 w-24 h-24 bg-amber-50 rounded-full opacity-80"></div>
             </div>
           </div>
         </div>
       </section>
 
+      {/* Stats Section */}
+      <StatsSectionSimple />
+
       {/* Serviços Section */}
-      <section id="servicos" className="py-10 sm:py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4">
+      <section id="servicos" className="py-12 md:py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-green-800 mb-4">Serviços</h2>
-            <p className="sm:text-lg text-gray-600 max-w-3xl mx-auto">
-              Oferecemos soluções completas em nutrição para ajudar você a
-              alcançar seus objetivos
+            <h2 className="text-3xl md:text-4xl font-bold text-green-800 mb-4">
+              Funcionalidades Incríveis
+            </h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              Soluções completas para ajudar você a alcançar seus
+              objetivos de saúde e bem-estar.
             </p>
           </div>
+
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="text-center p-8 border border-green-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-              <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg
-                  className="w-10 h-10 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                  />
-                </svg>
+            <Card className="text-center p-8 border border-green-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors duration-300">
+                  <span className="text-2xl">🍎</span>
+                </div>
+                <h3 className="text-xl font-bold text-green-800 mb-4">
+                  Plano Alimentar Personalizado
+                </h3>
+                <p className="text-gray-600">
+                  Dietas elaboradas especialmente para seu perfil, objetivos e
+                  preferências alimentares.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-green-800 mb-4">
-                Plano Alimentar Personalizado
-              </h3>
-              <p className="text-gray-600 sm:text-lg">
-                Dietas personalizadas baseadas no seu perfil, objetivos e
-                preferências alimentares.
-              </p>
             </Card>
-            <Card className="text-center p-8 border border-green-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-              <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg
-                  className="w-10 h-10 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
-                  />
-                </svg>
+
+            <Card className="text-center p-8 border border-green-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors duration-300">
+                  <span className="text-2xl">💬</span>
+                </div>
+                <h3 className="text-xl font-bold text-green-800 mb-4">
+                  Acompanhamento Contínuo
+                </h3>
+                <p className="text-gray-600">
+                  Suporte constante e ajustes periódicos para maximizar seus
+                  resultados e manter a motivação.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-green-800 mb-4">
-                Acompanhamento Contínuo
-              </h3>
-              <p className="text-gray-600 sm:text-lg">
-                Suporte constante e ajustes periódicos para maximizar seus
-                resultados.
-              </p>
             </Card>
-            <Card className="text-center p-8 border border-green-100 hover:shadow-xl transition-all duration-300 hover:-translate-y-2">
-              <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
-                <svg
-                  className="w-10 h-10 text-green-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
+
+            <Card className="text-center p-8 border border-green-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              <div className="relative z-10">
+                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors duration-300">
+                  <span className="text-2xl">📱</span>
+                </div>
+                <h3 className="text-xl font-bold text-green-800 mb-4">
+                  Consultas Online
+                </h3>
+                <p className="text-gray-600">
+                  Atendimento flexível e conveniente, onde e quando você
+                  precisar, com toda comodidade.
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-green-800 mb-4">
-                Consultas Online
-              </h3>
-              <p className="text-gray-600 sm:text-lg">
-                Atendimento flexível e conveniente, onde e quando você precisar.
-              </p>
             </Card>
           </div>
         </div>
@@ -183,7 +261,7 @@ const LandingPage: React.FC = () => {
       {/* Planos Section */}
       <section
         id="planos"
-        className="py-20 bg-green-50 relative overflow-hidden"
+        className="py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50 relative overflow-hidden"
       >
         <div className="absolute inset-0 opacity-5">
           <div className="absolute top-0 right-0 w-64 h-64 bg-green-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
@@ -244,7 +322,7 @@ const LandingPage: React.FC = () => {
                   Plano alimentar personalizado
                 </li>
               </ul>
-              <Link to="/questionario" className="w-full">
+              <Link to="/register" className="w-full">
                 <Button
                   variant="secondary"
                   className="w-full py-3 border-green-600 text-green-600 hover:bg-green-50"
@@ -344,17 +422,16 @@ const LandingPage: React.FC = () => {
       {/* Sobre Section */}
       <section id="sobre" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex flex-col lg:flex-row items-center gap-16">
-            <div className="flex-1 relative flex justify-center items-center">
-              <div className="relative z-10 rounded-2xl overflow-hidden">
+          <div className="flex flex-col lg:flex-row items-center gap-10">
+            <div className="flex-1 relative flex justify-center items-center floating-image-sobre">
+              <div className="relative z-10 rounded-2xl overflow-hidden image-container">
                 <img
                   src="/nutricionista2.webp"
                   alt="Dra. Andreina Cawanne"
                   className="max-w-xs max-h-xs transform hover:scale-105 transition-transform duration-700"
                 />
               </div>
-              <div className="absolute -bottom-6 -left-6 w-40 h-40 bg-green-100 rounded-full -z-10"></div>
-              <div className="absolute -top-6 -right-6 w-28 h-28 bg-yellow-100 rounded-full -z-10"></div>
+              <div className="absolute -bottom-6 -left-6 w-40 h-40 bg-green-100 rounded-full -z-11 opacity-40"></div>
             </div>
             <div className="flex-1">
               <h2 className="text-3xl font-bold text-green-800 mb-1">
@@ -444,7 +521,7 @@ const LandingPage: React.FC = () => {
                   </span>
                 </div>
               </div>
-              <Link to="/questionario">
+              <Link to="/register">
                 <Button className="px-8 py-3 transform hover:scale-105 transition-transform duration-300">
                   Agende sua Consulta
                 </Button>
@@ -523,23 +600,40 @@ const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="py-16 bg-green-700 relative overflow-hidden">
+      {/* Faq Section <Faq /> */}
+
+      {/* CTA Final */}
+      <section className="py-16 bg-gradient-to-br from-green-600 to-emerald-700 relative overflow-hidden">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute top-0 left-0 w-full h-full bg-pattern"></div>
+          <div className="absolute top-10 left-10 w-32 h-32 bg-white rounded-full blur-3xl animate-pulse"></div>
+          <div className="absolute bottom-10 right-10 w-40 h-40 bg-white rounded-full blur-3xl animate-pulse delay-1000"></div>
         </div>
 
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl font-bold text-white mb-6">
-            Pronto para transformar sua alimentação e sua saúde?
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+            Pronto para transformar sua saúde?
           </h2>
-          <p className="text-green-100 mb-8 text-xl">
-            Comece hoje mesmo sua jornada para uma vida mais saudável com um
-            plano nutricional personalizado para suas necessidades.
+          <p className="text-green-100 mb-8 text-lg md:text-xl">
+            Comece hoje mesmo sua jornada para uma vida mais saudável
           </p>
-          <Link to="/questionario">
-            <Button className="px-8 py-4 bg-white/30 rounded-lg text-green-700 hover:bg-green-800 text-lg font-semibold transform hover:scale-105 transition-transform duration-300">
-              Começar Agora
+          <Link to="/register">
+            <Button className="inline-flex items-center px-8 py-4 bg-white/30 text-green-700 hover:bg-green-50 text-sm sm:text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
+              Criar minha conta gratuita
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="12"
+                height="12"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="ml-2.5 h-5 w-5 transition-transform duration-300 group-hover:translate-x-1"
+              >
+                <path d="M5 12h14" />
+                <path d="m12 5 7 7-7 7" />
+              </svg>
             </Button>
           </Link>
         </div>
