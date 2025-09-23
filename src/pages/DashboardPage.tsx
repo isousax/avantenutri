@@ -8,7 +8,7 @@ import NotificationBell from "../components/NotificationBell";
 import Progress from "../components/ui/Progress";
 import LogoCroped from "../components/ui/LogoCroped";
 import { SEO } from "../components/comum/SEO";
-import Perfil from "../components/dashboard/perfil";
+import Perfil from "../components/dashboard/Perfil";
 import Consultas from "../components/dashboard/Consultas";
 import Suporte from "../components/dashboard/Suporte";
 
