@@ -88,84 +88,86 @@ function App() {
   }, []);
 
   return (
-    <div>
-      {/* Banner de Cookies (condicional) */}
-      <CookieBanner grantConsent={grantConsent} />
+    <div className="flex flex-col min-h-screen">
+      <main>
+        {/* Banner de Cookies (condicional) */}
+        <CookieBanner grantConsent={grantConsent} />
 
-      <Routes>
-        {/* Rotas públicas */}
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-        <Route
-          path="/recuperar-senha/confirmacao"
-          element={<CheckEmailPage />}
-        />
-        <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
-        <Route path="/termos" element={<TermosServicoPage />} />
-        <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
-        <Route path="/questionario" element={<QuestionarioPage />} />
+        <Routes>
+          {/* Rotas públicas */}
+          <Route path="/" element={<LandingPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/register" element={<RegisterPage />} />
+          <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
+          <Route
+            path="/recuperar-senha/confirmacao"
+            element={<CheckEmailPage />}
+          />
+          <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+          <Route path="/termos" element={<TermosServicoPage />} />
+          <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
+          <Route path="/questionario" element={<QuestionarioPage />} />
 
-        {/* Rotas protegidas (requer login) */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <DashboardPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/registro-refeicao"
-          element={
-            <PrivateRoute>
-              <RefeicaoRegistroPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/registro-peso"
-          element={
-            <PrivateRoute>
-              <PesoRegistroPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/registro-agua"
-          element={
-            <PrivateRoute>
-              <AguaRegistroPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/agendar-consulta"
-          element={
-            <PrivateRoute>
-              <AgendarConsultaPage />
-            </PrivateRoute>
-          }
-        />
+          {/* Rotas protegidas (requer login) */}
+          <Route
+            path="/dashboard"
+            element={
+              <PrivateRoute>
+                <DashboardPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/registro-refeicao"
+            element={
+              <PrivateRoute>
+                <RefeicaoRegistroPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/registro-peso"
+            element={
+              <PrivateRoute>
+                <PesoRegistroPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/registro-agua"
+            element={
+              <PrivateRoute>
+                <AguaRegistroPage />
+              </PrivateRoute>
+            }
+          />
+          <Route
+            path="/agendar-consulta"
+            element={
+              <PrivateRoute>
+                <AgendarConsultaPage />
+              </PrivateRoute>
+            }
+          />
 
-        {/* Rotas administrativas */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }
-        />
+          {/* Rotas administrativas */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
 
-        {/* Rota para página não encontrada */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-      <Footer />
+          {/* Rota para página não encontrada */}
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+        <Footer />
 
-      <Analytics />
-      <SpeedInsights />
+        <Analytics />
+        <SpeedInsights />
+      </main>
     </div>
   );
 }
