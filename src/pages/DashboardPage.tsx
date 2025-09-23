@@ -8,6 +8,9 @@ import NotificationBell from "../components/NotificationBell";
 import Progress from "../components/ui/Progress";
 import LogoCroped from "../components/ui/LogoCroped";
 import { SEO } from "../components/comum/SEO";
+import Perfil from "../components/dashboard/perfil";
+import Consultas from "../components/dashboard/Consultas";
+import Suporte from "../components/dashboard/Suporte";
 
 // Componentes novos que vamos criar
 type DietPlan = {
@@ -421,22 +424,6 @@ const DashboardPage: React.FC = () => {
                   notifications={notifications}
                   onNotificationClick={handleNotificationClick}
                 />
-                <div className="hidden md:flex items-center space-x-3">
-                  <div className="text-right">
-                    <p className="font-medium text-gray-900">{user?.name}</p>
-                    <p className="text-sm text-gray-500">Paciente</p>
-                  </div>
-                  <img
-                    src={
-                      user?.photoUrl ||
-                      `https://ui-avatars.com/api/?name=${
-                        user?.name || "User"
-                      }&background=22c55e&color=fff`
-                    }
-                    alt={user?.name}
-                    className="h-10 w-10 rounded-full border-2 border-green-200"
-                  />
-                </div>
               </div>
             </div>
           </div>
@@ -591,43 +578,15 @@ const DashboardPage: React.FC = () => {
           )}
 
           {activeTab === "consultas" && (
-            <div className="space-y-6">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Minhas Consultas
-                </h2>
-                <Button>Agendar Consulta</Button>
-              </div>
-
-              <Card className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                  Próximas Consultas
-                </h3>
-                {/* Conteúdo das consultas */}
-              </Card>
-            </div>
+            <Consultas />
           )}
 
           {activeTab === "perfil" && (
-            <div className="max-w-4xl">
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  Meu Perfil
-                </h2>
-                {/* Conteúdo do perfil */}
-              </Card>
-            </div>
+            <Perfil />
           )}
 
           {activeTab === "suporte" && (
-            <div className="max-w-4xl">
-              <Card className="p-6">
-                <h2 className="text-2xl font-bold text-gray-900 mb-6">
-                  Suporte
-                </h2>
-                {/* Conteúdo do suporte */}
-              </Card>
-            </div>
+            <Suporte />
           )}
         </div>
       </main>
