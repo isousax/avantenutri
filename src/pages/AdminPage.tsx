@@ -86,7 +86,7 @@ const AdminPage: React.FC = () => {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h2 className="text-2xl font-bold text-green-700">Área do Nutricionista</h2>
-              <p className="text-gray-600">Bem-vindo(a), Dra. Nutri</p>
+              <p className="text-gray-600 text-sm">Bem-vinda, Dra. Cawanne</p>
             </div>
             <Button variant="secondary" onClick={logout}>Sair</Button>
           </div>
@@ -286,17 +286,17 @@ const AdminPage: React.FC = () => {
                                   onChange={e => setPdf(e.target.files?.[0] || null)}
                                   className="text-xs"
                                 />
-                                <Button type="submit" disabled={!pdf}>Enviar</Button>
-                                <Button type="button" variant="secondary" onClick={() => setSelected(null)}>
+                                <Button type="submit" className="text-xs" disabled={!pdf}>Enviar</Button>
+                                <Button type="button" variant="secondary" className="text-xs" onClick={() => setSelected(null)}>
                                   Cancelar
                                 </Button>
                               </form>
                             ) : (
                               <>
-                                <Button variant="secondary" onClick={() => setSelected(p.id)}>
+                                <Button variant="secondary" className="text-xs" onClick={() => setSelected(p.id)}>
                                   Nova Dieta
                                 </Button>
-                                <Button variant="secondary">Ver Perfil</Button>
+                                <Button variant="secondary" className="text-xs">Ver Perfil</Button>
                               </>
                             )}
                           </div>

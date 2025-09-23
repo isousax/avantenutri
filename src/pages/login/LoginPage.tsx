@@ -80,7 +80,13 @@ const LoginPage: React.FC = () => {
 
   const location = useLocation();
   const state = location.state as LocationState;
-  const from = state?.from?.pathname || "/dashboard";
+  
+  // Define a rota padrão baseada no tipo de usuário
+  const getDefaultRoute = (email: string) => {
+    return email === MOCK_CREDENTIALS.admin.email ? "/admin" : "/dashboard";
+  };
+
+  const from = state?.from?.pathname || getDefaultRoute(formData.email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
