@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
+import { SEO } from '../../components/comum/SEO';
 
 interface FormData {
   peso: string;
@@ -87,6 +88,10 @@ const PesoRegistroPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-50 py-8 px-4">
+      <SEO 
+        title="Registro de Peso | Avante Nutri"
+        description="Acompanhe sua evolução física registrando seu peso. Monitore seu progresso e alcance seus objetivos com mais eficiência."
+      />
       <div className="max-w-4xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">

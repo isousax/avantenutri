@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from "../../components/comum/SEO";
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -59,6 +60,10 @@ const ForgotPasswordPage: React.FC = () => {
   if (emailSent) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+        <SEO
+          title="Recuperar Senha | Avante Nutri"
+          description="Recupere o acesso à sua conta Avante Nutri através do seu e-mail cadastrado."
+        />
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg
@@ -128,7 +133,7 @@ const ForgotPasswordPage: React.FC = () => {
                 </p>
               </div>
             </div>
-            
+
             {/* Campo E-mail */}
             <div>
               <label

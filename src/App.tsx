@@ -160,7 +160,7 @@ function App() {
             }
           />
 
-          {/* Rota para página não encontrada */}
+          {/* Rota para 404*/}
           <Route path="*" element={<NotFound />} />
         </Routes>
         <Footer />

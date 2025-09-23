@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from "../../components/comum/SEO";
 
 const RegisterPage: React.FC = () => {
   useEffect(() => {
@@ -194,6 +195,10 @@ const RegisterPage: React.FC = () => {
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+        <SEO
+          title="Cadastro | Avante Nutri"
+          description="Crie sua conta na Avante Nutri e comece sua jornada para uma vida mais saudável com acompanhamento nutricional personalizado."
+        />
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <svg

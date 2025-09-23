@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
+import { SEO } from "../../components/comum/SEO";
 
 const AgendarConsultaPage: React.FC = () => {
   const navigate = useNavigate();
@@ -217,6 +218,10 @@ const AgendarConsultaPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+      <SEO
+        title="Agendar Consulta | Avante Nutri"
+        description="Agende sua consulta nutricional online de forma rápida e prática. Escolha o melhor horário para seu atendimento."
+      />
       <div className="max-w-2xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">
@@ -273,10 +278,10 @@ const AgendarConsultaPage: React.FC = () => {
                   type="button"
                   variant="secondary"
                   onClick={() => navigate("/dashboard")}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
+                  className="flex-1"
+                >
+                  Cancelar
+                </Button>
               )}
               <Button type="submit" className="flex-1">
                 {etapa === 1 ? "Continuar" : "Confirmar Agendamento"}

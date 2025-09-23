@@ -10,6 +10,7 @@ import { MOCK_CREDENTIALS } from "../../mocks/users";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from "../../components/comum/SEO";
 
 const LoginPage: React.FC = () => {
   const { login, user } = useAuth();
@@ -128,6 +129,11 @@ const LoginPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+      <SEO 
+        title="Login | Avante Nutri"
+        description="Faça login na sua conta Avante Nutri para acessar seu plano alimentar personalizado e acompanhar seu progresso."
+        url="https://avantenutri.com.br/login"
+      />
       <div className="w-full max-w-md">
         {/* Logo e Cabeçalho */}
         <div className="text-center mb-8">

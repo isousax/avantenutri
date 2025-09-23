@@ -4,6 +4,7 @@ import Button from "../components/ui/Button";
 import Card from "../components/ui/Card";
 import Header from "../components/layout/Header";
 import "../styles/placeholder-images.css";
+import { SEO } from "../components/comum/SEO";
 
 const LandingPage: React.FC = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
@@ -26,6 +27,17 @@ const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white font-sans">
+      <SEO
+        title="Avante Nutri | Alimente-se Bem, Viva Melhor!"
+        description="Transforme sua saúde com acompanhamento nutricional personalizado. Planos alimentares exclusivos, consultas online e acompanhamento contínuo para uma vida mais saudável."
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "Avante Nutri",
+          description: "Consultoria nutricional personalizada",
+          url: "https://avantenutri.com.br",
+        }}
+      />
       <Header scrollPosition={scrollPosition} />
 
       {/* Hero Section */}
@@ -350,7 +362,7 @@ const LandingPage: React.FC = () => {
               </h2>
 
               <p className="text-gray-500 mb-5 text-sm">CRN: 43669/P</p>
-              
+
               <p className="text-gray-700 mb-6 leading-relaxed sm:text-lg">
                 Com mais de 6 anos de experiência em nutrição clínica e
                 esportiva, ajudo pessoas a alcançarem seus objetivos através de

@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
 import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from '../../components/comum/SEO';
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -193,6 +194,10 @@ const ResetPasswordPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+      <SEO 
+        title="Redefinir Senha | Avante Nutri"
+        description="Defina uma nova senha para sua conta Avante Nutri e mantenha seu acesso seguro."
+      />
       <div className="w-full max-w-md">
         {/* Logo e Cabeçalho */}
         <div className="text-center mb-8">

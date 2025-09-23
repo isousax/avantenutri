@@ -3,12 +3,18 @@ import { Link } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from "../../components/comum/SEO";
 
 const PoliticaPrivacidadePage: React.FC = () => {
   const lastUpdated = "22 de Setembro de 2025";
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
+      <SEO
+        title="Política de Privacidade | Avante Nutri"
+        description="Leia nossa política de privacidade para entender como protegemos seus dados."
+        url="https://avantenutri.com.br/privacidade"
+      />
       <div className="max-w-4xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">

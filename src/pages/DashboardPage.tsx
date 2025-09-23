@@ -7,6 +7,7 @@ import StatsCard from "../components/StatsCard";
 import NotificationBell from "../components/NotificationBell";
 import Progress from "../components/ui/Progress";
 import LogoCroped from "../components/ui/LogoCroped";
+import { SEO } from "../components/comum/SEO";
 
 // Componentes novos que vamos criar
 type DietPlan = {
@@ -261,6 +262,10 @@ const DashboardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      <SEO
+        title="Dashboard | Avante Nutri"
+        description="Acompanhe seu progresso, visualize seu plano alimentar e gerencie suas consultas na sua área personalizada da Avante Nutri."
+      />
       {/* Sidebar Mobile Overlay */}
       {sidebarOpen && (
         <div

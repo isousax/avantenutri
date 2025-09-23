@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LogoCroped from "../../components/ui/LogoCroped";
+import { SEO } from "../../components/comum/SEO";
 
 const TermosServicoPage: React.FC = () => {
   const lastUpdated = "22 de Setembro de 2025";
@@ -10,6 +11,11 @@ const TermosServicoPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
+      <SEO 
+        title="Termos de Serviço | Avante Nutri"
+        description="Conheça nossos termos de serviço e as condições de uso da plataforma Avante Nutri para um acompanhamento nutricional transparente e seguro."
+        url="https://avantenutri.com.br/termos"
+      />
       <div className="max-w-4xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">

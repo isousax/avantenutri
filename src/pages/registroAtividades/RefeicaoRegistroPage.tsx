@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
+import { SEO } from "../../components/comum/SEO";
 
 const RefeicaoRegistroPage: React.FC = () => {
   const navigate = useNavigate();
@@ -48,6 +49,10 @@ const RefeicaoRegistroPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+      <SEO 
+        title="Registro de Refeição | Avante Nutri"
+        description="Registre suas refeições diárias e mantenha um diário alimentar completo. Acompanhe suas escolhas alimentares e melhore seus hábitos."
+      />
       <div className="max-w-2xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">

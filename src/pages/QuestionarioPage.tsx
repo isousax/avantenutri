@@ -4,6 +4,7 @@ import Card from "../components/ui/Card";
 import Button from "../components/ui/Button";
 import ProgressBar from "../components/ui/ProgressBar";
 import { useQuestionario } from "../contexts/useQuestionario";
+import { SEO } from "../components/comum/SEO";
 
 // Dados do questionário
 const categorias = [
@@ -807,6 +808,10 @@ const QuestionarioPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
+      <SEO
+        title="Questionário Inicial | Avante Nutri"
+        description="Preencha nosso questionário detalhado para recebermos informações importantes sobre seus objetivos e necessidades nutricionais."
+      />
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-green-800 mb-2">Formulário</h1>

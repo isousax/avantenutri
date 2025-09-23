@@ -1,0 +1,4 @@
+User-agent: *
+Disallow:
+
+Sitemap: https://avantenutri.com.br/sitemap.xml
