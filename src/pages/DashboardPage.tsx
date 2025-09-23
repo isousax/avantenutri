@@ -312,7 +312,6 @@ const DashboardPage: React.FC = () => {
               />
               <div className="ml-4">
                 <h3 className="font-semibold text-gray-900">{user?.name}</h3>
-                <p className="text-sm text-gray-500">{user?.email}</p>
                 <p className="text-xs text-green-600 font-medium">
                   Plano Ativo
                 </p>
