@@ -124,7 +124,7 @@ const Servicos: React.FC = () => {
               Nutrição
             </span>
           </h2>
-          <p className="text-sm sm:text-base text-gray-600 max-w-md mx-auto leading-relaxed">
+          <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
             Acompanhamento nutricional personalizado para você alcançar seus
             objetivos de saúde e bem-estar.
           </p>
@@ -232,7 +232,7 @@ const Servicos: React.FC = () => {
           <h3 className="text-2xl md:text-3xl font-bold text-green-900 mb-4">
             Áreas de Especialização
           </h3>
-          <p className="text-gray-600 max-w-2xl mx-auto">
+          <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
             Atendimento especializado em diversas áreas da nutrição com foco em
             resultados
           </p>

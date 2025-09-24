@@ -107,7 +107,7 @@ const Planos: React.FC = () => {
           <h2 className="text-4xl font-bold text-green-800 mb-4">
             Planos que se Adaptam a Você
           </h2>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto mb-8">
+          <p className="text-sm sm:text-base text-gray-700 max-w-3xl mx-auto mb-8">
             Escolha o acompanhamento ideal para seus objetivos. Flexibilidade total para mudar quando quiser.
           </p>
           
