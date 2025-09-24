@@ -25,6 +25,8 @@ import CookieBanner from "./components/comum/CookieBanner.tsx";
 import useCookieConsent from "./hooks/useCookieConsent";
 import { useEffect } from "react";
 import type { FbqFunction } from "./types/global";
+import BlogPage from "./pages/blog/BlogPage.tsx";
+import BlogPostPage from "./pages/blog/BlogPostPage.tsx";
 
 function App() {
   const { grantConsent } = useCookieConsent();
@@ -107,6 +109,8 @@ function App() {
           <Route path="/termos" element={<TermosServicoPage />} />
           <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
           <Route path="/questionario" element={<QuestionarioPage />} />
+          <Route path="/blog" element={<BlogPage />} />
+          <Route path="/blog/:id" element={<BlogPostPage />} />
 
           {/* Rotas protegidas (requer login) */}
           <Route

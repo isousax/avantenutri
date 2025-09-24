@@ -8,7 +8,7 @@ export const MOCK_CREDENTIALS = {
   },
   admin: {
     email: "andreinacawanne@gmail.com",
-    password: "cawannre.04062025"
+    password: "cawanne.04062025"
   }
 } as const;
 

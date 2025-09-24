@@ -6,9 +6,20 @@ import Header from "../../components/layout/Header";
 import "../../styles/placeholder-images.css";
 import { SEO } from "../../components/comum/SEO";
 import StatsSectionSimple from "../../components/home/StatsSectionSimple";
+import { motion, AnimatePresence } from "framer-motion";
+import Planos from "../../components/home/Planos";
+import Servicos from "../../components/home/Servicos";
+
+const lines = [
+  "Acompanhamento personalizado com Dra. Andreina Cawanne.",
+  "Na Avante Nutri, avaliamos suas medidas e preferências alimentares.",
+  "Com essas informações, criamos um plano alimentar exclusivo para você.",
+];
 
 const LandingPage: React.FC = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
+  const [active, setActive] = useState(0);
+  const interval = 3500;
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,6 +35,19 @@ const LandingPage: React.FC = () => {
       window.scrollTo({ top: 0, behavior: "smooth" });
     }
   }, []);
+
+  useEffect(() => {
+    const t = setInterval(() => {
+      setActive((i) => (i + 1) % lines.length);
+    }, interval);
+    return () => clearInterval(t);
+  }, [interval]);
+
+  const variants = {
+    initial: { opacity: 0, y: 8 },
+    animate: { opacity: 1, y: 0 },
+    exit: { opacity: 0, y: -8 },
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white font-sans">
@@ -41,7 +65,7 @@ const LandingPage: React.FC = () => {
       <Header scrollPosition={scrollPosition} />
 
       {/* Hero Section Inspirada */}
-      <section className="relative pt-24 lg:pt-32 pb-16 md:pb-20 flex items-center justify-center overflow-hidden">
+      <section className="relative pt-24 lg:pt-32 flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-green-50/60 to-white"></div>
 
         {/* Elementos decorativos de fundo */}
@@ -180,11 +204,20 @@ const LandingPage: React.FC = () => {
           {/* Texto animado abaixo do hero */}
           <div className="mt-8 lg:mt-12 text-base sm:text-lg lg:text-lg xl:text-xl font-light text-gray-800 max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto text-center">
             <div className="relative h-16 flex items-center justify-center">
-              <div className="absolute inset-0 flex items-center justify-center transition-all duration-700 ease-in-out opacity-100 transform translate-y-0">
-                <p className="text-center">
-                  Acompanhamento personalizado com Dra. Andreina Cawanne
-                </p>
-              </div>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={active}
+                  variants={variants}
+                  initial="initial"
+                  animate="animate"
+                  exit="exit"
+                  transition={{ duration: 0.55, ease: "easeInOut" }}
+                  className="absolute inset-0 flex items-center justify-center px-4"
+                  aria-live="polite"
+                >
+                  <p className="text-center">{lines[active]}</p>
+                </motion.div>
+              </AnimatePresence>
             </div>
           </div>
         </div>
@@ -194,230 +227,10 @@ const LandingPage: React.FC = () => {
       <StatsSectionSimple />
 
       {/* Serviços Section */}
-      <section id="servicos" className="py-12 md:py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-green-800 mb-4">
-              Funcionalidades Incríveis
-            </h2>
-            <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-              Soluções completas para ajudar você a alcançar seus
-              objetivos de saúde e bem-estar.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            <Card className="text-center p-8 border border-green-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10">
-                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors duration-300">
-                  <span className="text-2xl">🍎</span>
-                </div>
-                <h3 className="text-xl font-bold text-green-800 mb-4">
-                  Plano Alimentar Personalizado
-                </h3>
-                <p className="text-gray-600">
-                  Dietas elaboradas especialmente para seu perfil, objetivos e
-                  preferências alimentares.
-                </p>
-              </div>
-            </Card>
-
-            <Card className="text-center p-8 border border-green-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10">
-                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors duration-300">
-                  <span className="text-2xl">💬</span>
-                </div>
-                <h3 className="text-xl font-bold text-green-800 mb-4">
-                  Acompanhamento Contínuo
-                </h3>
-                <p className="text-gray-600">
-                  Suporte constante e ajustes periódicos para maximizar seus
-                  resultados e manter a motivação.
-                </p>
-              </div>
-            </Card>
-
-            <Card className="text-center p-8 border border-green-100 hover:shadow-2xl transition-all duration-300 hover:-translate-y-2 group relative overflow-hidden">
-              <div className="absolute inset-0 bg-gradient-to-br from-green-50 to-emerald-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              <div className="relative z-10">
-                <div className="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6 group-hover:bg-green-200 transition-colors duration-300">
-                  <span className="text-2xl">📱</span>
-                </div>
-                <h3 className="text-xl font-bold text-green-800 mb-4">
-                  Consultas Online
-                </h3>
-                <p className="text-gray-600">
-                  Atendimento flexível e conveniente, onde e quando você
-                  precisar, com toda comodidade.
-                </p>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
+      <Servicos />
 
       {/* Planos Section */}
-      <section
-        id="planos"
-        className="py-20 bg-gradient-to-br from-green-50 via-white to-emerald-50 relative overflow-hidden"
-      >
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-green-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000"></div>
-        </div>
-
-        <div className="max-w-7xl mx-auto px-4 relative z-10">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl font-bold text-green-800 mb-4">
-              Nossos Planos
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
-              Escolha o plano que melhor se adapta às suas necessidades e
-              objetivos
-            </p>
-          </div>
-          <div className="grid md:grid-cols-2 gap-8">
-            <Card className="flex flex-col items-center p-8 border border-green-200 hover:shadow-lg transition-all duration-300">
-              <h3 className="font-bold text-2xl text-green-800 mb-2">Básico</h3>
-              <div className="text-4xl font-bold text-green-600 mb-4">
-                R$150<span className="text-lg font-normal"></span>
-              </div>
-              <p className="text-gray-600 mb-6 text-center">
-                Ideal para quem busca orientação inicial e um plano alimentar
-                personalizado.
-              </p>
-              <ul className="mb-8 space-y-3 flex-1">
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  1 consulta
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Plano alimentar personalizado
-                </li>
-              </ul>
-              <Link to="/register" className="w-full">
-                <Button
-                  variant="secondary"
-                  className="w-full py-3 border-green-600 text-green-600 hover:bg-green-50"
-                >
-                  Começar
-                </Button>
-              </Link>
-            </Card>
-
-            <Card className="flex flex-col items-center p-8 border-2 border-green-500 relative transform hover:scale-105 transition-all duration-300 shadow-lg">
-              <div className="absolute -top-4 bg-green-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-md">
-                MAIS POPULAR
-              </div>
-              <h3 className="font-bold text-2xl text-green-800 mb-2">
-                Premium
-              </h3>
-              <div className="text-4xl font-bold text-green-600 mb-4">
-                R$250<span className="text-lg font-normal"></span>
-              </div>
-              <p className="text-gray-600 mb-6 text-center">
-                Acompanhamento mensal completo com ajustes e suporte contínuo.
-              </p>
-              <ul className="mb-8 space-y-3 flex-1">
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  2 consultas
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Plano alimentar personalizado
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Acompanhamento Completo
-                </li>
-                <li className="flex items-center">
-                  <svg
-                    className="w-5 h-5 text-green-500 mr-3 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Suporte por WhatsApp
-                </li>
-              </ul>
-              <Link to="/questionario" className="w-full">
-                <Button className="w-full py-3">Começar</Button>
-              </Link>
-            </Card>
-          </div>
-        </div>
-      </section>
+      <Planos />
 
       {/* Sobre Section */}
       <section id="sobre" className="py-20 bg-white">
