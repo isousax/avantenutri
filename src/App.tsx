@@ -27,6 +27,7 @@ import { useEffect } from "react";
 import type { FbqFunction } from "./types/global";
 import BlogPage from "./pages/blog/BlogPage.tsx";
 import BlogPostPage from "./pages/blog/BlogPostPage.tsx";
+import DevelopmentBadge from "./components/DevelopmentProgressBanner";
 
 function App() {
   const { grantConsent } = useCookieConsent();
@@ -94,6 +95,7 @@ function App() {
       <main>
         {/* Banner de Cookies (condicional) */}
         <CookieBanner grantConsent={grantConsent} />
+        <DevelopmentBadge />
 
         <Routes>
           {/* Rotas públicas */}
