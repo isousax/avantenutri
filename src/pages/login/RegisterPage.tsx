@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
+import { normalizePhone } from "../../utils/normalizePhone";
 import { SEO } from "../../components/comum/SEO";
 
 const RegisterPage: React.FC = () => {
@@ -16,6 +17,7 @@ const RegisterPage: React.FC = () => {
     password: "",
     confirmPassword: "",
     phone: "",
+    birthDate: "",
     acceptTerms: false,
   });
   const [errors, setErrors] = useState({
@@ -25,10 +27,15 @@ const RegisterPage: React.FC = () => {
     confirmPassword: "",
     phone: "",
     acceptTerms: "",
+    birthDate: "",
     general: "",
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const API_REGISTER = "/api/register/register";
+  const PHONE_E164_REGEX = /^\+?[1-9]\d{1,14}$/;
+  const PASSWORD_POLICY_REGEX =
+    /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target;
@@ -48,7 +55,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const validateForm = () => {
-    const newErrors = {
+    const newErrors: typeof errors & { birthDate?: string } = {
       name: "",
       email: "",
       password: "",
@@ -56,6 +63,7 @@ const RegisterPage: React.FC = () => {
       phone: "",
       acceptTerms: "",
       general: "",
+      birthDate: "",
     };
 
     if (!formData.name.trim()) {
@@ -72,11 +80,9 @@ const RegisterPage: React.FC = () => {
 
     if (!formData.password) {
       newErrors.password = "Senha é obrigatória";
-    } else if (formData.password.length < 6) {
-      newErrors.password = "Senha deve ter pelo menos 6 caracteres";
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
+    } else if (!PASSWORD_POLICY_REGEX.test(formData.password)) {
       newErrors.password =
-        "Senha deve conter letras maiúsculas, minúsculas e números";
+        "Senha inválida. Mínimo de 8 caracteres, incluíndo minúscula, maiúscula, número e símbolo";
     }
 
     if (!formData.confirmPassword) {
@@ -85,15 +91,29 @@ const RegisterPage: React.FC = () => {
       newErrors.confirmPassword = "As senhas não coincidem";
     }
 
+    if (!formData.birthDate) {
+      newErrors.birthDate = "Data de nascimento é obrigatória";
+    } else {
+      // basic parse
+      const ms = Date.parse(formData.birthDate);
+      if (isNaN(ms)) newErrors.birthDate = "Data inválida";
+    }
+
     if (!formData.phone.trim()) {
       newErrors.phone = "Telefone é obrigatório";
+    } else {
+      const normalized = normalizePhone(formData.phone);
+      if (!PHONE_E164_REGEX.test(normalized)) {
+        newErrors.phone =
+          "Telefone inválido; use formato internacional (ex: +5511999999999)";
+      }
     }
 
     if (!formData.acceptTerms) {
       newErrors.acceptTerms = "Você deve aceitar os termos e políticas";
     }
 
-    setErrors(newErrors);
+    setErrors((prev) => ({ ...prev, ...newErrors }));
     return !Object.values(newErrors).some((error) => error !== "");
   };
 
@@ -106,17 +126,70 @@ const RegisterPage: React.FC = () => {
     setErrors((prev) => ({ ...prev, general: "" }));
 
     try {
-      // Simulação de API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const normalizedPhone = normalizePhone(formData.phone);
+      const body = {
+        email: formData.email.trim(),
+        password: formData.password,
+        full_name: formData.name.trim(),
+        phone: normalizedPhone,
+        birth_date: formData.birthDate,
+      };
 
-      // Simulação de sucesso no cadastro
-      setSuccess(true);
+      const res = await fetch(API_REGISTER, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
 
-      // Redirecionar para login após 2 segundos
-      setTimeout(() => {
-        navigate("/login");
-      }, 2000);
-    } catch {
+      const data = await (async () => {
+        try {
+          return await res.json();
+        } catch {
+          return null;
+        }
+      })();
+
+      if (res.status === 201) {
+        // sucesso: salvar email para prefill do login e mostrar tela de sucesso
+        try {
+          sessionStorage.setItem("prefill_email", body.email);
+        } catch {
+          console.info("Erro ao salvar e-mail.");
+        }
+        setSuccess(true);
+        // redirecionar para login após 2s
+        setTimeout(() => navigate("/login"), 2000);
+        return;
+      }
+
+      if (res.status === 409) {
+        setErrors((prev) => ({ ...prev, email: "Usuário já existe" }));
+        return;
+      }
+
+      if (res.status === 400) {
+        // erros de validação do backend - pode ter { error: "..."} ou objeto com detalhes
+        const msg = data?.error || "Dados inválidos";
+        setErrors((prev) => ({ ...prev, general: String(msg) }));
+        return;
+      }
+
+      if (res.status === 429) {
+        const retry = res.headers.get("Retry-After") || "60";
+        setErrors((prev) => ({
+          ...prev,
+          general: `Muitas tentativas. Tente novamente em ${retry}s.`,
+        }));
+        return;
+      }
+
+      // fallback
+      setErrors((prev) => ({
+        ...prev,
+        general: data?.error || "Erro ao criar conta. Tente novamente.",
+      }));
+    } catch (err) {
+      console.error("[RegisterPage] submit error", err);
       setErrors((prev) => ({
         ...prev,
         general: "Erro ao criar conta. Tente novamente mais tarde.",
@@ -133,7 +206,6 @@ const RegisterPage: React.FC = () => {
 
     const getStrength = (pwd: string) => {
       let score = 0;
-      if (pwd.length >= 6) score++;
       if (pwd.length >= 8) score++;
       if (/[a-z]/.test(pwd)) score++;
       if (/[A-Z]/.test(pwd)) score++;
@@ -268,7 +340,7 @@ const RegisterPage: React.FC = () => {
                 disabled={loading}
               />
               {errors.name && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -308,7 +380,7 @@ const RegisterPage: React.FC = () => {
                 disabled={loading}
               />
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -348,7 +420,7 @@ const RegisterPage: React.FC = () => {
                 disabled={loading}
               />
               {errors.phone && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -363,6 +435,32 @@ const RegisterPage: React.FC = () => {
                     />
                   </svg>
                   {errors.phone}
+                </p>
+              )}
+            </div>
+
+            {/* Campo Data de Nascimento */}
+            <div>
+              <label
+                htmlFor="birthDate"
+                className="block text-sm font-medium text-gray-700 mb-2"
+              >
+                Data de nascimento *
+              </label>
+              <input
+                id="birthDate"
+                name="birthDate"
+                type="date"
+                value={formData.birthDate || ""}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                  errors.birthDate ? "border-red-500" : "border-gray-300"
+                }`}
+                disabled={loading}
+              />
+              {errors.birthDate && (
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
+                  {errors.birthDate}
                 </p>
               )}
             </div>
@@ -389,7 +487,7 @@ const RegisterPage: React.FC = () => {
               />
               <PasswordStrengthIndicator password={formData.password} />
               {errors.password && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -429,7 +527,7 @@ const RegisterPage: React.FC = () => {
                 disabled={loading}
               />
               {errors.confirmPassword && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -481,7 +579,7 @@ const RegisterPage: React.FC = () => {
                 </label>
               </div>
               {errors.acceptTerms && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
