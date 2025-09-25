@@ -119,7 +119,7 @@ const RegisterPage: React.FC = () => {
         password: formData.password,
         full_name: formData.name.trim(),
         phone: normalizedPhone,
-        birth_date: "0000-00-00",
+        birth_date: "0001-01-01",
       };
 
       const res = await fetch(API_REGISTER, {
@@ -708,7 +708,7 @@ const RegisterPage: React.FC = () => {
                       d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                     />
                   </svg>
-                  <span className="text-sm font-medium">{errors.general}</span>
+                  <span className="text-xs font-medium">{errors.general}</span>
                 </div>
               </div>
             )}
