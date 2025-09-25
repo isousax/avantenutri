@@ -43,10 +43,10 @@ const ForgotPasswordPage: React.FC = () => {
 
       // Redirecionar para a página de confirmação após 2 segundos
       setTimeout(() => {
-        navigate("/recuperar-senha/confirmacao", {
+        navigate("/login", {
           state: { email },
         });
-      }, 2000);
+      }, 5500);
     } catch {
       setErrors({
         email: "",
@@ -56,6 +56,22 @@ const ForgotPasswordPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const MailIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      />
+    </svg>
+  );
 
   if (emailSent) {
     return (
@@ -84,7 +100,10 @@ const ForgotPasswordPage: React.FC = () => {
             E-mail enviado!
           </h2>
           <p className="text-gray-600 mb-6">
-            Redirecionando para a página de confirmação...
+            Por favor, verifique sua caixa de entrada e a pasta de spam.
+          </p>
+          <p className="text-gray-600 mb-2 text-xs">
+            Você será redirecionado para a página de login.
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full animate-pulse"></div>
@@ -136,27 +155,27 @@ const ForgotPasswordPage: React.FC = () => {
 
             {/* Campo E-mail */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                E-mail cadastrado
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (errors.email) setErrors({ ...errors, email: "" });
-                }}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="seu@email.com"
-                disabled={loading}
-                autoFocus
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MailIcon />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (errors.email) setErrors({ ...errors, email: "" });
+                  }}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="E-mail Cadastrado"
+                  disabled={loading}
+                  required
+                />
+              </div>
               {errors.email && (
                 <p className="text-red-500 text-sm mt-1 flex items-center">
                   <svg
@@ -264,7 +283,7 @@ const ForgotPasswordPage: React.FC = () => {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            Link de recuperação válido por 1 hora
+            Link de recuperação válido por 30 minutos
           </div>
         </div>
       </div>

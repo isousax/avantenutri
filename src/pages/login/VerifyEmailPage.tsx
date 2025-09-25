@@ -119,7 +119,7 @@ const CheckEmailPage: React.FC = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
               Confirmação Necessária
             </h2>
-            <p className="text-gray-600 mb-4">
+            <p className="text-gray-600 mb-4 text-xs">
               Enviamos um link de confirmação para:
             </p>
             <p className="font-semibold text-green-700 text-lg break-all">
