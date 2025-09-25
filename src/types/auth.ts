@@ -14,9 +14,20 @@ export type User = {
 
 export interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
+  login: (
+    email: string,
+    password: string,
+    rememberMe?: boolean
+  ) => Promise<boolean>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
-  authenticatedFetch: (input: RequestInfo | URL, init?: RequestInit & { autoLogout?: boolean }) => Promise<Response>;
+  authenticatedFetch: (
+    input: RequestInfo | URL,
+    init?: RequestInit & { autoLogout?: boolean }
+  ) => Promise<Response>;
   refreshSession: () => Promise<boolean>;
+  syncUser: () => Promise<boolean>;
+  sessionLastVerified?: number | null;
+  sessionVerified?: boolean | null;
+  forceVerify: () => Promise<boolean>;
 }

@@ -106,7 +106,7 @@ const LoginPage: React.FC = () => {
             ? sessionStorage
             : localStorage;
           const access = storage.getItem("@AvanteNutri:access_token");
-          let role = "client";
+          let role = "patient";
           if (access) {
             const payload = decodeJwt(access);
             if (payload && payload.role) role = String(payload.role);

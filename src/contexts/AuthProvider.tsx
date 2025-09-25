@@ -35,8 +35,9 @@ function nowMs() {
 }
 
 function normalizeRole(role: unknown): "patient" | "admin" {
-  if (role === "admin") return "admin";
-  return "patient";
+  if (typeof role === "string" && role.toLowerCase() === "admin")
+    return "admin";
+  return "patient"; // qualquer outro valor cai em 'patient'
 }
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
@@ -74,6 +75,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const tabIdRef = useRef<string>(Math.random().toString(36).slice(2));
   const isLeaderRef = useRef<boolean>(false);
   const bcRef = useRef<BroadcastChannel | null>(null);
+  // Verificação periódica de sessão
+  const [sessionLastVerified, setSessionLastVerified] = useState<number | null>(
+    null
+  );
+  const [sessionVerified, setSessionVerified] = useState<boolean | null>(null);
+  const verifyIntervalRef = useRef<number | null>(null);
 
   const saveUserToStorage = (userData: User, rememberMe: boolean) => {
     const payload = {
@@ -327,8 +334,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const when = Math.max(0, msLeft - buffer);
     const timeout = when <= 0 ? 200 : when;
 
-  // Agora tokens sempre em localStorage (espelho opcional em sessionStorage)
-  const storageForCallback = localStorage;
+    // Agora tokens sempre em localStorage (espelho opcional em sessionStorage)
+    const storageForCallback = localStorage;
 
     refreshTimeoutRef.current = window.setTimeout(() => {
       try {
@@ -488,11 +495,45 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (isLeaderRef.current && refresh) {
           scheduleRefreshLeader(access, refresh, expiresAtIso, rememberFlag);
         }
+        // Chamada de sincronização não bloqueante
+        try {
+          void fetch("/api/auth/me/me", {
+            method: "GET",
+            headers: { Authorization: `Bearer ${access}` },
+          })
+            .then(async (r) => {
+              if (!r.ok) return;
+              const me = await (async () => {
+                try {
+                  return await r.json();
+                } catch {
+                  return null;
+                }
+              })();
+              if (me && typeof me === "object") {
+                const updated: User = {
+                  id: (me.id || me.user_id || derived.id) as string,
+                  email: (me.email || derived.email) as string,
+                  role: normalizeRole(me.role || derived.role),
+                  full_name: (me.full_name ||
+                    me.name ||
+                    derived.full_name) as string,
+                };
+                setUser(updated);
+                saveUserToStorage(updated, rememberFlag);
+              }
+            })
+            .catch(() => {});
+        } catch (err) {
+          console.warn("[AuthProvider] sync failed", err);
+        }
         return;
       }
 
       // fallback to persisted user object
-      const rawUser = localStorage.getItem(STORAGE_USER_KEY) || sessionStorage.getItem(STORAGE_USER_KEY);
+      const rawUser =
+        localStorage.getItem(STORAGE_USER_KEY) ||
+        sessionStorage.getItem(STORAGE_USER_KEY);
       if (rawUser) {
         const parsed = JSON.parse(rawUser) as {
           user: User;
@@ -602,6 +643,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       window.removeEventListener("beforeunload", onBeforeUnload);
       stopLeaderElection();
       cancelScheduledRefresh();
+      if (verifyIntervalRef.current) {
+        clearInterval(verifyIntervalRef.current);
+        verifyIntervalRef.current = null;
+      }
       if (bcRef.current) {
         try {
           bcRef.current.close();
@@ -614,8 +659,112 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Função interna para verificar sessão via /me (não exposta diretamente)
+  const runSessionVerification = async (force = false) => {
+    try {
+      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      if (!access) {
+        setSessionVerified(false);
+        setSessionLastVerified(Date.now());
+        return false;
+      }
+      // throttle: se não for force e última verificação < 60s, pula
+      if (
+        !force &&
+        sessionLastVerified &&
+        Date.now() - sessionLastVerified < 60000
+      ) {
+        return sessionVerified ?? false;
+      }
+      const r = await fetch("/api/auth/me/me", {
+        method: "GET",
+        headers: { Authorization: `Bearer ${access}` },
+      });
+      setSessionLastVerified(Date.now());
+      if (!r.ok) {
+        if (r.status === 401 || r.status === 403) {
+          setSessionVerified(false);
+          await contextLogout();
+          return false;
+        }
+        setSessionVerified(false);
+        return false;
+      }
+      const data = await (async () => {
+        try {
+          return await r.json();
+        } catch {
+          return null;
+        }
+      })();
+      if (data && typeof data === "object") {
+        // Atualiza user se houver diferenças relevantes
+        const updated: User = {
+          id: (data.id || data.user_id || user?.id || "") as string,
+          email: (data.email || user?.email || "") as string,
+          role: normalizeRole((data.role || user?.role) as string),
+          full_name: (data.full_name ||
+            data.name ||
+            user?.full_name ||
+            "") as string,
+        };
+        const changed = JSON.stringify(updated) !== JSON.stringify(user);
+        if (changed) {
+          setUser(updated);
+          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
+          saveUserToStorage(updated, rememberFlag);
+        }
+      }
+      setSessionVerified(true);
+      return true;
+    } catch (err) {
+      console.warn("[AuthProvider] runSessionVerification error", err);
+      setSessionVerified(false);
+      setSessionLastVerified(Date.now());
+      return false;
+    }
+  };
+
+  // Intervalo periódico a cada 10 minutos somente se usuário autenticado
+  useEffect(() => {
+    if (user) {
+      // Verifica imediatamente (não force para respeitar throttle se acabou de verificar)
+      void runSessionVerification(false);
+      if (verifyIntervalRef.current) {
+        clearInterval(verifyIntervalRef.current);
+      }
+      verifyIntervalRef.current = window.setInterval(() => {
+        void runSessionVerification(false);
+      }, 10 * 60 * 1000) as unknown as number; // 10 min
+      const onFocus = () => {
+        if (document.visibilityState === "visible") {
+          void runSessionVerification(false);
+        }
+      };
+      window.addEventListener("focus", onFocus);
+      return () => {
+        window.removeEventListener("focus", onFocus);
+        if (verifyIntervalRef.current) {
+          clearInterval(verifyIntervalRef.current);
+          verifyIntervalRef.current = null;
+        }
+      };
+    } else {
+      if (verifyIntervalRef.current) {
+        clearInterval(verifyIntervalRef.current);
+        verifyIntervalRef.current = null;
+      }
+      setSessionVerified(null);
+      setSessionLastVerified(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
   const contextValue: AuthContextType = {
     user,
+    sessionLastVerified,
+    sessionVerified,
+    forceVerify: async () => runSessionVerification(true),
     login: async (
       email: string,
       password: string,
@@ -660,14 +809,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           } else {
             const returnedUser = {
               id: body?.user_id ?? body?.id,
-              role: body?.role ?? "client",
+              role: normalizeRole(body?.role),
               email: body?.email ?? email,
               full_name: body?.full_name ?? "",
             };
             userObj = {
               id: returnedUser.id ?? "",
               email: returnedUser.email ?? email,
-              role: normalizeRole(returnedUser.role),
+              role: returnedUser.role,
               full_name: returnedUser.full_name ?? "",
             };
           }
@@ -677,6 +826,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           setUser(userObj);
           saveUserToStorage(userObj, rememberMe);
+
+          // Validação adicional opcional com /api/auth/me (se upstream suportar) – não bloqueante
+          if (access) {
+            try {
+              const meResp = await fetch("/api/auth/me/me", {
+                method: "GET",
+                headers: { Authorization: `Bearer ${access}` },
+              });
+              if (meResp.ok) {
+                const meData = await (async () => {
+                  try {
+                    return await meResp.json();
+                  } catch {
+                    return null;
+                  }
+                })();
+                if (meData && typeof meData === "object") {
+                  const updated = {
+                    id: (meData.id || meData.user_id || userObj.id) as string,
+                    email: (meData.email || userObj.email) as string,
+                    role: normalizeRole(
+                      (meData.role || userObj.role) as string
+                    ),
+                    full_name: (meData.full_name ||
+                      meData.name ||
+                      userObj.full_name) as string,
+                  } as User;
+                  setUser(updated);
+                  saveUserToStorage(updated, rememberMe);
+                }
+              }
+            } catch (err) {
+              // Silencioso – se /me falhar não quebra login
+              console.warn("[AuthProvider] /me sync skipped", err);
+            }
+          }
 
           // schedule refresh if leader
           if (isLeaderRef.current && access && refresh) {
@@ -748,7 +933,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!refresh) return false;
         // Se líder, usa fluxo de retry existente
         if (isLeaderRef.current) {
-          return await doRefreshWithRetry(refresh, !sessionStorage.getItem(STORAGE_ACCESS_KEY));
+          return await doRefreshWithRetry(
+            refresh,
+            !sessionStorage.getItem(STORAGE_ACCESS_KEY)
+          );
         }
         const r = await fetch(API_REFRESH, {
           method: "POST",
@@ -766,7 +954,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         if (newAccess) {
           const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
-          persistTokens(newAccess, newRefresh, expiresAt ?? undefined, rememberFlag);
+          persistTokens(
+            newAccess,
+            newRefresh,
+            expiresAt ?? undefined,
+            rememberFlag
+          );
           const p = decodeJwt(newAccess);
           if (p) {
             setUser({
@@ -785,16 +978,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     authenticatedFetch: async (input, init = {}) => {
-      const { autoLogout = true, ...rest } = init as RequestInit & { autoLogout?: boolean};
+      const { autoLogout = true, ...rest } = init as RequestInit & {
+        autoLogout?: boolean;
+      };
       let access = localStorage.getItem(STORAGE_ACCESS_KEY);
       // Heurística: se expira em < 60s tenta refresh
       const needsRefresh = (() => {
         if (!access) return true;
         try {
           const p = decodeJwt(access);
-            if (p?.exp) return Date.now() > Number(p.exp) * 1000 - 60000;
+          if (p?.exp) return Date.now() > Number(p.exp) * 1000 - 60000;
         } catch (err) {
-          console.warn("Erro na tentativa de refresh ", err)
+          console.warn("Erro na tentativa de refresh ", err);
         }
         return false;
       })();
@@ -811,7 +1006,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const newAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
           if (newAccess) headers.set("Authorization", `Bearer ${newAccess}`);
           response = await fetch(input, { ...rest, headers });
-          if ((response.status === 401 || response.status === 403) && autoLogout) {
+          if (
+            (response.status === 401 || response.status === 403) &&
+            autoLogout
+          ) {
             await contextLogout();
           }
         } else if (autoLogout) {
@@ -819,6 +1017,49 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       return response;
+    },
+    syncUser: async () => {
+      try {
+        const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+        if (!access) return false;
+        const r = await fetch("/api/auth/me/me", {
+          method: "GET",
+          headers: { Authorization: `Bearer ${access}` },
+        });
+        if (!r.ok) {
+          if (r.status === 401 || r.status === 403) {
+            // token inválido -> logout seguro
+            await contextLogout();
+          }
+          return false;
+        }
+        const data = await (async () => {
+          try {
+            return await r.json();
+          } catch {
+            return null;
+          }
+        })();
+        if (data && typeof data === "object") {
+          const updated: User = {
+            id: (data.id || data.user_id || user?.id || "") as string,
+            email: (data.email || user?.email || "") as string,
+            role: normalizeRole((data.role || user?.role) as string),
+            full_name: (data.full_name ||
+              data.name ||
+              user?.full_name ||
+              "") as string,
+          };
+          setUser(updated);
+          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
+          saveUserToStorage(updated, rememberFlag);
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.warn("[AuthProvider] syncUser failed", err);
+        return false;
+      }
     },
   };
 
