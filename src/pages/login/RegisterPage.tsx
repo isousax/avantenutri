@@ -17,9 +17,7 @@ const RegisterPage: React.FC = () => {
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
     phone: "",
-    birthDate: "",
     acceptTerms: false,
   });
   const [errors, setErrors] = useState({
@@ -87,12 +85,6 @@ const RegisterPage: React.FC = () => {
     } else if (!PASSWORD_POLICY_REGEX.test(formData.password)) {
       newErrors.password =
         "Senha deve ter mínimo 8 caracteres, incluindo minúscula, maiúscula, número e símbolo";
-    }
-
-    if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Confirme sua senha";
-    } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "As senhas não coincidem";
     }
 
     if (!formData.phone.trim()) {
@@ -687,9 +679,6 @@ const RegisterPage: React.FC = () => {
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
                     className="lucide lucide-user-plus h-5 w-5"
                   >
                     <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
