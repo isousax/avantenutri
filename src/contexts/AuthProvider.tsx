@@ -33,9 +33,6 @@ const LEADER_HEARTBEAT_MS = 2000;
 function nowMs() {
   return Date.now();
 }
-function readStorage(rememberMe: boolean) {
-  return rememberMe ? localStorage : sessionStorage;
-}
 
 function normalizeRole(role: unknown): "patient" | "admin" {
   if (role === "admin") return "admin";
@@ -85,17 +82,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       rememberMe,
     };
     try {
-      if (rememberMe) {
-        localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(payload));
-        // copy tokens from sessionStorage to localStorage if present
-        const s = sessionStorage.getItem(STORAGE_ACCESS_KEY);
-        if (s) localStorage.setItem(STORAGE_ACCESS_KEY, s);
-        const r = sessionStorage.getItem(STORAGE_REFRESH_KEY);
-        if (r) localStorage.setItem(STORAGE_REFRESH_KEY, r);
-        const e = sessionStorage.getItem(STORAGE_EXPIRES_KEY);
-        if (e) localStorage.setItem(STORAGE_EXPIRES_KEY, e);
-      } else {
+      // Sempre salva em localStorage para compartilhamento entre abas
+      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(payload));
+      if (!rememberMe) {
+        // Espelha também em sessionStorage (opcional / para limpeza automática se todas abas fecharem)
         sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(payload));
+      } else {
+        // Se rememberMe true, remove possível cópia antiga de sessão curta
+        sessionStorage.removeItem(STORAGE_USER_KEY);
       }
     } catch (err) {
       console.warn("[AuthProvider] saveUserToStorage failed", err);
@@ -127,16 +121,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     expiresAtIso?: string,
     rememberMe = false
   ) => {
-    const storage = readStorage(rememberMe);
     try {
-      storage.setItem(STORAGE_ACCESS_KEY, accessToken);
-      if (refreshToken) storage.setItem(STORAGE_REFRESH_KEY, refreshToken);
-      if (expiresAtIso) storage.setItem(STORAGE_EXPIRES_KEY, expiresAtIso);
-      const other = storage === localStorage ? sessionStorage : localStorage;
-      other.removeItem(STORAGE_ACCESS_KEY);
-      other.removeItem(STORAGE_REFRESH_KEY);
-      other.removeItem(STORAGE_EXPIRES_KEY);
-      // notify other tabs (both BroadcastChannel and storage fallback)
+      // Fonte de verdade sempre localStorage
+      localStorage.setItem(STORAGE_ACCESS_KEY, accessToken);
+      if (refreshToken) localStorage.setItem(STORAGE_REFRESH_KEY, refreshToken);
+      if (expiresAtIso) localStorage.setItem(STORAGE_EXPIRES_KEY, expiresAtIso);
+
+      if (!rememberMe) {
+        // Espelha para sessionStorage para ciclo de vida curto
+        sessionStorage.setItem(STORAGE_ACCESS_KEY, accessToken);
+        if (refreshToken)
+          sessionStorage.setItem(STORAGE_REFRESH_KEY, refreshToken);
+        if (expiresAtIso)
+          sessionStorage.setItem(STORAGE_EXPIRES_KEY, expiresAtIso);
+      } else {
+        // Garante remoção de cópias antigas de sessão curta
+        sessionStorage.removeItem(STORAGE_ACCESS_KEY);
+        sessionStorage.removeItem(STORAGE_REFRESH_KEY);
+        sessionStorage.removeItem(STORAGE_EXPIRES_KEY);
+      }
+
+      // notify other tabs
       try {
         if (bcRef.current) {
           bcRef.current.postMessage({ type: "tokens_updated", ts: Date.now() });
@@ -186,10 +191,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // contextual logout used by provider & refresh failure
   const contextLogout = async () => {
     try {
-      const storage = sessionStorage.getItem(STORAGE_ACCESS_KEY)
-        ? sessionStorage
-        : localStorage;
-      const refresh = storage.getItem(STORAGE_REFRESH_KEY);
+      const refresh =
+        localStorage.getItem(STORAGE_REFRESH_KEY) ||
+        sessionStorage.getItem(STORAGE_REFRESH_KEY);
       if (refresh) {
         // try navigator.sendBeacon first (best-effort)
         try {
@@ -323,8 +327,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const when = Math.max(0, msLeft - buffer);
     const timeout = when <= 0 ? 200 : when;
 
-    // capture the chosen storage mode at schedule time (uses rememberMe param)
-    const storageForCallback = rememberMe ? localStorage : sessionStorage;
+  // Agora tokens sempre em localStorage (espelho opcional em sessionStorage)
+  const storageForCallback = localStorage;
 
     refreshTimeoutRef.current = window.setTimeout(() => {
       try {
@@ -389,19 +393,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // schedule refresh if tokens available
     try {
-      const storage = sessionStorage.getItem(STORAGE_ACCESS_KEY)
-        ? sessionStorage
-        : localStorage;
-      const access = storage.getItem(STORAGE_ACCESS_KEY);
-      const refresh = storage.getItem(STORAGE_REFRESH_KEY);
-      const expiresAt = storage.getItem(STORAGE_EXPIRES_KEY);
+      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      const refresh = localStorage.getItem(STORAGE_REFRESH_KEY);
+      const expiresAt = localStorage.getItem(STORAGE_EXPIRES_KEY);
       if (access && refresh) {
-        scheduleRefreshLeader(
-          access,
-          refresh,
-          expiresAt,
-          storage === localStorage
-        );
+        // Detecta rememberMe pela ausência de espelho em sessionStorage
+        const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
+        scheduleRefreshLeader(access, refresh, expiresAt, rememberFlag);
       }
     } catch (err) {
       console.warn("[AuthProvider] becomeLeader schedule error", err);
@@ -449,12 +447,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // rehydrate tokens + user on startup or when other tabs update tokens
   const rehydrateFromStorage = () => {
     try {
-      const storage = sessionStorage.getItem(STORAGE_ACCESS_KEY)
-        ? sessionStorage
-        : localStorage;
-      const access = storage.getItem(STORAGE_ACCESS_KEY);
-      const refresh = storage.getItem(STORAGE_REFRESH_KEY) ?? null;
-      const expiresAtIso = storage.getItem(STORAGE_EXPIRES_KEY) ?? null;
+      // Sempre tenta a fonte de verdade localStorage
+      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      const refresh = localStorage.getItem(STORAGE_REFRESH_KEY) ?? null;
+      const expiresAtIso = localStorage.getItem(STORAGE_EXPIRES_KEY) ?? null;
 
       if (!access) {
         const rawUser =
@@ -484,7 +480,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           full_name: (payload.full_name ?? payload.name ?? "") as string,
         };
         setUser(derived);
-        const rememberFlag = storage === localStorage;
+        // detecta rememberMe pela existência no sessionStorage (espelho) – se não existir assume rememberMe=true
+        const sessionAccess = sessionStorage.getItem(STORAGE_ACCESS_KEY);
+        const rememberFlag = !sessionAccess; // se não há espelho, é uma sessão persistente (rememberMe)
         saveUserToStorage(derived, rememberFlag);
 
         if (isLeaderRef.current && refresh) {
@@ -494,9 +492,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
 
       // fallback to persisted user object
-      const rawUser =
-        sessionStorage.getItem(STORAGE_USER_KEY) ||
-        localStorage.getItem(STORAGE_USER_KEY);
+      const rawUser = localStorage.getItem(STORAGE_USER_KEY) || sessionStorage.getItem(STORAGE_USER_KEY);
       if (rawUser) {
         const parsed = JSON.parse(rawUser) as {
           user: User;
@@ -582,10 +578,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
       }
       try {
-        const storage = sessionStorage.getItem(STORAGE_ACCESS_KEY)
-          ? sessionStorage
-          : localStorage;
-        const refresh = storage.getItem(STORAGE_REFRESH_KEY);
+        const refresh =
+          localStorage.getItem(STORAGE_REFRESH_KEY) ||
+          sessionStorage.getItem(STORAGE_REFRESH_KEY);
         if (refresh && navigator.sendBeacon) {
           const blob = new Blob([JSON.stringify({ refresh_token: refresh })], {
             type: "application/json",
@@ -744,6 +739,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (err) {
         console.warn("[AuthProvider] updateUser storage failed", err);
       }
+    },
+    refreshSession: async () => {
+      try {
+        const refresh =
+          localStorage.getItem(STORAGE_REFRESH_KEY) ||
+          sessionStorage.getItem(STORAGE_REFRESH_KEY);
+        if (!refresh) return false;
+        // Se líder, usa fluxo de retry existente
+        if (isLeaderRef.current) {
+          return await doRefreshWithRetry(refresh, !sessionStorage.getItem(STORAGE_ACCESS_KEY));
+        }
+        const r = await fetch(API_REFRESH, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refresh }),
+        });
+        if (!r.ok) return false;
+        const data = await r.json();
+        const newAccess = data?.access_token;
+        const newRefresh = data?.refresh_token ?? refresh;
+        let expiresAt = data?.expires_at ?? null;
+        if (!expiresAt && newAccess) {
+          const p = decodeJwt(newAccess);
+          if (p?.exp) expiresAt = new Date(Number(p.exp) * 1000).toISOString();
+        }
+        if (newAccess) {
+          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
+          persistTokens(newAccess, newRefresh, expiresAt ?? undefined, rememberFlag);
+          const p = decodeJwt(newAccess);
+          if (p) {
+            setUser({
+              id: (p.sub ?? p.user_id ?? p.id) as string,
+              email: (p.email ?? "") as string,
+              role: normalizeRole(p.role),
+              full_name: (p.full_name ?? p.name ?? "") as string,
+            });
+          }
+          return true;
+        }
+        return false;
+      } catch (err) {
+        console.warn("[AuthProvider] refreshSession failed", err);
+        return false;
+      }
+    },
+    authenticatedFetch: async (input, init = {}) => {
+      const { autoLogout = true, ...rest } = init as RequestInit & { autoLogout?: boolean};
+      let access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      // Heurística: se expira em < 60s tenta refresh
+      const needsRefresh = (() => {
+        if (!access) return true;
+        try {
+          const p = decodeJwt(access);
+            if (p?.exp) return Date.now() > Number(p.exp) * 1000 - 60000;
+        } catch (err) {
+          console.warn("Erro na tentativa de refresh ", err)
+        }
+        return false;
+      })();
+      if (needsRefresh) {
+        await contextValue.refreshSession?.();
+        access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      }
+      const headers = new Headers(rest.headers || {});
+      if (access) headers.set("Authorization", `Bearer ${access}`);
+      let response = await fetch(input, { ...rest, headers });
+      if (response.status === 401 || response.status === 403) {
+        const retried = await contextValue.refreshSession?.();
+        if (retried) {
+          const newAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+          if (newAccess) headers.set("Authorization", `Bearer ${newAccess}`);
+          response = await fetch(input, { ...rest, headers });
+          if ((response.status === 401 || response.status === 403) && autoLogout) {
+            await contextLogout();
+          }
+        } else if (autoLogout) {
+          await contextLogout();
+        }
+      }
+      return response;
     },
   };
 

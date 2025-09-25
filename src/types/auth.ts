@@ -17,4 +17,6 @@ export interface AuthContextType {
   login: (email: string, password: string, rememberMe?: boolean) => Promise<boolean>;
   logout: () => void;
   updateUser: (userData: Partial<User>) => void;
+  authenticatedFetch: (input: RequestInfo | URL, init?: RequestInit & { autoLogout?: boolean }) => Promise<Response>;
+  refreshSession: () => Promise<boolean>;
 }
