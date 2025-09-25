@@ -1,8 +1,8 @@
 export type User = {
   id: string;
-  name: string;
+  full_name: string;
   email: string;
-  role: "paciente" | "admin";
+  role: "patient" | "admin";
   photoUrl?: string;
   phone?: string;
   birthDate?: string;
