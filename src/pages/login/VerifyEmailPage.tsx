@@ -74,7 +74,7 @@ const CheckEmailPage: React.FC = () => {
 
   const handleLogout = () => {
     sessionStorage.removeItem("prefill_email");
-    setTimeout(() => navigate("/login"), 2000);
+    setTimeout(() => navigate("/login"), 1000);
   };
 
   return (

@@ -35,13 +35,10 @@ const ForgotPasswordPage: React.FC = () => {
     setErrors({ email: "", general: "" });
 
     try {
-      // Simulação de envio de e-mail
       await new Promise((resolve) => setTimeout(resolve, 1500));
 
-      // Simulação de sucesso
       setEmailSent(true);
 
-      // Redirecionar para a página de confirmação após 2 segundos
       setTimeout(() => {
         navigate("/login", {
           state: { email },
