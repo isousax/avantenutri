@@ -31,7 +31,7 @@ const CheckEmailPage: React.FC = () => {
     }
   }, [countdown]);
 
-  const API_VERIFY_EMAIL = "/api/register/sendVerification";
+  const API_VERIFY_EMAIL = "/api/auth/register/sendVerification";
 
   const handleResendEmail = async () => {
     if (!canResend) return;

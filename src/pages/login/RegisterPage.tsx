@@ -35,7 +35,7 @@ const RegisterPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const API_REGISTER = "/api/register/register";
+  const API_REGISTER = "/api/auth/register/register";
   const PHONE_E164_REGEX = /^\+?[1-9]\d{1,14}$/;
   const PASSWORD_POLICY_REGEX =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;

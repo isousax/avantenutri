@@ -126,7 +126,7 @@ const QuickAction: React.FC<QuickActionProps> = ({
 );
 
 const DashboardPage: React.FC = () => {
-  const { user = { name: "", email: "", photoUrl: "" }, logout } = useAuth();
+  const { user = { full_name: "", email: "", photoUrl: "" }, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = async () => {
@@ -304,14 +304,14 @@ const DashboardPage: React.FC = () => {
                 src={
                   user?.photoUrl ||
                   `https://ui-avatars.com/api/?name=${
-                    user?.name || "User"
+                    user?.full_name || "User"
                   }&background=22c55e&color=fff`
                 }
-                alt={user?.name}
+                alt={user?.full_name}
                 className="h-16 w-16 rounded-full border-4 border-green-100"
               />
               <div className="ml-4">
-                <h3 className="font-semibold text-gray-900">{user?.name}</h3>
+                <h3 className="font-semibold text-gray-900">{user?.full_name}</h3>
                 <p className="text-xs text-green-600 font-medium">
                   Plano Ativo
                 </p>

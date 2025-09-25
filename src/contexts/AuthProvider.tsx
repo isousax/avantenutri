@@ -21,9 +21,9 @@ const STORAGE_EXPIRES_KEY = "@AvanteNutri:expires_at";
 
 const SESSION_EXPIRY = 4 * 60 * 60 * 1000; // 4h meta expiry
 
-const API_LOGIN = "/api/login/login";
-const API_REFRESH = "/api/login/refresh";
-const API_LOGOUT = "/api/logout/logout";
+const API_LOGIN = "/api/auth/login/login";
+const API_REFRESH = "/api/auth/login/refresh";
+const API_LOGOUT = "/api/auth/logout/logout";
 
 // Leader election keys / timing
 const LEADER_KEY = "@AvanteNutri:leader";

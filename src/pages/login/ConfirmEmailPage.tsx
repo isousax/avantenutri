@@ -24,7 +24,7 @@ const ConfirmEmailPage: React.FC = () => {
       }
 
       try {
-        const API_VERIFY_EMAIL = "/api/register/sendVerification";
+        const API_VERIFY_EMAIL = "/api/auth/register/sendVerification";
 
         const response = await fetch(API_VERIFY_EMAIL, {
           method: "POST",
