@@ -9,6 +9,7 @@ import StatsSectionSimple from "../../components/home/StatsSectionSimple";
 import { motion, AnimatePresence } from "framer-motion";
 import Planos from "../../components/home/Planos";
 import Servicos from "../../components/home/Servicos";
+import Footer from "../../components/layout/Footer";
 
 const lines = [
   "Acompanhamento personalizado com Dra. Andreina Cawanne.",
@@ -451,6 +452,8 @@ const LandingPage: React.FC = () => {
           </Link>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 };

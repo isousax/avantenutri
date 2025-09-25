@@ -124,10 +124,10 @@ const NotFound: React.FC = () => {
           <h3 className="text-xl font-semibold mb-2">
             Não encontrou o que procurava?
           </h3>
-          <p className="mb-4 opacity-90">
-            Entre em contato conosco, estamos aqui para ajudar!
+          <p className="mb-4 opacity-90 text-sm">
+            Entre em contato, estamos aqui para ajudar!
           </p>
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
             <a
               href="https://wa.me/5581986653214?text=Olá, não estou encontrando a página que procuro no site."
               target="_blank"

@@ -1,21 +1,23 @@
 export default async function handler(req, res) {
   try {
-      const body = req.body;
+    const body = req.body;
+
+    if (!body) {
+      return res.status(400).json({ error: "Missing body" });
+    }
 
     const r = await fetch(
-      "https://dedicart-file-worker.dedicart.workers.dev/ai",
+      "https://login-service.avantenutri.workers.dev/auth/resend-verification",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.WORKER_API_KEY}`,
         },
         body: JSON.stringify(body),
       }
     );
 
     const data = await r.json();
-
     return res.status(r.status).json(data);
   } catch (err) {
     console.error("Erro no proxy:", err);

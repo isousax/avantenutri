@@ -9,11 +9,11 @@ import RegisterPage from "./pages/login/RegisterPage.tsx";
 import DashboardPage from "./pages/client/DashboardPage.tsx";
 import QuestionarioPage from "./pages/client/QuestionarioPage.tsx";
 import AdminPage from "./pages/admin/AdminPage.tsx";
-import Footer from "./components/layout/Footer.tsx";
 import TermosServicoPage from "./pages/legal/TermosServicoPage.tsx";
 import PoliticaPrivacidadePage from "./pages/legal/PoliticaPrivacidadePage.tsx";
 import ForgotPasswordPage from "./pages/login/ForgotPasswordPage.tsx";
-import CheckEmailPage from "./pages/login/CheckEmailPage.tsx";
+import VerifyEmailPage from "./pages/login/VerifyEmailPage.tsx";
+import ConfirmEmailPage from "./pages/login/ConfirmEmailPage.tsx";
 import ResetPasswordPage from "./pages/login/ResetPasswordPage.tsx";
 import RefeicaoRegistroPage from "./pages/client/registroAtividades/RefeicaoRegistroPage.tsx";
 import PesoRegistroPage from "./pages/client/registroAtividades/PesoRegistroPage.tsx";
@@ -103,10 +103,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-          <Route
-            path="/recuperar-senha/confirmacao"
-            element={<CheckEmailPage />}
-          />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/confirm-email" element={<ConfirmEmailPage />} />
           <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
           <Route path="/termos" element={<TermosServicoPage />} />
           <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
@@ -169,8 +167,6 @@ function App() {
           {/* Rota para 404*/}
           <Route path="*" element={<NotFound />} />
         </Routes>
-        <Footer />
-
         <Analytics />
         <SpeedInsights />
       </main>

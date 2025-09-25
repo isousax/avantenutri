@@ -10,7 +10,9 @@ const RegisterPage: React.FC = () => {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
+
   const navigate = useNavigate();
+
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -27,11 +29,12 @@ const RegisterPage: React.FC = () => {
     confirmPassword: "",
     phone: "",
     acceptTerms: "",
-    birthDate: "",
     general: "",
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
   const API_REGISTER = "/api/register/register";
   const PHONE_E164_REGEX = /^\+?[1-9]\d{1,14}$/;
   const PASSWORD_POLICY_REGEX =
@@ -55,7 +58,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const validateForm = () => {
-    const newErrors: typeof errors & { birthDate?: string } = {
+    const newErrors: typeof errors = {
       name: "",
       email: "",
       password: "",
@@ -63,13 +66,14 @@ const RegisterPage: React.FC = () => {
       phone: "",
       acceptTerms: "",
       general: "",
-      birthDate: "",
     };
+
+    const regexNome = /^[A-Za-zÀ-ÖØ-öø-ÿ'’-]+(?: [A-Za-zÀ-ÖØ-öø-ÿ'’-]+)+$/i;
 
     if (!formData.name.trim()) {
       newErrors.name = "Nome completo é obrigatório";
-    } else if (formData.name.trim().length < 2) {
-      newErrors.name = "Nome deve ter pelo menos 2 caracteres";
+    } else if (regexNome.test(formData.name)) {
+      newErrors.name = "Informe o nome completo";
     }
 
     if (!formData.email.trim()) {
@@ -82,7 +86,7 @@ const RegisterPage: React.FC = () => {
       newErrors.password = "Senha é obrigatória";
     } else if (!PASSWORD_POLICY_REGEX.test(formData.password)) {
       newErrors.password =
-        "Senha inválida. Mínimo de 8 caracteres, incluíndo minúscula, maiúscula, número e símbolo";
+        "Senha deve ter mínimo 8 caracteres, incluindo minúscula, maiúscula, número e símbolo";
     }
 
     if (!formData.confirmPassword) {
@@ -91,21 +95,12 @@ const RegisterPage: React.FC = () => {
       newErrors.confirmPassword = "As senhas não coincidem";
     }
 
-    if (!formData.birthDate) {
-      newErrors.birthDate = "Data de nascimento é obrigatória";
-    } else {
-      // basic parse
-      const ms = Date.parse(formData.birthDate);
-      if (isNaN(ms)) newErrors.birthDate = "Data inválida";
-    }
-
     if (!formData.phone.trim()) {
       newErrors.phone = "Telefone é obrigatório";
     } else {
       const normalized = normalizePhone(formData.phone);
       if (!PHONE_E164_REGEX.test(normalized)) {
-        newErrors.phone =
-          "Telefone inválido; use formato internacional (ex: +5511999999999)";
+        newErrors.phone = "Telefone inválido";
       }
     }
 
@@ -132,7 +127,7 @@ const RegisterPage: React.FC = () => {
         password: formData.password,
         full_name: formData.name.trim(),
         phone: normalizedPhone,
-        birth_date: formData.birthDate,
+        birth_date: "0000-00-00",
       };
 
       const res = await fetch(API_REGISTER, {
@@ -150,25 +145,25 @@ const RegisterPage: React.FC = () => {
       })();
 
       if (res.status === 201) {
-        // sucesso: salvar email para prefill do login e mostrar tela de sucesso
         try {
           sessionStorage.setItem("prefill_email", body.email);
         } catch {
           console.info("Erro ao salvar e-mail.");
         }
         setSuccess(true);
-        // redirecionar para login após 2s
-        setTimeout(() => navigate("/login"), 2000);
+        setTimeout(() => navigate("/verify-email"), 2000);
         return;
       }
 
       if (res.status === 409) {
-        setErrors((prev) => ({ ...prev, email: "Usuário já existe" }));
+        setErrors((prev) => ({
+          ...prev,
+          email: "Este e-mail já está cadastrado",
+        }));
         return;
       }
 
       if (res.status === 400) {
-        // erros de validação do backend - pode ter { error: "..."} ou objeto com detalhes
         const msg = data?.error || "Dados inválidos";
         setErrors((prev) => ({ ...prev, general: String(msg) }));
         return;
@@ -183,7 +178,6 @@ const RegisterPage: React.FC = () => {
         return;
       }
 
-      // fallback
       setErrors((prev) => ({
         ...prev,
         general: data?.error || "Erro ao criar conta. Tente novamente.",
@@ -264,6 +258,96 @@ const RegisterPage: React.FC = () => {
     );
   };
 
+  // Ícones SVG para os campos
+  const UserIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+      />
+    </svg>
+  );
+
+  const MailIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      />
+    </svg>
+  );
+
+  const PhoneIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+      />
+    </svg>
+  );
+
+  const LockIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+      />
+    </svg>
+  );
+
+  const EyeIcon = ({ show }: { show: boolean }) => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      {show ? (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+        />
+      ) : (
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"
+        />
+      )}
+    </svg>
+  );
+
   if (success) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
@@ -303,6 +387,11 @@ const RegisterPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+      <SEO
+        title="Cadastro | Avante Nutri"
+        description="Crie sua conta na Avante Nutri e comece sua jornada para uma vida mais saudável com acompanhamento nutricional personalizado."
+      />
+
       <div className="w-full max-w-md">
         {/* Logo e Cabeçalho */}
         <div className="text-center mb-8">
@@ -312,35 +401,45 @@ const RegisterPage: React.FC = () => {
           <h1 className="text-3xl font-bold text-green-800 mb-2">
             Crie sua conta
           </h1>
-          <p className="text-gray-600 text-xs">
-            Junte-se a nós e comece sua jornada de saúde
+          <p className="text-gray-600 text-sm">
+            Preencha os dados para se registrar
           </p>
         </div>
 
-        <Card className="p-8 shadow-xl border border-green-100">
-          <form onSubmit={handleSubmit} className="space-y-6">
+        <Card className="p-6 shadow-xl border border-green-100">
+          <form onSubmit={handleSubmit} className="space-y-5">
             {/* Campo Nome */}
             <div>
-              <label
-                htmlFor="name"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Nome completo *
-              </label>
-              <input
-                id="name"
-                name="name"
-                type="text"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.name ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Seu nome completo"
-                disabled={loading}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <UserIcon />
+                </div>
+                <input
+                  id="name"
+                  name="name"
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    input.setCustomValidity("");
+                    handleChange(e);
+                  }}
+                  onInvalid={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    input.setCustomValidity(
+                      "Por favor, informe seu nome completo"
+                    );
+                  }}
+                  required
+                  placeholder="Seu nome completo"
+                  disabled={loading}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.name ? "border-red-500" : "border-gray-300"
+                  }`}
+                />
+              </div>
               {errors.name && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs mt-2 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -361,26 +460,26 @@ const RegisterPage: React.FC = () => {
 
             {/* Campo E-mail */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                E-mail *
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="seu@email.com"
-                disabled={loading}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MailIcon />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="E-mail"
+                  disabled={loading}
+                  required
+                />
+              </div>
               {errors.email && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs mt-2 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -401,26 +500,36 @@ const RegisterPage: React.FC = () => {
 
             {/* Campo Telefone */}
             <div>
-              <label
-                htmlFor="phone"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Telefone/WhatsApp *
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.phone ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="(61) 99999-9999"
-                disabled={loading}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <PhoneIcon />
+                </div>
+                <input
+                  id="phone"
+                  name="phone"
+                  type="tel"
+                  value={formData.phone}
+                  onChange={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    input.setCustomValidity("");
+                    handleChange(e);
+                  }}
+                  onInvalid={(e) => {
+                    const input = e.target as HTMLInputElement;
+                    input.setCustomValidity(
+                      "Por favor, informe seu telefone com DDD"
+                    );
+                  }}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.phone ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Telefone"
+                  disabled={loading}
+                  required
+                />
+              </div>
               {errors.phone && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs mt-2 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -439,55 +548,36 @@ const RegisterPage: React.FC = () => {
               )}
             </div>
 
-            {/* Campo Data de Nascimento */}
-            <div>
-              <label
-                htmlFor="birthDate"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Data de nascimento *
-              </label>
-              <input
-                id="birthDate"
-                name="birthDate"
-                type="date"
-                value={formData.birthDate || ""}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.birthDate ? "border-red-500" : "border-gray-300"
-                }`}
-                disabled={loading}
-              />
-              {errors.birthDate && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
-                  {errors.birthDate}
-                </p>
-              )}
-            </div>
-
             {/* Campo Senha */}
             <div>
-              <label
-                htmlFor="password"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Senha *
-              </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.password ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Crie uma senha segura"
-                disabled={loading}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockIcon />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.password ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Crie uma senha segura"
+                  disabled={loading}
+                  required
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  <EyeIcon show={showPassword} />
+                </button>
+              </div>
               <PasswordStrengthIndicator password={formData.password} />
               {errors.password && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs mt-2 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -506,48 +596,8 @@ const RegisterPage: React.FC = () => {
               )}
             </div>
 
-            {/* Campo Confirmar Senha */}
-            <div>
-              <label
-                htmlFor="confirmPassword"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                Confirmar senha *
-              </label>
-              <input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.confirmPassword ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Digite a senha novamente"
-                disabled={loading}
-              />
-              {errors.confirmPassword && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
-                  <svg
-                    className="w-4 h-4 mr-1"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                  {errors.confirmPassword}
-                </p>
-              )}
-            </div>
-
             {/* Termos e Condições */}
-            <div>
+            <div className="bg-gray-50 p-4 rounded-lg">
               <div className="flex items-start">
                 <input
                   id="acceptTerms"
@@ -555,31 +605,32 @@ const RegisterPage: React.FC = () => {
                   type="checkbox"
                   checked={formData.acceptTerms}
                   onChange={handleChange}
-                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-1"
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded mt-0.5"
                   disabled={loading}
+                  required
                 />
                 <label
                   htmlFor="acceptTerms"
-                  className="ml-2 block text-sm text-gray-700"
+                  className="ml-3 block text-sm text-gray-700"
                 >
-                  Concordo com os{" "}
+                  Eu aceito os{" "}
                   <Link
                     to="/termos"
-                    className="text-green-600 hover:text-green-700 underline"
+                    className="text-green-600 hover:text-green-700 hover:underline font-medium"
                   >
-                    termos de serviço
+                    Termos de Serviço
                   </Link>{" "}
                   e{" "}
                   <Link
                     to="/privacidade"
-                    className="text-green-600 hover:text-green-700 underline"
+                    className="text-green-600 hover:text-green-700 hover:underline font-medium"
                   >
-                    política de privacidade
+                    Política de Privacidade
                   </Link>
                 </label>
               </div>
               {errors.acceptTerms && (
-                <p className="text-red-500 text-xs sm:text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs mt-2 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -628,7 +679,26 @@ const RegisterPage: React.FC = () => {
                   Criando conta...
                 </div>
               ) : (
-                "Criar conta"
+                <div className="flex items-center justify-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    className="lucide lucide-user-plus h-5 w-5"
+                  >
+                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <line x1="19" x2="19" y1="8" y2="14"></line>
+                    <line x1="22" x2="16" y1="11" y2="11"></line>
+                  </svg>
+                  Criar conta
+                </div>
               )}
             </Button>
 
@@ -656,7 +726,7 @@ const RegisterPage: React.FC = () => {
           </form>
 
           {/* Link para Login */}
-          <div className="mt-8 text-center">
+          <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
               Já tem uma conta?{" "}
               <Link

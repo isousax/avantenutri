@@ -27,6 +27,7 @@ const LoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
 
+
   // Redirecionar se já estiver logado
   useEffect(() => {
     if (user) {
@@ -81,7 +82,7 @@ const LoginPage: React.FC = () => {
 
   const location = useLocation();
   const state = location.state as LocationState;
-  
+
   // Define a rota padrão baseada no tipo de usuário
   const getDefaultRoute = (email: string) => {
     return email === MOCK_CREDENTIALS.admin.email ? "/admin" : "/dashboard";
@@ -98,7 +99,11 @@ const LoginPage: React.FC = () => {
     setErrors((prev) => ({ ...prev, general: "" }));
 
     try {
-      const success = await login(formData.email, formData.password, rememberMe);
+      const success = await login(
+        formData.email,
+        formData.password,
+        rememberMe
+      );
 
       if (success) {
         // Feedback visual de sucesso
@@ -122,14 +127,42 @@ const LoginPage: React.FC = () => {
     }
   };
 
-  // Usa as credenciais mock centralizadas
-  const handleDemoLogin = (type: "patient" | "admin") => {
-    setFormData(MOCK_CREDENTIALS[type]);
-  };
+  // Ícones SVG para os campos
+  const MailIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+      />
+    </svg>
+  );
+
+  const LockIcon = () => (
+    <svg
+      className="w-5 h-5 text-gray-400"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2}
+        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+      />
+    </svg>
+  );
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
-      <SEO 
+      <SEO
         title="Login | Avante Nutri"
         description="Faça login na sua conta Avante Nutri para acessar seu plano alimentar personalizado e acompanhar seu progresso."
         url="https://avantenutri.com.br/login"
@@ -143,10 +176,10 @@ const LoginPage: React.FC = () => {
             </div>
           </Link>
           <h1 className="text-3xl font-bold text-green-800 mb-2">
-            Bem-vindo de volta!
+            Bem-vindo de volta
           </h1>
-          <p className="text-gray-600 text-xs sm:text-sm">
-            Entre para acessar sua área do paciente
+          <p className="text-sm text-gray-500">
+            Acesse sua conta para continuar
           </p>
         </div>
 
@@ -154,26 +187,26 @@ const LoginPage: React.FC = () => {
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Campo E-mail */}
             <div>
-              <label
-                htmlFor="email"
-                className="block text-sm font-medium text-gray-700 mb-2"
-              >
-                E-mail
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.email ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="seu@email.com"
-                disabled={loading}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <MailIcon />
+                </div>
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.email ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="E-mail"
+                  disabled={loading}
+                  required
+                />
+              </div>
               {errors.email && (
-                <p className="text-red-500 text-sm mt-1 flex items-center">
+                <p className="text-red-500 text-xs mt-2 flex items-center">
                   <svg
                     className="w-4 h-4 mr-1"
                     fill="none"
@@ -194,32 +227,23 @@ const LoginPage: React.FC = () => {
 
             {/* Campo Senha */}
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Senha
-                </label>
-                <Link
-                  to="/recuperar-senha"
-                  className="text-sm text-green-600 hover:text-green-700 transition-colors duration-200"
-                >
-                  Esqueceu a senha?
-                </Link>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <LockIcon />
+                </div>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                    errors.password ? "border-red-500" : "border-gray-300"
+                  }`}
+                  placeholder="Senha"
+                  disabled={loading}
+                />
               </div>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.password ? "border-red-500" : "border-gray-300"
-                }`}
-                placeholder="Sua senha"
-                disabled={loading}
-              />
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1 flex items-center">
                   <svg
@@ -240,30 +264,39 @@ const LoginPage: React.FC = () => {
               )}
             </div>
 
-            {/* Lembrar-me */}
-            <div className="flex items-center">
-              <input
-                id="rememberMe"
-                name="rememberMe"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
-                disabled={loading}
-              />
-              <label
-                htmlFor="rememberMe"
-                className="ml-2 block text-sm text-gray-700"
+            {/* Lembrar-me e Esqueceu a senha */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="rememberMe"
+                  name="rememberMe"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="h-4 w-4 text-green-600 focus:ring-green-500 border-gray-300 rounded"
+                  disabled={loading}
+                />
+                <label
+                  htmlFor="rememberMe"
+                  className="ml-2 block text-sm text-gray-700"
+                >
+                  Lembrar-me
+                </label>
+              </div>
+              
+              <Link
+                to="/recuperar-senha"
+                className="text-sm text-green-600 hover:text-green-700 hover:underline font-medium"
               >
-                Lembrar-me
-              </label>
+                Esqueceu a senha?
+              </Link>
             </div>
 
             {/* Botão de Login */}
             <Button
               type="submit"
               disabled={loading}
-              className="w-full py-3 text-lg font-semibold transform transition-all duration-200 hover:scale-[1.02] disabled:hover:scale-100"
+              className="w-full py-3 text-lg font-semibold transform transition-all duration-200 hover:scale-[1.02] disabled:hover:scale-100 mt-2"
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -289,7 +322,25 @@ const LoginPage: React.FC = () => {
                   Entrando...
                 </div>
               ) : (
-                "Entrar"
+                <span className="flex items-center justify-center gap-2">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="lucide lucide-log-in h-5 w-5"
+                  >
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                    <polyline points="10 17 15 12 10 7"></polyline>
+                    <line x1="15" x2="3" y1="12" y2="12"></line>
+                  </svg>
+                  <span>Entrar</span>
+                </span>
               )}
             </Button>
 
@@ -323,25 +374,9 @@ const LoginPage: React.FC = () => {
             <div className="flex-1 border-t border-gray-200"></div>
           </div>
 
-          {/* Login Demo */}
-          <div className="space-y-3">
-            <p className="text-sm text-gray-600 text-center mb-3">
-              Acesso rápido para demonstração:
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => handleDemoLogin("patient")}
-              disabled={loading}
-              className="w-full py-2 text-sm"
-            >
-              👤 Entrar como Paciente Demo
-            </Button>
-          </div>
-
           {/* Link para Cadastro */}
           <div className="mt-8 text-center">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-zinc-500">
               Não tem uma conta?{" "}
               <Link
                 to="/register"

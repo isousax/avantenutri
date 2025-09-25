@@ -1,10 +1,11 @@
 import Button from "../ui/Button";
 import Card from "../ui/Card";
-import { Link } from "react-router-dom";
+import { Link, useNavigate  } from "react-router-dom";
 import { useState } from "react";
 
 const Planos: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "quarterly" | "annual">("monthly");
+  const navigate = useNavigate();
 
   const plans = [
     {
@@ -254,11 +255,11 @@ const Planos: React.FC = () => {
           <div className="bg-white rounded-lg p-6 shadow-sm border border-green-100 max-w-2xl mx-auto">
             <h4 className="font-semibold text-green-800 mb-2">Dúvidas sobre os planos?</h4>
             <p className="text-gray-600 mb-4">
-              Fale conosco para personalizar seu pacote conforme suas necessidades.
+              Veja nossa página de perguntas frequentes.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <Button className="border-green-500 text-green-600 hover:bg-green-50" onClick={() => window.location.href = "https://wa.me/+5581986653214"}>
-                Falar com Especialista
+              <Button className="border-green-500 text-green-600 hover:bg-green-50" onClick={() => navigate('/faq')}>
+                FAQ
               </Button>
             </div>
           </div>

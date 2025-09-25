@@ -7,12 +7,11 @@ export default async function handler(req, res) {
     }
 
     const r = await fetch(
-      "https://dedicart-mp-worker.dedicart.workers.dev/preview/create",
+      "https://login-service.avantenutri.workers.dev/auth/login",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.WORKER_API_KEY}`,
         },
         body: JSON.stringify(body),
       }
