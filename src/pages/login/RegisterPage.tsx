@@ -68,12 +68,12 @@ const RegisterPage: React.FC = () => {
       general: "",
     };
 
-    const regexNome = /^[A-Za-zÀ-ÖØ-öø-ÿÇç]+(?: [A-Za-zÀ-ÖØ-öø-ÿÇç]+)+$/;
+    const regexNome = /^[A-Za-zÀ-ÿ]+(?: [A-Za-zÀ-ÿ]+)+$/;
 
     if (!formData.name.trim()) {
       newErrors.name = "Nome completo é obrigatório";
     } else if (!regexNome.test(formData.name.trim())) {
-      newErrors.name = "Informe o nome completo (nome e sobrenome)";
+      newErrors.name = "Informe o nome completo";
     }
 
     if (!formData.email.trim()) {
