@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate, useLocation } from "react-router-dom";
-type LocationState = {
-  from: {
-    pathname: string;
-  };
-};
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../../contexts";
-import { MOCK_CREDENTIALS } from "../../mocks/users";
+import { decodeJwt } from "../../utils/decodeJwt";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
@@ -26,7 +21,6 @@ const LoginPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
-
 
   // Redirecionar se já estiver logado
   useEffect(() => {
@@ -80,19 +74,20 @@ const LoginPage: React.FC = () => {
     return !newErrors.email && !newErrors.password;
   };
 
-  const location = useLocation();
-  const state = location.state as LocationState;
+  function normalizeRole(raw: unknown): "admin" | "patient" {
+    if (typeof raw === "string" && raw.toLowerCase() === "admin") {
+      return "admin";
+    }
+    return "patient";
+  }
 
   // Define a rota padrão baseada no tipo de usuário
-  const getDefaultRoute = (email: string) => {
-    return email === MOCK_CREDENTIALS.admin.email ? "/admin" : "/dashboard";
+  const getRouteForRole = (role: string) => {
+    return role === "admin" ? "/admin" : "/dashboard";
   };
-
-  const from = state?.from?.pathname || getDefaultRoute(formData.email);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     setLoading(true);
@@ -106,11 +101,39 @@ const LoginPage: React.FC = () => {
       );
 
       if (success) {
-        // Feedback visual de sucesso
-        document.body.classList.add("fade-out");
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 400);
+        try {
+          const storage = sessionStorage.getItem("@AvanteNutri:access_token")
+            ? sessionStorage
+            : localStorage;
+          const access = storage.getItem("@AvanteNutri:access_token");
+          let role = "client";
+          if (access) {
+            const payload = decodeJwt(access);
+            if (payload && payload.role) role = String(payload.role);
+          } else if (user && user.role) {
+            role = user.role;
+          }
+
+          const normalized = normalizeRole(role);
+          const redirectPath = getRouteForRole(normalized);
+
+          // animação visual
+          document.body.classList.add("fade-out");
+          setTimeout(() => {
+            navigate(redirectPath, { replace: true });
+          }, 200);
+          return;
+        } catch (err) {
+          console.warn(
+            "Falha ao ler role do token, usando fallback de usuário:",
+            err
+          );
+          document.body.classList.add("fade-out");
+          setTimeout(() => {
+            navigate("/dashboard", { replace: true });
+          }, 200);
+          return;
+        }
       } else {
         setErrors((prev) => ({
           ...prev,
@@ -283,7 +306,7 @@ const LoginPage: React.FC = () => {
                   Lembrar-me
                 </label>
               </div>
-              
+
               <Link
                 to="/recuperar-senha"
                 className="text-sm text-green-600 hover:text-green-700 hover:underline font-medium"
