@@ -21,9 +21,9 @@ const STORAGE_EXPIRES_KEY = "@AvanteNutri:expires_at";
 
 const SESSION_EXPIRY = 4 * 60 * 60 * 1000; // 4h meta expiry
 
-const API_LOGIN = "/api/auth/login/login";
-const API_REFRESH = "/api/auth/login/refresh";
-const API_LOGOUT = "/api/auth/logout/logout";
+const API_LOGIN = "/api/auth/login";
+const API_REFRESH = "/api/auth/refresh";
+const API_LOGOUT = "/api/auth/logout";
 
 // Leader election keys / timing
 const LEADER_KEY = "@AvanteNutri:leader";
@@ -497,16 +497,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         // Chamada de sincronização não bloqueante
         try {
-          void fetch("/api/auth/me/me", {
+          void fetch("/api/auth/me", {
             method: "GET",
             headers: { Authorization: `Bearer ${access}` },
           })
             .then(async (r) => {
               if (!r.ok) {
                 if (r.status === 401) {
-                  const payload = await (async () => { try { return await r.json(); } catch { return null; } })();
-                  if (payload && payload.error === 'Token outdated') {
-                    const hadRefresh = !!(localStorage.getItem(STORAGE_REFRESH_KEY) || sessionStorage.getItem(STORAGE_REFRESH_KEY));
+                  const payload = await (async () => {
+                    try {
+                      return await r.json();
+                    } catch {
+                      return null;
+                    }
+                  })();
+                  if (payload && payload.error === "Token outdated") {
+                    const hadRefresh = !!(
+                      localStorage.getItem(STORAGE_REFRESH_KEY) ||
+                      sessionStorage.getItem(STORAGE_REFRESH_KEY)
+                    );
                     if (hadRefresh) {
                       const refreshed = await contextValue.refreshSession?.();
                       if (!refreshed) await contextLogout();
@@ -517,13 +526,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
                 return;
               }
-              const me = await (async () => { try { return await r.json(); } catch { return null; } })();
-              if (me && typeof me === 'object') {
+              const me = await (async () => {
+                try {
+                  return await r.json();
+                } catch {
+                  return null;
+                }
+              })();
+              if (me && typeof me === "object") {
                 const updated: User = {
                   id: (me.id || me.user_id || derived.id) as string,
                   email: (me.email || derived.email) as string,
                   role: normalizeRole(me.role || derived.role),
-                  full_name: (me.full_name || me.name || derived.full_name) as string,
+                  full_name: (me.full_name ||
+                    me.name ||
+                    derived.full_name) as string,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
@@ -682,7 +699,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ) {
         return sessionVerified ?? false;
       }
-      const r = await fetch("/api/auth/me/me", {
+      const r = await fetch("/api/auth/me", {
         method: "GET",
         headers: { Authorization: `Bearer ${access}` },
       });
@@ -690,15 +707,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!r.ok) {
         try {
           if (r.status === 401) {
-            const payload = await (async () => { try { return await r.json(); } catch { return null; } })();
-            if (payload && payload.error === 'Token outdated') {
+            const payload = await (async () => {
+              try {
+                return await r.json();
+              } catch {
+                return null;
+              }
+            })();
+            if (payload && payload.error === "Token outdated") {
               const refreshed = await contextValue.refreshSession?.();
               if (refreshed) {
                 return await runSessionVerification(true);
               }
             }
           }
-        } catch {}
+        } catch (err){console.warn("[setSessionLastVerified] erro: ",err)}
         if (r.status === 401 || r.status === 403) {
           setSessionVerified(false);
           await contextLogout();
@@ -847,7 +870,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Validação adicional opcional com /api/auth/me (se upstream suportar) – não bloqueante
           if (access) {
             try {
-              const meResp = await fetch("/api/auth/me/me", {
+              const meResp = await fetch("/api/auth/me", {
                 method: "GET",
                 headers: { Authorization: `Bearer ${access}` },
               });
@@ -1039,25 +1062,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const access = localStorage.getItem(STORAGE_ACCESS_KEY);
         if (!access) return false;
-        const r = await fetch("/api/auth/me/me", {
+        const r = await fetch("/api/auth/me", {
           method: "GET",
           headers: { Authorization: `Bearer ${access}` },
         });
         if (!r.ok) {
-            try {
-              if (r.status === 401) {
-                const payload = await (async () => { try { return await r.json(); } catch { return null; } })();
-                if (payload && payload.error === 'Token outdated') {
-                  const refreshed = await contextValue.refreshSession?.();
-                  if (refreshed) {
-                    return await contextValue.syncUser?.();
-                  }
+          try {
+            if (r.status === 401) {
+              const payload = await (async () => {
+                try {
+                  return await r.json();
+                } catch {
+                  return null;
+                }
+              })();
+              if (payload && payload.error === "Token outdated") {
+                const refreshed = await contextValue.refreshSession?.();
+                if (refreshed) {
+                  return await contextValue.syncUser?.();
                 }
               }
-            } catch {}
-            if (r.status === 401 || r.status === 403) {
-              await contextLogout();
             }
+          } catch (err) {
+            console.warn("Erro ao realizar SyncUser", err);
+          }
+          if (r.status === 401 || r.status === 403) {
+            await contextLogout();
+          }
           return false;
         }
         const data = await (async () => {
