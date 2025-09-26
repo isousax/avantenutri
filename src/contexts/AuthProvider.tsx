@@ -208,7 +208,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 type: "application/json",
               }
             );
-            navigator.sendBeacon(API.LOGOUT, blob);
+            navigator.sendBeacon(
+              new URL("/auth/logout", API.API_AUTH_BASE).toString(),
+              blob
+            );
           } else {
             // fire-and-forget fetch
             void fetch(API.LOGOUT, {
@@ -646,7 +649,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const blob = new Blob([JSON.stringify({ refresh_token: refresh })], {
             type: "application/json",
           });
-          navigator.sendBeacon(API.LOGOUT, blob);
+          navigator.sendBeacon(
+            new URL("/auth/logout", API.API_AUTH_BASE).toString(),
+            blob
+          );
         }
       } catch (err) {
         console.warn(
@@ -718,7 +724,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             }
           }
-        } catch (err){console.warn("[setSessionLastVerified] erro: ",err)}
+        } catch (err) {
+          console.warn("[setSessionLastVerified] erro: ", err);
+        }
         if (r.status === 401 || r.status === 403) {
           setSessionVerified(false);
           await contextLogout();
