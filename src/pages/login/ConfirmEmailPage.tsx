@@ -22,10 +22,17 @@ const ConfirmEmailPage: React.FC = () => {
         setStatus("error");
         setMessage("Token de confirmação não encontrado.");
         return;
+      } else if (
+        typeof token !== "string" ||
+        token.length < 10 ||
+        token.length > 500
+      ) {
+        setStatus("error");
+        setMessage("Token de confirmação inválido.");
       }
 
       try {
-  const API_VERIFY_EMAIL = API.CONFIRM_EMAIL;
+        const API_VERIFY_EMAIL = API.CONFIRM_EMAIL;
 
         const response = await fetch(API_VERIFY_EMAIL, {
           method: "POST",

@@ -9,7 +9,7 @@ export const API = {
   LOGOUT: `/api/auth/logout`,
   REGISTER: `${API_AUTH_BASE}/auth/register`,
   RESEND_VERIFICATION: `${API_AUTH_BASE}/auth/send-verification`,
-  CONFIRM_EMAIL: `${API_AUTH_BASE}auth/confirm-email`,
+  CONFIRM_EMAIL: `${API_AUTH_BASE}/auth/confirm-email`,
   PASSWORD_REQUEST_RESET: `${API_AUTH_BASE}/auth/request-reset`,
   PASSWORD_RESET: `${API_AUTH_BASE}/auth/reset-password`,
   CHANGE_PASSWORD: `${API_AUTH_BASE}/auth/change-password`,
