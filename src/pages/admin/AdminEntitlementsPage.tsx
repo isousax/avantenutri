@@ -1,7 +1,7 @@
 import React from 'react';
 import Card from '../../components/ui/Card';
 import PermissionGate from '../../components/auth/PermissionGate';
-import { CAPABILITIES } from '../../capabilities';
+import { CAPABILITIES } from '../../types/capabilities';
 import { usePermissions } from '../../hooks/usePermissions';
 
 // Demonstration page for current (scaffold) entitlements system.

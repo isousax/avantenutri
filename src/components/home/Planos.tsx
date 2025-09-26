@@ -224,7 +224,7 @@ const Planos: React.FC = () => {
                   
                   <div className="mt-auto">
                     <Link 
-                      to={plan.id === "premium" ? "/questionario" : "/register"} 
+                      to={"/register"} 
                       className="block w-full"
                     >
                       <Button 

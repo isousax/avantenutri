@@ -106,7 +106,6 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-          <Route path="/resetar-senha" element={<ResetPasswordPage />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/confirm-email" element={<ConfirmEmailPage />} />
           <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
