@@ -1,5 +1,5 @@
 import { methodGuard, json, validateRefreshToken } from "../_utils/security.js";
-import { meCacheClearAll } from "../_utils/meCache";
+import { meCacheClearAll } from "../_utils/meCache.js";
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, "POST")) return;
