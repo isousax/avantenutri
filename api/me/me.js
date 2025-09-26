@@ -1,6 +1,6 @@
-import { json } from '../../api-no-proxy/_utils/security.js';
-import { verifyJwt, unsafeDecode } from '../../api-no-proxy/_utils/jwt';
-import { meCacheGet, meCacheSet } from '../../api-no-proxy/_utils/meCache';
+import { json } from '../_utils/security.js';
+import { verifyJwt, unsafeDecode } from '../_utils/jwt';
+import { meCacheGet, meCacheSet } from '../_utils/meCache';
 
 const DEFAULT_TTL_MS = Number(process.env.ME_CACHE_TTL_MS || 60000);
 
