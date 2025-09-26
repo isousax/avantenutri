@@ -209,7 +209,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             );
             navigator.sendBeacon(
-              new URL("/auth/logout", API.API_AUTH_BASE).toString(),
+              API.LOGOUT,
               blob
             );
           } else {
@@ -650,7 +650,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             type: "application/json",
           });
           navigator.sendBeacon(
-            new URL("/auth/logout", API.API_AUTH_BASE).toString(),
+            API.LOGOUT,
             blob
           );
         }
