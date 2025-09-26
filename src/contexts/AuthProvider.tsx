@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import type { User, AuthContextType } from "../types/auth";
 import { AuthContext } from "./AuthContext";
 import { decodeJwt } from "../utils/decodeJwt";
+import { API } from "../config/api";
 
 /**
  * AuthProvider
@@ -20,10 +21,6 @@ const STORAGE_REFRESH_KEY = "@AvanteNutri:refresh_token";
 const STORAGE_EXPIRES_KEY = "@AvanteNutri:expires_at";
 
 const SESSION_EXPIRY = 4 * 60 * 60 * 1000; // 4h meta expiry
-
-const API_LOGIN = "/api/auth/login";
-const API_REFRESH = "/api/auth/refresh";
-const API_LOGOUT = "/api/auth/logout";
 
 // Leader election keys / timing
 const LEADER_KEY = "@AvanteNutri:leader";
@@ -211,10 +208,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 type: "application/json",
               }
             );
-            navigator.sendBeacon(API_LOGOUT, blob);
+            navigator.sendBeacon(API.LOGOUT, blob);
           } else {
             // fire-and-forget fetch
-            void fetch(API_LOGOUT, {
+            void fetch(API.LOGOUT, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ refresh_token: refresh }),
@@ -253,7 +250,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (!isLeaderRef.current) return false; // lost leadership
       if (delayMs > 0) await new Promise((r) => setTimeout(r, delayMs));
       try {
-        const res = await fetch(API_REFRESH, {
+        const res = await fetch(API.REFRESH, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: refreshToken }),
@@ -649,7 +646,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const blob = new Blob([JSON.stringify({ refresh_token: refresh })], {
             type: "application/json",
           });
-          navigator.sendBeacon(API_LOGOUT, blob);
+          navigator.sendBeacon(API.LOGOUT, blob);
         }
       } catch (err) {
         console.warn(
@@ -811,7 +808,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       rememberMe: boolean = false
     ) => {
       try {
-        const res = await fetch(API_LOGIN, {
+        const res = await fetch(API.LOGIN, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ email, password, remember: rememberMe }),
@@ -978,7 +975,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             !sessionStorage.getItem(STORAGE_ACCESS_KEY)
           );
         }
-        const r = await fetch(API_REFRESH, {
+        const r = await fetch(API.REFRESH, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: refresh }),

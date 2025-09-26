@@ -1,19 +1,5 @@
 {
-  "rewrites": [
-    {
-      "source": "/api/auth/:path*",
-      "destination": "https://login-service.avantenutri.workers.dev/auth/:path*"
-    },
-    {
-      "source": "/api/admin/:path*",
-      "destination": "https://login-service.avantenutri.workers.dev/admin/:path*"
-    },
-    {
-      "source": "/api/:path*",
-      "destination": "https://login-service.avantenutri.workers.dev/:path*"
-    },
-    { "source": "/(.*)", "destination": "/" }
-  ],
+  "rewrites": [{ "source": "/(.*)", "destination": "/" }],
   "headers": [
     {
       "source": "/(.*)",

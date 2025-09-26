@@ -7,6 +7,7 @@ import React, {
 import { useAuth } from "../../contexts";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import { API } from "../../config/api";
 
 interface ListedUser {
   id: string;
@@ -46,7 +47,7 @@ const AdminUsersPage: React.FC = () => {
       });
       if (search) qs.set("q", search);
       if (userIdFilter) qs.set("user_id", userIdFilter);
-      const r = await authenticatedFetch(`/api/admin/users?${qs.toString()}`, {
+      const r = await authenticatedFetch(`${API.ADMIN_USERS}?${qs.toString()}`, {
         method: "GET",
         autoLogout: true,
       });
@@ -78,7 +79,7 @@ const AdminUsersPage: React.FC = () => {
   const applyRole = async (id: string, newRole: string): Promise<void> => {
     try {
       setChanging(id);
-      const r = await authenticatedFetch(`/api/admin/users/${id}/role`, {
+      const r = await authenticatedFetch(`${API.ADMIN_USERS}/${id}/role`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_role: newRole, reason: "UI change" }),
@@ -213,7 +214,7 @@ const AdminUsersPage: React.FC = () => {
                           try {
                             setChanging(u.id);
                             const r = await authenticatedFetch(
-                              `/api/admin/users/${u.id}/force-logout`,
+                              `${API.ADMIN_USERS}/${u.id}/force-logout`,
                               { method: "POST" }
                             );
                             if (!r.ok)

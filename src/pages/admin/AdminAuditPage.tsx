@@ -1,6 +1,7 @@
 import React, { useEffect, useState, type FormEvent } from "react";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
+import { API } from "../../config/api";
 
 interface PasswordAuditRow {
   user_id: string;
@@ -57,7 +58,7 @@ const AdminAuditPage: React.FC = () => {
         pageSize: String(pageSize),
       });
       if (userIdFilter.trim()) params.set("user_id", userIdFilter.trim());
-      const r = await fetch(`/api/admin/audit?${params.toString()}`, {
+      const r = await fetch(`${API.ADMIN_AUDIT}?${params.toString()}`, {
         headers: apiKey ? { "x-api-key": apiKey } : {},
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);

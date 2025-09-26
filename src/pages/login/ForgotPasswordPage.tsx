@@ -48,17 +48,25 @@ const ForgotPasswordPage: React.FC = () => {
       let data: any = null;
       try {
         data = await res.json();
-      } catch {}
+      } catch (err) {
+        console.warn("Erro na extração do JSON ", err);
+      }
 
       if (res.status === 429) {
         const retry = Number(res.headers.get("Retry-After") || 60);
         setCooldown(retry);
-        setErrors({ email: "", general: `Muitas tentativas. Aguarde ${retry}s.` });
+        setErrors({
+          email: "",
+          general: `Muitas tentativas. Aguarde ${retry}s.`,
+        });
         return;
       }
 
       if (!res.ok && data?.error) {
-        setErrors({ email: "", general: data.error || "Erro ao solicitar redefinição" });
+        setErrors({
+          email: "",
+          general: data.error || "Erro ao solicitar redefinição",
+        });
         return;
       }
 
@@ -67,7 +75,7 @@ const ForgotPasswordPage: React.FC = () => {
       setTimeout(() => {
         navigate("/login", { state: { email } });
       }, 8000);
-    } catch (err) {
+    } catch {
       setErrors({ email: "", general: "Erro de rede. Tente novamente." });
     } finally {
       setLoading(false);
@@ -251,7 +259,11 @@ const ForgotPasswordPage: React.FC = () => {
                   </svg>
                   Enviando...
                 </div>
-              ) : cooldown > 0 ? `Aguarde ${cooldown}s` : "Enviar Link de Recuperação"}
+              ) : cooldown > 0 ? (
+                `Aguarde ${cooldown}s`
+              ) : (
+                "Enviar Link de Recuperação"
+              )}
             </Button>
 
             {/* Erro Geral */}
