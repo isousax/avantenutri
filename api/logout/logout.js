@@ -1,5 +1,5 @@
-import { methodGuard, json, validateRefreshToken } from '../../_utils/security';
-import { meCacheClearAll } from '../../_utils/meCache';
+import { methodGuard, json, validateRefreshToken } from '../../api-no-proxy/_utils/security';
+import { meCacheClearAll } from '../../api-no-proxy/_utils/meCache';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;

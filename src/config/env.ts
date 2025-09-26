@@ -8,6 +8,7 @@ interface AppEnv {
   JWT_EXPECTED_AUDIENCE: string | undefined;
   ME_CACHE_TTL_MS: number;
   APP_VERSION: string | undefined;
+  API_AUTH_BASE: string | undefined;
 }
 
 function toNumber(v: unknown, fallback: number) {
@@ -22,4 +23,5 @@ export const ENV: AppEnv = {
   JWT_EXPECTED_AUDIENCE: import.meta.env.VITE_JWT_EXPECTED_AUDIENCE,
   ME_CACHE_TTL_MS: toNumber(import.meta.env.VITE_ME_CACHE_TTL_MS, 60000),
   APP_VERSION: import.meta.env.VITE_APP_VERSION,
+  API_AUTH_BASE: import.meta.env.VITE_API_BASE
 };

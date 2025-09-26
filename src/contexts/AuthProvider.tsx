@@ -494,7 +494,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         // Chamada de sincronização não bloqueante
         try {
-          void fetch("/api/auth/me", {
+          void fetch(API.ME, {
             method: "GET",
             headers: { Authorization: `Bearer ${access}` },
           })
@@ -696,7 +696,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       ) {
         return sessionVerified ?? false;
       }
-      const r = await fetch("/api/auth/me", {
+      const r = await fetch(API.ME, {
         method: "GET",
         headers: { Authorization: `Bearer ${access}` },
       });

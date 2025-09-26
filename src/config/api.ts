@@ -1,18 +1,23 @@
+import { ENV } from "./env";
+
+const API_AUTH_BASE = ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`
+
 export const API = {
-  LOGIN: '/api-no-proxy/auth/login',
-  REFRESH: '/api-no-proxy/auth/refresh',
-  LOGOUT: '/api-no-proxy/auth/logout',
-  REGISTER: '/api-no-proxy/auth/register',
-  RESEND_VERIFICATION: '/api-no-proxy/auth/send-verification',
-  CONFIRM_EMAIL: '/api-no-proxy/auth/confirm-email',
-  PASSWORD_REQUEST_RESET: '/api-no-proxy/auth/request-reset',
-  PASSWORD_RESET: '/api-no-proxy/auth/reset-password',
-  CHANGE_PASSWORD: '/api-no-proxy/auth/change-password',
-  ME: '/api-no-proxy/auth/me',
-  PROFILE: '/api-no-proxy/auth/profile',
-  ENTITLEMENTS: '/api-no-proxy/auth/entitlements',
-  ADMIN_USERS: '/api-no-proxy/admin/users',
-  ADMIN_AUDIT: '/api-no-proxy/admin/audit',
-};
+  API_AUTH_BASE: ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`,
+  LOGIN: `${API_AUTH_BASE}/auth/login`,
+  REFRESH: `${API_AUTH_BASE}/auth/refresh`,
+  LOGOUT: `/api/auth/logout`,
+  REGISTER: `${API_AUTH_BASE}/auth/register`,
+  RESEND_VERIFICATION: `${API_AUTH_BASE}/auth/send-verification`,
+  CONFIRM_EMAIL: `${API_AUTH_BASE}auth/confirm-email`,
+  PASSWORD_REQUEST_RESET: `${API_AUTH_BASE}/auth/request-reset`,
+  PASSWORD_RESET: `${API_AUTH_BASE}/auth/reset-password`,
+  CHANGE_PASSWORD: `${API_AUTH_BASE}/auth/change-password`,
+  ME: `/api/me`,
+  PROFILE: `${API_AUTH_BASE}/auth/profile`,
+  ENTITLEMENTS: `${API_AUTH_BASE}/auth/entitlements`,
+  ADMIN_USERS: `${API_AUTH_BASE}/admin/users`,
+  ADMIN_AUDIT: `${API_AUTH_BASE}/admin/audit`,
+} as const;
 
 export type ApiRoutes = typeof API;
