@@ -1,4 +1,4 @@
-import { methodGuard, json, rateLimit, extractIp, validatePassword, jitter } from '../../_utils/security';
+import { methodGuard, json, rateLimit, extractIp, validatePassword, jitter } from '../../_utils/security.js';
 
 // Política de senha backend (reforçada aqui): 8+ chars, minúscula, maiúscula, número e símbolo.
 const STRONG_PWD_REGEX = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;

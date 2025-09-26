@@ -1,4 +1,4 @@
-import { methodGuard, json, validateEmail, rateLimit, extractIp, jitter } from '../../_utils/security';
+import { methodGuard, json, validateEmail, rateLimit, extractIp, jitter } from '../../_utils/security.js';
 
 // Proxy para solicitar envio de link de redefinição de senha
 // Mantém respostas genéricas para evitar enumeração de usuários.

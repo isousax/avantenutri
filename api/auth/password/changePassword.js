@@ -1,4 +1,4 @@
-import { json, jitter } from '../../_utils/security';
+import { json, jitter } from '../../_utils/security.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

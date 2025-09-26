@@ -1,4 +1,4 @@
-import { methodGuard, json, rateLimit, extractIp } from '../../_utils/security';
+import { methodGuard, json, rateLimit, extractIp } from '../../_utils/security.js';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;

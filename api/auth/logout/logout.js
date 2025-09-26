@@ -1,4 +1,4 @@
-import { methodGuard, json, validateRefreshToken } from '../../_utils/security';
+import { methodGuard, json, validateRefreshToken } from '../../_utils/security.js';
 import { meCacheInvalidateToken } from '../../_utils/meCache';
 
 export default async function handler(req, res) {

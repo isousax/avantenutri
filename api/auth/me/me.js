@@ -1,8 +1,8 @@
 // Endpoint experimental /api/auth/me
 // Tenta validar token junto ao serviço remoto. Caso endpoint remoto não exista, retorna 501.
-import { json, setSecurityHeaders } from '../../_utils/security';
-import { verifyJwt, unsafeDecode } from '../../_utils/jwt';
-import { meCacheGet, meCacheSet } from '../../_utils/meCache';
+import { json, setSecurityHeaders } from '../../_utils/security.js';
+import { verifyJwt, unsafeDecode } from '../../_utils/jwt.js';
+import { meCacheGet, meCacheSet } from '../../_utils/meCache.js';
 
 const DEFAULT_TTL_MS = Number(process.env.ME_CACHE_TTL_MS || 60000);
 
