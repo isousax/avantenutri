@@ -120,7 +120,6 @@ const RegisterPage: React.FC = () => {
         password: formData.password,
         full_name: formData.name.trim(),
         phone: normalizedPhone,
-        birth_date: "0001-01-01",
       };
 
       const res = await fetch(API_REGISTER, {
