@@ -13,7 +13,7 @@ export const API = {
   PASSWORD_REQUEST_RESET: `${API_AUTH_BASE}/auth/request-reset`,
   PASSWORD_RESET: `${API_AUTH_BASE}/auth/reset-password`,
   CHANGE_PASSWORD: `${API_AUTH_BASE}/auth/change-password`,
-  ME: `/api/me`,
+  ME: `/api/me/me`,
   PROFILE: `${API_AUTH_BASE}/auth/profile`,
   ENTITLEMENTS: `${API_AUTH_BASE}/auth/entitlements`,
   ADMIN_USERS: `${API_AUTH_BASE}/admin/users`,

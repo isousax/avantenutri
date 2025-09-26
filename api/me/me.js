@@ -1,6 +1,4 @@
-// Endpoint experimental /api/auth/me
-// Tenta validar token junto ao serviço remoto. Caso endpoint remoto não exista, retorna 501.
-import { json } from '../../api-no-proxy/_utils/security';
+import { json } from '../../api-no-proxy/_utils/security.js';
 import { verifyJwt, unsafeDecode } from '../../api-no-proxy/_utils/jwt';
 import { meCacheGet, meCacheSet } from '../../api-no-proxy/_utils/meCache';
 
