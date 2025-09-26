@@ -1,9 +1,11 @@
 import { ENV } from "./env";
 
-const API_AUTH_BASE = ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`
+const API_AUTH_BASE =
+  ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`;
 
 export const API = {
-  API_AUTH_BASE: ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`,
+  API_AUTH_BASE:
+    ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`,
   LOGIN: `${API_AUTH_BASE}/auth/login`,
   REFRESH: `${API_AUTH_BASE}/auth/refresh`,
   LOGOUT: `/api/auth/logout`,
