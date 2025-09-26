@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../contexts';
@@ -88,7 +89,12 @@ const AdminPage: React.FC = () => {
               <h2 className="text-2xl font-bold text-green-700">Área do Nutricionista</h2>
               <p className="text-gray-600 text-sm">Bem-vinda, Dra. Cawanne</p>
             </div>
-            <Button variant="secondary" onClick={logout}>Sair</Button>
+            <div className="flex gap-3 items-center text-sm">
+              <Link to="/admin/usuarios" className="text-green-700 hover:underline">Usuários</Link>
+              <Link to="/admin/audit" className="text-green-700 hover:underline">Auditoria</Link>
+              <Link to="/admin/entitlements" className="text-green-700 hover:underline">Entitlements</Link>
+              <Button variant="secondary" onClick={logout}>Sair</Button>
+            </div>
           </div>
 
           {/* Stats Cards */}

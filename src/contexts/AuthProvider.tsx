@@ -502,22 +502,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             headers: { Authorization: `Bearer ${access}` },
           })
             .then(async (r) => {
-              if (!r.ok) return;
-              const me = await (async () => {
-                try {
-                  return await r.json();
-                } catch {
-                  return null;
+              if (!r.ok) {
+                if (r.status === 401) {
+                  const payload = await (async () => { try { return await r.json(); } catch { return null; } })();
+                  if (payload && payload.error === 'Token outdated') {
+                    const hadRefresh = !!(localStorage.getItem(STORAGE_REFRESH_KEY) || sessionStorage.getItem(STORAGE_REFRESH_KEY));
+                    if (hadRefresh) {
+                      const refreshed = await contextValue.refreshSession?.();
+                      if (!refreshed) await contextLogout();
+                    } else {
+                      await contextLogout();
+                    }
+                  }
                 }
-              })();
-              if (me && typeof me === "object") {
+                return;
+              }
+              const me = await (async () => { try { return await r.json(); } catch { return null; } })();
+              if (me && typeof me === 'object') {
                 const updated: User = {
                   id: (me.id || me.user_id || derived.id) as string,
                   email: (me.email || derived.email) as string,
                   role: normalizeRole(me.role || derived.role),
-                  full_name: (me.full_name ||
-                    me.name ||
-                    derived.full_name) as string,
+                  full_name: (me.full_name || me.name || derived.full_name) as string,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
@@ -682,6 +688,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       });
       setSessionLastVerified(Date.now());
       if (!r.ok) {
+        try {
+          if (r.status === 401) {
+            const payload = await (async () => { try { return await r.json(); } catch { return null; } })();
+            if (payload && payload.error === 'Token outdated') {
+              const refreshed = await contextValue.refreshSession?.();
+              if (refreshed) {
+                return await runSessionVerification(true);
+              }
+            }
+          }
+        } catch {}
         if (r.status === 401 || r.status === 403) {
           setSessionVerified(false);
           await contextLogout();
@@ -1027,10 +1044,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           headers: { Authorization: `Bearer ${access}` },
         });
         if (!r.ok) {
-          if (r.status === 401 || r.status === 403) {
-            // token inválido -> logout seguro
-            await contextLogout();
-          }
+            try {
+              if (r.status === 401) {
+                const payload = await (async () => { try { return await r.json(); } catch { return null; } })();
+                if (payload && payload.error === 'Token outdated') {
+                  const refreshed = await contextValue.refreshSession?.();
+                  if (refreshed) {
+                    return await contextValue.syncUser?.();
+                  }
+                }
+              }
+            } catch {}
+            if (r.status === 401 || r.status === 403) {
+              await contextLogout();
+            }
           return false;
         }
         const data = await (async () => {

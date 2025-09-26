@@ -1,14 +1,16 @@
-import { methodGuard, json, validateEmail, validatePassword, rateLimit, extractIp } from '../../_utils/security';
+import { methodGuard, json, validateEmail, validatePassword, rateLimit, extractIp, jitter } from '../../_utils/security';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
   const ip = extractIp(req);
   if (!rateLimit(`login:${ip}`, 10, 60_000)) {
+    await jitter();
     return json(res, 429, { error: 'Too many attempts. Try again later.' });
   }
   try {
     const { email, password, remember } = req.body || {};
     if (!validateEmail(email) || !validatePassword(password)) {
+      await jitter();
       return json(res, 400, { error: 'Invalid credentials payload' });
     }
     const payload = { email, password, remember: !!remember };

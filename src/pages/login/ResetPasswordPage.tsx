@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { API } from '../../config/api';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import Button from '../../components/ui/Button';
 import Card from '../../components/ui/Card';
@@ -21,9 +22,11 @@ const ResetPasswordPage: React.FC = () => {
   });
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [showPwd, setShowPwd] = useState(false);
+  const API_RESET_PASSWORD = API.PASSWORD_RESET;
 
-  // Verificar se o token é válido (simulação)
-  const isValidToken = token && token.length > 10;
+  // Validação superficial do token apenas para UX; verificação real acontece no backend
+  const isValidToken = token && token.length >= 16;
 
   const PasswordStrengthIndicator: React.FC<{ password: string }> = ({ password }) => {
     if (!password) return null;
@@ -77,10 +80,8 @@ const ResetPasswordPage: React.FC = () => {
 
     if (!formData.password) {
       newErrors.password = 'Senha é obrigatória';
-    } else if (formData.password.length < 6) {
-      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(formData.password)) {
-      newErrors.password = 'Senha deve conter letras maiúsculas, minúsculas e números';
+    } else if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(formData.password)) {
+      newErrors.password = 'Mín 8 caracteres com minúscula, maiúscula, número e símbolo';
     }
 
     if (!formData.confirmPassword) {
@@ -118,25 +119,36 @@ const ResetPasswordPage: React.FC = () => {
     setErrors(prev => ({ ...prev, general: '' }));
 
     try {
-      // Simulação de API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      if (!isValidToken) {
-        throw new Error('Link inválido ou expirado');
+      const res = await fetch(API_RESET_PASSWORD, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, new_password: formData.password })
+      });
+      let data: any = null;
+      try { data = await res.json(); } catch {}
+
+      if (res.status === 400 || res.status === 422) {
+        setErrors(prev => ({ ...prev, general: data?.error || 'Token ou senha inválidos.' }));
+        return;
       }
-      
-      // Simulação de sucesso
+      if (res.status === 404) {
+        setErrors(prev => ({ ...prev, general: 'Token não encontrado ou já utilizado.' }));
+        return;
+      }
+      if (res.status === 429) {
+        setErrors(prev => ({ ...prev, general: 'Muitas tentativas. Aguarde e tente novamente.' }));
+        return;
+      }
+      if (!res.ok) {
+        setErrors(prev => ({ ...prev, general: data?.error || 'Erro inesperado.' }));
+        return;
+      }
       setSuccess(true);
-      
-      // Redirecionar para login após 3 segundos
-      setTimeout(() => {
-        navigate('/login');
-      }, 3000);
-      
+      setTimeout(() => navigate('/login'), 4000);
     } catch (error) {
       setErrors(prev => ({
         ...prev,
-        general: error instanceof Error ? error.message : 'Erro ao redefinir senha. Tente novamente.'
+        general: 'Erro de rede ao redefinir. Tente novamente.'
       }));
     } finally {
       setLoading(false);
@@ -215,19 +227,27 @@ const ResetPasswordPage: React.FC = () => {
               <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
                 Nova Senha
               </label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                value={formData.password}
-                onChange={handleChange}
-                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
-                  errors.password ? 'border-red-500' : 'border-gray-300'
-                }`}
-                placeholder="Digite sua nova senha"
-                disabled={loading}
-                autoFocus
-              />
+              <div className="relative">
+                <input
+                  id="password"
+                  name="password"
+                  type={showPwd ? 'text' : 'password'}
+                  value={formData.password}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
+                    errors.password ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Mín 8 c/ maiúscula, minúscula, número e símbolo"
+                  disabled={loading}
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  className="absolute inset-y-0 right-0 px-3 text-xs text-gray-500 hover:text-gray-700"
+                  onClick={() => setShowPwd(p => !p)}
+                  tabIndex={-1}
+                >{showPwd ? 'Ocultar' : 'Mostrar'}</button>
+              </div>
               <PasswordStrengthIndicator password={formData.password} />
               {errors.password && (
                 <p className="text-red-500 text-sm mt-1 flex items-center">

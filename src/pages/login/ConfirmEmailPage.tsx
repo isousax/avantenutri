@@ -4,6 +4,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { API } from "../../config/api";
 
 const ConfirmEmailPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -24,7 +25,7 @@ const ConfirmEmailPage: React.FC = () => {
       }
 
       try {
-        const API_VERIFY_EMAIL = "/api/auth/register/confirmEmail";
+  const API_VERIFY_EMAIL = API.CONFIRM_EMAIL;
 
         const response = await fetch(API_VERIFY_EMAIL, {
           method: "POST",

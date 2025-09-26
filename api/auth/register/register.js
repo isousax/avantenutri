@@ -1,14 +1,16 @@
-import { methodGuard, json, validateEmail, validatePassword, rateLimit, extractIp } from '../../_utils/security';
+import { methodGuard, json, validateEmail, validatePassword, rateLimit, extractIp, jitter } from '../../_utils/security';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
   const ip = extractIp(req);
   if (!rateLimit(`register:${ip}`, 5, 300_000)) {
+    await jitter();
     return json(res, 429, { error: 'Too many registrations attempts' });
   }
   try {
     const { email, password, full_name } = req.body || {};
     if (!validateEmail(email) || !validatePassword(password)) {
+      await jitter();
       return json(res, 400, { error: 'Invalid registration payload' });
     }
     const upstream = await fetch('https://login-service.avantenutri.workers.dev/auth/register', {

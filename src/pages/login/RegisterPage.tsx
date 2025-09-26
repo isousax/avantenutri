@@ -4,6 +4,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { normalizePhone } from "../../utils/normalizePhone";
+import { API } from "../../config/api";
 import { SEO } from "../../components/comum/SEO";
 
 const RegisterPage: React.FC = () => {
@@ -33,7 +34,7 @@ const RegisterPage: React.FC = () => {
   const [success, setSuccess] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  const API_REGISTER = "/api/auth/register/register";
+  const API_REGISTER = API.REGISTER;
   const PHONE_E164_REGEX = /^\+?[1-9]\d{1,14}$/;
   const PASSWORD_POLICY_REGEX =
     /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/;

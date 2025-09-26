@@ -9,6 +9,9 @@ import RegisterPage from "./pages/login/RegisterPage.tsx";
 import DashboardPage from "./pages/client/DashboardPage.tsx";
 import QuestionarioPage from "./pages/client/QuestionarioPage.tsx";
 import AdminPage from "./pages/admin/AdminPage.tsx";
+import AdminUsersPage from "./pages/admin/AdminUsersPage.tsx";
+import AdminAuditPage from "./pages/admin/AdminAuditPage.tsx";
+import AdminEntitlementsPage from "./pages/admin/AdminEntitlementsPage.tsx";
 import TermosServicoPage from "./pages/legal/TermosServicoPage.tsx";
 import PoliticaPrivacidadePage from "./pages/legal/PoliticaPrivacidadePage.tsx";
 import ForgotPasswordPage from "./pages/login/ForgotPasswordPage.tsx";
@@ -161,6 +164,30 @@ function App() {
             element={
               <AdminRoute>
                 <AdminPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/usuarios"
+            element={
+              <AdminRoute>
+                <AdminUsersPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/audit"
+            element={
+              <AdminRoute>
+                <AdminAuditPage />
+              </AdminRoute>
+            }
+          />
+          <Route
+            path="/admin/entitlements"
+            element={
+              <AdminRoute>
+                <AdminEntitlementsPage />
               </AdminRoute>
             }
           />

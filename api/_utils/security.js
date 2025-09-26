@@ -58,3 +58,9 @@ export function validatePassword(pwd) {
 export function validateRefreshToken(t) {
   return typeof t === 'string' && t.length >= 20 && t.length <= 1000;
 }
+
+// Pequeno atraso aleatório para respostas sensíveis (mitiga análise de tempo)
+export async function jitter(minMs = 120, maxMs = 320) {
+  const ms = Math.floor(Math.random() * (maxMs - minMs + 1)) + minMs;
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}

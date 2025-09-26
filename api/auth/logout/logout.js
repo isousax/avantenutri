@@ -1,5 +1,5 @@
 import { methodGuard, json, validateRefreshToken } from '../../_utils/security';
-import { meCacheClearAll } from '../../_utils/meCache';
+import { meCacheInvalidateToken } from '../../_utils/meCache';
 
 export default async function handler(req, res) {
   if (!methodGuard(req, res, 'POST')) return;
@@ -15,8 +15,14 @@ export default async function handler(req, res) {
     });
     let data = null;
     try { data = await upstream.json(); } catch { data = null; }
-    // Limpa cache de /me para minimizar risco de dados desatualizados pós logout
-    try { meCacheClearAll(); } catch {}
+    // Invalida somente o token de acesso enviado (se presente) ao invés de limpar todo o cache
+    try {
+      const auth = req.headers.authorization || req.headers.Authorization;
+      if (auth && /^Bearer\s+.+/i.test(auth)) {
+        const accessToken = auth.split(/\s+/)[1];
+        if (accessToken) meCacheInvalidateToken(accessToken);
+      }
+    } catch {}
     return json(res, upstream.status, data ?? {});
   } catch (err) {
     console.error('Erro no proxy logout:', err);

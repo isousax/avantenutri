@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API } from "../../config/api";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
@@ -11,6 +12,8 @@ const ForgotPasswordPage: React.FC = () => {
   const [errors, setErrors] = useState({ email: "", general: "" });
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
+  const [cooldown, setCooldown] = useState<number>(0);
+  const API_REQUEST_RESET = API.PASSWORD_REQUEST_RESET;
 
   const validateEmail = (email: string) => {
     if (!email.trim()) {
@@ -35,24 +38,50 @@ const ForgotPasswordPage: React.FC = () => {
     setErrors({ email: "", general: "" });
 
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const res = await fetch(API_REQUEST_RESET, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim() }),
+      });
+
+      // Tentamos extrair JSON (mesmo se 200 genérico)
+      let data: any = null;
+      try {
+        data = await res.json();
+      } catch {}
+
+      if (res.status === 429) {
+        const retry = Number(res.headers.get("Retry-After") || 60);
+        setCooldown(retry);
+        setErrors({ email: "", general: `Muitas tentativas. Aguarde ${retry}s.` });
+        return;
+      }
+
+      if (!res.ok && data?.error) {
+        setErrors({ email: "", general: data.error || "Erro ao solicitar redefinição" });
+        return;
+      }
 
       setEmailSent(true);
-
+      // Redireciona após alguns segundos para login permitindo copiar email
       setTimeout(() => {
-        navigate("/login", {
-          state: { email },
-        });
-      }, 5500);
-    } catch {
-      setErrors({
-        email: "",
-        general: "Erro ao enviar e-mail. Tente novamente mais tarde.",
-      });
+        navigate("/login", { state: { email } });
+      }, 8000);
+    } catch (err) {
+      setErrors({ email: "", general: "Erro de rede. Tente novamente." });
     } finally {
       setLoading(false);
     }
   };
+
+  // Gerencia countdown se houver cooldown
+  React.useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = setInterval(() => {
+      setCooldown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    return () => clearInterval(id);
+  }, [cooldown]);
 
   const MailIcon = () => (
     <svg
@@ -196,7 +225,7 @@ const ForgotPasswordPage: React.FC = () => {
             {/* Botão de Enviar */}
             <Button
               type="submit"
-              disabled={loading}
+              disabled={loading || cooldown > 0}
               className="w-full py-3 text-lg font-semibold transform transition-all duration-200 hover:scale-[1.02] disabled:hover:scale-100"
             >
               {loading ? (
@@ -222,9 +251,7 @@ const ForgotPasswordPage: React.FC = () => {
                   </svg>
                   Enviando...
                 </div>
-              ) : (
-                "Enviar Link de Recuperação"
-              )}
+              ) : cooldown > 0 ? `Aguarde ${cooldown}s` : "Enviar Link de Recuperação"}
             </Button>
 
             {/* Erro Geral */}

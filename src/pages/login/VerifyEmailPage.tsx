@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
+import { API } from "../../config/api";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
@@ -31,7 +32,7 @@ const CheckEmailPage: React.FC = () => {
     }
   }, [countdown]);
 
-  const API_VERIFY_EMAIL = "/api/auth/register/sendVerification";
+  const API_VERIFY_EMAIL = API.RESEND_VERIFICATION;
 
   const handleResendEmail = async () => {
     if (!canResend) return;

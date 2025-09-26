@@ -26,10 +26,11 @@ export default async function handler(req, res) {
     }
 
     // Segundo: tentativa de verificação local de assinatura via JWKS/Pem
-    const jwksUrl = process.env.JWT_JWKS_URL; // configure no ambiente (ex: Vercel)
-    const publicKeyPem = process.env.JWT_PUBLIC_KEY_PEM; // alternativa a JWKS
-    const issuer = process.env.JWT_EXPECTED_ISSUER; // opcional
-    const audience = process.env.JWT_EXPECTED_AUDIENCE; // opcional
+  // Suporte a prefixo VITE_ para quando variáveis forem expostas ao build.
+  const jwksUrl = process.env.JWT_JWKS_URL || process.env.VITE_JWT_JWKS_URL; // configure no ambiente (ex: Vercel)
+  const publicKeyPem = process.env.JWT_PUBLIC_KEY_PEM; // alternativa a JWKS (NÃO expor ao client)
+  const issuer = process.env.JWT_EXPECTED_ISSUER || process.env.VITE_JWT_EXPECTED_ISSUER; // opcional
+  const audience = process.env.JWT_EXPECTED_AUDIENCE || process.env.VITE_JWT_EXPECTED_AUDIENCE; // opcional
     if (jwksUrl || publicKeyPem) {
       try {
         const { payload, header } = await verifyJwt(token, { jwksUrl, publicKeyPem, issuer, audience });
@@ -61,11 +62,12 @@ export default async function handler(req, res) {
     }
 
     // Fallback: proxy para upstream /auth/me (validação remota) – mantém comportamento original
-    const upstreamUrl = 'https://login-service.avantenutri.workers.dev/auth/me';
+  const upstreamUrl = 'https://login-service.avantenutri.workers.dev/auth/me';
     let upstreamResp;
     try {
+      // Upstream worker espera POST (não GET). Mantemos GET somente local, mas fazemos POST para upstream.
       upstreamResp = await fetch(upstreamUrl, {
-        method: 'GET',
+        method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
     } catch {
