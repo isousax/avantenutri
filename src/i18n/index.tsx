@@ -779,6 +779,8 @@ const translations: Record<Locale, Record<string,string>> = {
   'admin.user.filter.userId': 'Filtrar por user_id',
   'common.search': 'Buscar',
   'common.clear': 'Limpar',
+  'common.prev': 'Anterior',
+  'common.next': 'Próxima',
   // Admin nav & layout (added)
   'admin.nav.dashboard': 'Dashboard',
   'admin.nav.users': 'Usuários',
@@ -1678,7 +1680,9 @@ const translations: Record<Locale, Record<string,string>> = {
   'admin.users.empty': 'No users',
   'admin.user.filter.userId': 'Filter by user_id',
   'common.search': 'Search',
-  'common.clear': 'Clear',
+  'common.clear': 'Clear',  
+  'common.prev': 'Previous',
+  'common.next': 'Next',
   // Admin nav & layout (added)
   'admin.nav.dashboard': 'Dashboard',
   'admin.nav.users': 'Users',
