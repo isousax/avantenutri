@@ -4,15 +4,18 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n, formatDate } from "../../i18n";
 
 const PoliticaPrivacidadePage: React.FC = () => {
-  const lastUpdated = "22 de Setembro de 2025";
+  const { t, locale } = useI18n();
+  const lastUpdatedRaw = "2025-09-22";
+  const lastUpdated = formatDate(lastUpdatedRaw, locale, { dateStyle: 'long' });
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
       <SEO
-        title="Política de Privacidade | Avante Nutri"
-        description="Leia nossa política de privacidade para entender como protegemos seus dados."
+        title={t('legal.privacy.seo.title')}
+        description={t('legal.privacy.seo.desc')}
         url="https://avantenutri.com.br/privacidade"
       />
       <div className="max-w-4xl mx-auto">
@@ -22,10 +25,10 @@ const PoliticaPrivacidadePage: React.FC = () => {
             <LogoCroped />
           </Link>
           <h1 className="text-4xl font-bold text-green-800 mb-4">
-            Política de Privacidade
+            {t('legal.privacy.title')}
           </h1>
           <p className="text-xs text-gray-600">
-            Última atualização: {lastUpdated}
+            {t('legal.privacy.lastUpdated', { date: lastUpdated })}
           </p>
         </div>
 
@@ -34,20 +37,17 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Introdução */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                1. Introdução
+                {t('legal.privacy.section1.title')}
               </h2>
               <p className="text-gray-700 mb-4">
-                Na Avante Nutris, levamos a privacidade dos seus dados muito a
-                sério. Esta política explica como coletamos, usamos, protegemos
-                e compartilhamos suas informações pessoais.
+                {t('legal.privacy.section1.p1')}
               </p>
               <div className="bg-green-50 p-4 rounded-lg">
                 <p className="font-semibold text-green-800">
-                  💡 Nosso Compromisso:
+                  {t('legal.privacy.section1.commitmentTitle')}:
                 </p>
                 <p>
-                  Seus dados de saúde são tratados com total confidencialidade e
-                  segurança.
+                  {t('legal.privacy.section1.commitmentBody')}
                 </p>
               </div>
             </section>
@@ -55,70 +55,57 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Dados Coletados */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                2. Dados que Coletamos
+                {t('legal.privacy.section2.title')}
               </h2>
 
               <h3 className="text-xl font-semibold text-green-700 mb-3">
-                2.1. Dados Pessoais
+                {t('legal.privacy.section2.hPersonal')}
               </h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
-                <li>Nome completo, e-mail, telefone</li>
-                <li>Data de nascimento, gênero</li>
-                <li>Documentos de identificação (quando necessário)</li>
-                <li>Informações de contato de emergência</li>
+                <li>{t('legal.privacy.section2.personal.li1')}</li>
+                <li>{t('legal.privacy.section2.personal.li2')}</li>
+                <li>{t('legal.privacy.section2.personal.li3')}</li>
+                <li>{t('legal.privacy.section2.personal.li4')}</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-green-700 mb-3">
-                2.2. Dados de Saúde
+                {t('legal.privacy.section2.hHealth')}
               </h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2 mb-4">
-                <li>Histórico médico e condições de saúde</li>
-                <li>Medicamentos em uso</li>
-                <li>Exames laboratoriais</li>
-                <li>Hábitos alimentares e estilo de vida</li>
-                <li>Medidas corporais e evolução do tratamento</li>
+                <li>{t('legal.privacy.section2.health.li1')}</li>
+                <li>{t('legal.privacy.section2.health.li2')}</li>
+                <li>{t('legal.privacy.section2.health.li3')}</li>
+                <li>{t('legal.privacy.section2.health.li4')}</li>
+                <li>{t('legal.privacy.section2.health.li5')}</li>
               </ul>
 
               <h3 className="text-xl font-semibold text-green-700 mb-3">
-                2.3. Dados Técnicos
+                {t('legal.privacy.section2.hTech')}
               </h3>
               <ul className="list-disc list-inside text-gray-700 space-y-2">
-                <li>Endereço IP, tipo de navegador</li>
-                <li>Dispositivo utilizado, logs de acesso</li>
-                <li>Cookies e tecnologias similares</li>
+                <li>{t('legal.privacy.section2.tech.li1')}</li>
+                <li>{t('legal.privacy.section2.tech.li2')}</li>
+                <li>{t('legal.privacy.section2.tech.li3')}</li>
               </ul>
             </section>
 
             {/* Base Legal */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                3. Base Legal para Tratamento
+                {t('legal.privacy.section3.title')}
               </h2>
               <div className="grid md:grid-cols-2 gap-4 text-gray-700">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <p className="font-semibold text-blue-800">
-                    👥 Consentimento
-                  </p>
-                  <p>
-                    Para dados sensíveis de saúde, obtemos consentimento
-                    explícito
-                  </p>
+                  <p className="font-semibold text-blue-800">{t('legal.privacy.section3.consent')}</p>
                 </div>
                 <div className="bg-green-50 p-4 rounded-lg">
-                  <p className="font-semibold text-green-800">📝 Contrato</p>
-                  <p>Execução de serviços contratados de nutrição</p>
+                  <p className="font-semibold text-green-800">{t('legal.privacy.section3.contract')}</p>
                 </div>
                 <div className="bg-purple-50 p-4 rounded-lg">
-                  <p className="font-semibold text-purple-800">
-                    ⚖️ Legítimo Interesse
-                  </p>
-                  <p>Melhoria contínua de nossos serviços</p>
+                  <p className="font-semibold text-purple-800">{t('legal.privacy.section3.legitimateInterest')}</p>
                 </div>
                 <div className="bg-yellow-50 p-4 rounded-lg">
-                  <p className="font-semibold text-yellow-800">
-                    🏥 Obrigação Legal
-                  </p>
-                  <p>Cumprimento de normas sanitárias e profissionais</p>
+                  <p className="font-semibold text-yellow-800">{t('legal.privacy.section3.legalObligation')}</p>
                 </div>
               </div>
             </section>
@@ -126,38 +113,38 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Finalidades */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                4. Finalidades do Tratamento
+                {t('legal.privacy.section4.title')}
               </h2>
               <div className="space-y-4 text-gray-700">
                 <div className="flex items-start">
                   <span className="bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1 flex-shrink-0">
                     1
                   </span>
-                  <span>Prestação de serviços de nutrição personalizados</span>
+                  <span>{t('legal.privacy.section4.li1')}</span>
                 </div>
                 <div className="flex items-start">
                   <span className="bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1 flex-shrink-0">
                     2
                   </span>
-                  <span>Comunicação sobre agendamentos e acompanhamento</span>
+                  <span>{t('legal.privacy.section4.li2')}</span>
                 </div>
                 <div className="flex items-start">
                   <span className="bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1 flex-shrink-0">
                     3
                   </span>
-                  <span>Envio de materiais educativos e orientações</span>
+                  <span>{t('legal.privacy.section4.li3')}</span>
                 </div>
                 <div className="flex items-start">
                   <span className="bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1 flex-shrink-0">
                     4
                   </span>
-                  <span>Melhoria da qualidade dos serviços prestados</span>
+                  <span>{t('legal.privacy.section4.li4')}</span>
                 </div>
                 <div className="flex items-start">
                   <span className="bg-green-100 text-green-800 rounded-full w-6 h-6 flex items-center justify-center text-sm font-bold mr-3 mt-1 flex-shrink-0">
                     5
                   </span>
-                  <span>Cumprimento de obrigações legais e regulatórias</span>
+                  <span>{t('legal.privacy.section4.li5')}</span>
                 </div>
               </div>
             </section>
@@ -165,28 +152,19 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Compartilhamento */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                5. Compartilhamento de Dados
+                {t('legal.privacy.section5.title')}
               </h2>
               <div className="space-y-4 text-gray-700">
-                <p>
-                  <strong>5.1.</strong> Seus dados de saúde{" "}
-                  <strong>não são compartilhados</strong> com terceiros sem sua
-                  autorização explícita.
-                </p>
-                <p>
-                  <strong>5.2.</strong> Exceções legais incluem:
-                </p>
+                <p>{t('legal.privacy.section5.p1')}</p>
+                <p>{t('legal.privacy.section5.p2')}</p>
                 <ul className="list-disc list-inside ml-6 space-y-1">
-                  <li>Ordem judicial</li>
-                  <li>Autoridades sanitárias (quando obrigatório por lei)</li>
-                  <li>Proteção da vida do paciente ou de terceiros</li>
+                  <li>{t('legal.privacy.section5.li1')}</li>
+                  <li>{t('legal.privacy.section5.li2')}</li>
+                  <li>{t('legal.privacy.section5.li3')}</li>
                 </ul>
                 <div className="bg-red-50 border-l-4 border-red-400 p-4">
-                  <p className="font-semibold text-red-800">⚠️ Atenção:</p>
-                  <p>
-                    Dados anonimizados podem ser usados para pesquisas
-                    científicas, sempre preservando sua identidade.
-                  </p>
+                  <p className="font-semibold text-red-800">{t('legal.privacy.section5.warningTitle')}:</p>
+                  <p>{t('legal.privacy.section5.warningBody')}</p>
                 </div>
               </div>
             </section>
@@ -194,29 +172,29 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Segurança */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                6. Segurança dos Dados
+                {t('legal.privacy.section6.title')}
               </h2>
               <div className="grid md:grid-cols-2 gap-6 text-gray-700">
                 <div>
                   <h3 className="font-semibold text-green-700 mb-2">
-                    🔒 Medidas Técnicas
+                    {t('legal.privacy.section6.techTitle')}
                   </h3>
                   <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Criptografia de dados em repouso e trânsito</li>
-                    <li>Backups regulares e seguros</li>
-                    <li>Controle de acesso baseado em função</li>
-                    <li>Monitoramento de segurança 24/7</li>
+                    <li>{t('legal.privacy.section6.tech.li1')}</li>
+                    <li>{t('legal.privacy.section6.tech.li2')}</li>
+                    <li>{t('legal.privacy.section6.tech.li3')}</li>
+                    <li>{t('legal.privacy.section6.tech.li4')}</li>
                   </ul>
                 </div>
                 <div>
                   <h3 className="font-semibold text-green-700 mb-2">
-                    👥 Medidas Organizacionais
+                    {t('legal.privacy.section6.orgTitle')}
                   </h3>
                   <ul className="list-disc list-inside ml-4 space-y-1">
-                    <li>Acordos de confidencialidade com a equipe</li>
-                    <li>Treinamento em proteção de dados</li>
-                    <li>Políticas internas de segurança</li>
-                    <li>Auditorias regulares</li>
+                    <li>{t('legal.privacy.section6.org.li1')}</li>
+                    <li>{t('legal.privacy.section6.org.li2')}</li>
+                    <li>{t('legal.privacy.section6.org.li3')}</li>
+                    <li>{t('legal.privacy.section6.org.li4')}</li>
                   </ul>
                 </div>
               </div>
@@ -225,109 +203,37 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Seus Direitos */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                7. Seus Direitos
+                {t('legal.privacy.section7.title')}
               </h2>
               <div className="space-y-4 text-gray-700">
                 <div className="bg-green-50 p-4 rounded-lg">
                   <p className="font-semibold text-green-800">
-                    📋 Direitos do Titular (LGPD):
+                    {t('legal.privacy.section7.rightsTitle')}:
                   </p>
                   <div className="grid md:grid-cols-2 gap-3 mt-2">
                     <div className="flex items-center">
-                      <svg
-                        className="w-4 h-4 text-green-600 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Confirmação de existência de tratamento
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {t('legal.privacy.section7.rights.li1')}
                     </div>
                     <div className="flex items-center">
-                      <svg
-                        className="w-4 h-4 text-green-600 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Acesso aos dados
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {t('legal.privacy.section7.rights.li2')}
                     </div>
                     <div className="flex items-center">
-                      <svg
-                        className="w-4 h-4 text-green-600 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Correção de dados incompletos
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {t('legal.privacy.section7.rights.li3')}
                     </div>
                     <div className="flex items-center">
-                      <svg
-                        className="w-4 h-4 text-green-600 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Anonimização, bloqueio ou eliminação
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {t('legal.privacy.section7.rights.li4')}
                     </div>
                     <div className="flex items-center">
-                      <svg
-                        className="w-4 h-4 text-green-600 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Portabilidade dos dados
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {t('legal.privacy.section7.rights.li5')}
                     </div>
                     <div className="flex items-center">
-                      <svg
-                        className="w-4 h-4 text-green-600 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                      Revogação do consentimento
+                      <svg className="w-4 h-4 text-green-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                      {t('legal.privacy.section7.rights.li6')}
                     </div>
                   </div>
                 </div>
@@ -337,22 +243,14 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Retenção */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                8. Tempo de Retenção
+                {t('legal.privacy.section8.title')}
               </h2>
               <div className="space-y-4 text-gray-700">
-                <p>Mantemos seus dados pelo tempo necessário para:</p>
+                <p>{t('legal.privacy.section8.pIntro')}</p>
                 <ul className="list-disc list-inside ml-6 space-y-2">
-                  <li>
-                    <strong>Prontuários:</strong> 20 anos (conforme legislação
-                    profissional)
-                  </li>
-                  <li>
-                    <strong>Dados contratuais:</strong> 5 anos após término do
-                    contrato
-                  </li>
-                  <li>
-                    <strong>Dados fiscais:</strong> 5 anos (obrigação legal)
-                  </li>
+                  <li><strong>{t('legal.privacy.section8.li1').split(':')[0]}:</strong> {t('legal.privacy.section8.li1').split(':').slice(1).join(':').trim()}</li>
+                  <li><strong>{t('legal.privacy.section8.li2').split(':')[0]}:</strong> {t('legal.privacy.section8.li2').split(':').slice(1).join(':').trim()}</li>
+                  <li><strong>{t('legal.privacy.section8.li3').split(':')[0]}:</strong> {t('legal.privacy.section8.li3').split(':').slice(1).join(':').trim()}</li>
                 </ul>
               </div>
             </section>
@@ -360,36 +258,30 @@ const PoliticaPrivacidadePage: React.FC = () => {
             {/* Cookies */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                9. Cookies e Tecnologias Similares
+                {t('legal.privacy.section9.title')}
               </h2>
               <p className="text-gray-700 mb-4">
-                Utilizamos cookies para melhorar sua experiência no site. Você
-                pode configurar seu navegador para recusar cookies, mas isso
-                pode afetar a funcionalidade do site.
+                {t('legal.privacy.section9.p1')}
               </p>
             </section>
 
             {/* Alterações */}
             <section className="mb-8">
               <h2 className="text-2xl font-bold text-green-800 mb-4">
-                10. Alterações nesta Política
+                {t('legal.privacy.section10.title')}
               </h2>
               <p className="text-gray-700">
-                Esta política pode ser atualizada. Alterações significativas
-                serão comunicadas por e-mail ou através de nossos canais
-                oficiais.
+                {t('legal.privacy.section10.p1')}
               </p>
             </section>
 
             {/* Consentimento */}
             <section className="bg-green-50 p-6 rounded-lg border border-green-200">
               <h2 className="text-xl font-bold text-green-800 mb-4">
-                Seu Consentimento
+                {t('legal.privacy.consent.title')}
               </h2>
               <p className="text-gray-700">
-                Ao usar nossos serviços, você concorda com os termos desta
-                Política de Privacidade e autoriza o tratamento de seus dados
-                conforme descrito acima.
+                {t('legal.privacy.consent.p1')}
               </p>
             </section>
           </div>
@@ -398,11 +290,11 @@ const PoliticaPrivacidadePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-6 border-t border-gray-200">
             <Link to="/termos" className="flex-1">
               <Button variant="secondary" className="w-full">
-                ← Ver Termos de Serviço
+                {t('legal.privacy.viewTerms')}
               </Button>
             </Link>
             <Link to="/" className="flex-1">
-              <Button className="w-full">Ir para Inicio →</Button>
+              <Button className="w-full">{t('legal.privacy.goHome')}</Button>
             </Link>
           </div>
         </Card>

@@ -10,14 +10,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import Planos from "../../components/home/Planos";
 import Servicos from "../../components/home/Servicos";
 import Footer from "../../components/layout/Footer";
+import { useI18n } from '../../i18n';
+import { testimonials } from '../../data/testimonials';
+import type { TranslationKey } from '../../types/i18n';
 
-const lines = [
-  "Acompanhamento personalizado com Dra. Andreina Cawanne.",
-  "Na Avante Nutri, avaliamos suas medidas e preferências alimentares.",
-  "Com essas informações, criamos um plano alimentar exclusivo para você.",
+const linesKeys: TranslationKey[] = [
+  'landing.hero.line1',
+  'landing.hero.line2',
+  'landing.hero.line3'
 ];
 
 const LandingPage: React.FC = () => {
+  const { t } = useI18n();
   const [scrollPosition, setScrollPosition] = useState(0);
   const [active, setActive] = useState(0);
   const interval = 3500;
@@ -39,7 +43,7 @@ const LandingPage: React.FC = () => {
 
   useEffect(() => {
     const t = setInterval(() => {
-      setActive((i) => (i + 1) % lines.length);
+  setActive((i) => (i + 1) % linesKeys.length);
     }, interval);
     return () => clearInterval(t);
   }, [interval]);
@@ -53,8 +57,8 @@ const LandingPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-white font-sans">
       <SEO
-        title="Avante Nutri | Alimente-se Bem, Viva Melhor!"
-        description="Transforme sua saúde com acompanhamento nutricional personalizado. Planos alimentares exclusivos, consultas online e acompanhamento contínuo para uma vida mais saudável."
+        title={t('landing.seo.title')}
+        description={t('landing.seo.desc')}
         schema={{
           "@context": "https://schema.org",
           "@type": "WebSite",
@@ -118,25 +122,16 @@ const LandingPage: React.FC = () => {
                   <path d="M4 17v2"></path>
                   <path d="M5 18H3"></path>
                 </svg>
-                <span className="text-xs lg:text-sm font-light text-green-800 animate-slide-in">
-                  Nutrição personalizada com resultados comprovados
-                </span>
+                <span className="text-xs lg:text-sm font-light text-green-800 animate-slide-in">{t('landing.badge')}</span>
               </div>
 
               <div className="hidden md:block">
-                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight text-green-800">
-                  Transforme sua saúde com uma{" "}
-                  <span className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-600 bg-clip-text text-transparent animate-gradient">
-                    nutrição inteligente
-                  </span>
-                </h1>
-                <p className="text-xl lg:text-2xl xl:text-3xl font-light text-gray-700 mt-2 lg:mt-3">
-                  sua dieta, do seu jeito!
-                </p>
+                <h1 className="text-4xl lg:text-5xl xl:text-6xl font-bold tracking-tight leading-tight text-green-800">{t('landing.hero.title.part1')} <span className="bg-gradient-to-r from-green-600 via-green-500 to-emerald-600 bg-clip-text text-transparent animate-gradient">{t('landing.hero.title.highlight')}</span></h1>
+                <p className="text-xl lg:text-2xl xl:text-3xl font-light text-gray-700 mt-2 lg:mt-3">{t('landing.hero.subtitle')}</p>
                 <div className="mt-6 lg:mt-8 flex justify-center md:justify-start">
                   <Link to="/register">
                     <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 py-3 bg-[#16a34a] hover:bg-[#15803d] text-white px-8 lg:px-10 xl:px-12 h-12 lg:h-12 xl:h-14 text-sm lg:text-sm xl:text-base font-normal transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
-                      Começar minha transformação
+                      {t('landing.cta.primary')}
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -159,12 +154,8 @@ const LandingPage: React.FC = () => {
 
               {/* Versão Mobile */}
               <div className="md:hidden text-center">
-                <h1 className="text-3xl font-bold tracking-tight leading-tight mb-2 text-green-800">
-                  Transforme sua saúde
-                </h1>
-                <p className="text-lg font-light text-gray-700 mb-6">
-                  com nutrição personalizada
-                </p>
+                <h1 className="text-3xl font-bold tracking-tight leading-tight mb-2 text-green-800">{t('landing.hero.mobile.title')}</h1>
+                <p className="text-lg font-light text-gray-700 mb-6">{t('landing.hero.mobile.subtitle')}</p>
                 <div className="mt-4 mb-0 relative w-full mx-auto overflow-hidden">
                   <img
                     alt="Dra. Andreina Cawanne"
@@ -179,7 +170,7 @@ const LandingPage: React.FC = () => {
                 <div className="flex pt-6 justify-center">
                   <Link to="/register">
                     <Button className="inline-flex items-center justify-center gap-2 whitespace-nowrap ring-offset-background transition-colors focus-visible:outline-none disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 py-2 bg-[#16a34a] hover:bg-[#15803d] text-white px-8 h-12 text-sm font-normal">
-                      Começar agora
+                      {t('landing.cta.startNow')}
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -216,7 +207,7 @@ const LandingPage: React.FC = () => {
                   className="absolute inset-0 flex items-center justify-center px-4"
                   aria-live="polite"
                 >
-                  <p className="text-center">{lines[active]}</p>
+                  <p className="text-center">{t(linesKeys[active])}</p>
                 </motion.div>
               </AnimatePresence>
             </div>
@@ -248,19 +239,11 @@ const LandingPage: React.FC = () => {
               <div className="absolute -bottom-6 -left-6 w-40 h-40 bg-green-100 rounded-full -z-11 opacity-40"></div>
             </div>
             <div className="flex-1">
-              <h2 className="text-3xl font-bold text-green-800 mb-1">
-                Dra. Andreina Cawanne
-              </h2>
+              <h2 className="text-3xl font-bold text-green-800 mb-1">{t('landing.about.name')}</h2>
 
-              <p className="text-gray-500 mb-5 text-sm">CRN: 43669/P</p>
+              <p className="text-gray-500 mb-5 text-sm">{t('landing.about.crn',{crn:'43669/P'})}</p>
 
-              <p className="text-gray-700 mb-6 leading-relaxed sm:text-lg">
-                Com mais de 6 anos de experiência em nutrição clínica e
-                esportiva, ajudo pessoas a alcançarem seus objetivos através de
-                uma alimentação equilibrada e sustentável. Minha abordagem
-                combina ciência nutricional com um olhar individualizado para
-                cada paciente.
-              </p>
+              <p className="text-gray-700 mb-6 leading-relaxed sm:text-lg">{t('landing.about.bio')}</p>
               <div className="space-y-4 mb-8">
                 <div className="flex items-start">
                   <svg
@@ -276,9 +259,7 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span className="text-gray-700">
-                    Especialista em Nutrição Clínica pela Unibra
-                  </span>
+                  <span className="text-gray-700">{t('landing.about.point1')}</span>
                 </div>
                 <div className="flex items-start">
                   <svg
@@ -294,9 +275,7 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span className="text-gray-700">
-                    Pós-graduada em Nutrição Esportiva
-                  </span>
+                  <span className="text-gray-700">{t('landing.about.point2')}</span>
                 </div>
                 <div className="flex items-start">
                   <svg
@@ -312,9 +291,7 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span className="text-gray-700">
-                    Mais de 1000 pacientes atendidos
-                  </span>
+                  <span className="text-gray-700">{t('landing.about.point3')}</span>
                 </div>
                 <div className="flex items-start">
                   <svg
@@ -330,15 +307,11 @@ const LandingPage: React.FC = () => {
                       d="M5 13l4 4L19 7"
                     />
                   </svg>
-                  <span className="text-gray-700">
-                    Certificação em Nutrição Comportamental
-                  </span>
+                  <span className="text-gray-700">{t('landing.about.point4')}</span>
                 </div>
               </div>
               <Link to="/register">
-                <Button className="px-8 py-3 transform hover:scale-105 transition-transform duration-300">
-                  Agende sua Consulta
-                </Button>
+                <Button className="px-8 py-3 transform hover:scale-105 transition-transform duration-300">{t('landing.about.button')}</Button>
               </Link>
             </div>
           </div>
@@ -349,67 +322,24 @@ const LandingPage: React.FC = () => {
       <section className="py-20 bg-green-50">
         <div className="max-w-7xl mx-auto px-4">
           <div className="text-center mb-16">
-            <h2 className="text-4xl font-bold text-green-800 mb-4">
-              O que nossos pacientes dizem
-            </h2>
-            <p className="text-gray-700 max-w-3xl mx-auto text-lg">
-              Resultados reais de pessoas reais que transformaram sua saúde
-            </p>
+            <h2 className="text-4xl font-bold text-green-800 mb-4">{t('landing.testimonials.title')}</h2>
+            <p className="text-gray-700 max-w-3xl mx-auto text-lg">{t('landing.testimonials.subtitle')}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-6 border border-green-200">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center text-green-800 font-bold mr-4">
-                  MC
+            {testimonials.map(item => (
+              <Card key={item.id} className="p-6 border border-green-200">
+                <div className="flex items-center mb-4">
+                  <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center text-green-800 font-bold mr-4">
+                    {item.initials}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-green-800">{t(item.nameKey)}</h4>
+                    <p className="text-sm text-gray-600">{t(item.subtitleKey)}</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-green-800">Maria Clara</h4>
-                  <p className="text-sm text-gray-600">
-                    Perdeu 18kg em 5 meses
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-700 italic">
-                "Com a Dra. Andreina consegui não apenas emagrecer, mas criar
-                uma relação saudável com a comida. Me sinto muito melhor!"
-              </p>
-            </Card>
-
-            <Card className="p-6 border border-green-200">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center text-green-800 font-bold mr-4">
-                  JP
-                </div>
-                <div>
-                  <h4 className="font-bold text-green-800">João Pedro</h4>
-                  <p className="text-sm text-gray-600">
-                    Melhorou performance esportiva
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-700 italic">
-                "Como corredor amador, a orientação nutricional fez toda
-                diferença na minha performance e recuperação pós-treino."
-              </p>
-            </Card>
-
-            <Card className="p-6 border border-green-200">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-green-200 rounded-full flex items-center justify-center text-green-800 font-bold mr-4">
-                  AS
-                </div>
-                <div>
-                  <h4 className="font-bold text-green-800">Ana Silva</h4>
-                  <p className="text-sm text-gray-600">
-                    Controlou problemas digestivos
-                  </p>
-                </div>
-              </div>
-              <p className="text-gray-700 italic">
-                "Há anos sofria com problemas digestivos. Em 3 meses de
-                acompanhamento, consegui resolver 90% dos meus problemas!"
-              </p>
-            </Card>
+                <p className="text-gray-700 italic">{t(item.textKey)}</p>
+              </Card>
+            ))}
           </div>
         </div>
       </section>
@@ -424,15 +354,11 @@ const LandingPage: React.FC = () => {
         </div>
 
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Pronto para transformar sua saúde?
-          </h2>
-          <p className="text-green-100 mb-8 text-lg md:text-xl">
-            Comece hoje mesmo sua jornada para uma vida mais saudável
-          </p>
+          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">{t('landing.final.title')}</h2>
+          <p className="text-green-100 mb-8 text-lg md:text-xl">{t('landing.final.subtitle')}</p>
           <Link to="/register">
             <Button className="inline-flex items-center px-8 py-4 bg-white/30 text-green-700 hover:bg-green-50 text-sm sm:text-lg font-semibold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl">
-              Criar minha conta gratuita
+              {t('landing.final.button')}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 width="12"

@@ -6,9 +6,11 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from '../../i18n';
 
 const LoginPage: React.FC = () => {
   const { login, user } = useAuth();
+  const { t } = useI18n();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
     email: "",
@@ -59,15 +61,15 @@ const LoginPage: React.FC = () => {
     };
 
     if (!formData.email.trim()) {
-      newErrors.email = "E-mail é obrigatório";
+  newErrors.email = t('auth.error.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "E-mail inválido";
+  newErrors.email = t('auth.error.emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = "Senha é obrigatória";
+  newErrors.password = t('auth.error.passwordRequired');
     } else if (formData.password.length < 6) {
-      newErrors.password = "Senha deve ter pelo menos 6 caracteres";
+  newErrors.password = t('auth.error.passwordMin');
     }
 
     setErrors(newErrors);
@@ -137,13 +139,13 @@ const LoginPage: React.FC = () => {
       } else {
         setErrors((prev) => ({
           ...prev,
-          general: "E-mail ou senha incorretos. Verifique suas credenciais.",
+          general: t('auth.error.invalidCredentials'),
         }));
       }
     } catch {
       setErrors((prev) => ({
         ...prev,
-        general: "Erro ao fazer login. Tente novamente mais tarde.",
+  general: t('auth.error.generic'),
       }));
     } finally {
       setLoading(false);
@@ -186,8 +188,8 @@ const LoginPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
       <SEO
-        title="Login | Avante Nutri"
-        description="Faça login na sua conta Avante Nutri para acessar seu plano alimentar personalizado e acompanhar seu progresso."
+        title={t('login.seo.title')}
+        description={t('login.seo.desc')}
         url="https://avantenutri.com.br/login"
       />
       <div className="w-full max-w-md">
@@ -198,12 +200,8 @@ const LoginPage: React.FC = () => {
               <LogoCroped />
             </div>
           </Link>
-          <h1 className="text-3xl font-bold text-green-800 mb-2">
-            Bem-vindo de volta
-          </h1>
-          <p className="text-sm text-gray-500">
-            Acesse sua conta para continuar
-          </p>
+          <h1 className="text-3xl font-bold text-green-800 mb-2">{t('auth.login.title')}</h1>
+          <p className="text-sm text-gray-500">{t('auth.login.subtitle')}</p>
         </div>
 
         <Card className="p-8 shadow-xl border border-green-100">
@@ -223,7 +221,7 @@ const LoginPage: React.FC = () => {
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.email ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="E-mail"
+                  placeholder={t('auth.login.email')}
                   disabled={loading}
                   required
                 />
@@ -263,7 +261,7 @@ const LoginPage: React.FC = () => {
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="Senha"
+                  placeholder={t('auth.login.password')}
                   disabled={loading}
                 />
               </div>
@@ -303,7 +301,7 @@ const LoginPage: React.FC = () => {
                   htmlFor="rememberMe"
                   className="ml-2 block text-sm text-gray-700"
                 >
-                  Lembrar-me
+                  {t('auth.login.remember')}
                 </label>
               </div>
 
@@ -311,7 +309,7 @@ const LoginPage: React.FC = () => {
                 to="/recuperar-senha"
                 className="text-sm text-green-600 hover:text-green-700 hover:underline font-medium"
               >
-                Esqueceu a senha?
+                {t('auth.login.forgot')}
               </Link>
             </div>
 
@@ -342,7 +340,7 @@ const LoginPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Entrando...
+                  {t('auth.login.loading')}
                 </div>
               ) : (
                 <span className="flex items-center justify-center gap-2">
@@ -362,7 +360,7 @@ const LoginPage: React.FC = () => {
                     <polyline points="10 17 15 12 10 7"></polyline>
                     <line x1="15" x2="3" y1="12" y2="12"></line>
                   </svg>
-                  <span>Entrar</span>
+                  <span>{t('auth.login.submit')}</span>
                 </span>
               )}
             </Button>
@@ -393,19 +391,19 @@ const LoginPage: React.FC = () => {
           {/* Divisor */}
           <div className="my-6 flex items-center">
             <div className="flex-1 border-t border-gray-200"></div>
-            <span className="px-3 text-sm text-gray-500">ou</span>
+            <span className="px-3 text-sm text-gray-500">{t('auth.login.or')}</span>
             <div className="flex-1 border-t border-gray-200"></div>
           </div>
 
           {/* Link para Cadastro */}
           <div className="mt-8 text-center">
             <p className="text-sm text-zinc-500">
-              Não tem uma conta?{" "}
+              {t('auth.login.noAccount')} 
               <Link
                 to="/register"
                 className="font-medium text-green-600 hover:text-green-700 transition-colors duration-200"
               >
-                Cadastre-se aqui
+                {t('auth.login.registerHere')}
               </Link>
             </p>
           </div>
@@ -427,7 +425,7 @@ const LoginPage: React.FC = () => {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            Seus dados estão protegidos e criptografados
+            {t('auth.login.secure')}
           </div>
         </div>
       </div>

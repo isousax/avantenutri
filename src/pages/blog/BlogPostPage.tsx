@@ -1,52 +1,85 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Footer from "../../components/layout/Footer";
+import { useI18n, formatDate as fmtDate } from "../../i18n";
+import { SEO } from "../../components/comum/SEO";
+import { useAuth } from "../../contexts/useAuth";
 
 const BlogPostPage: React.FC = () => {
-  //const { id } = useParams();
+  const { slug } = useParams();
 
-  const post = {
-    id: "1",
-    title: "10 Alimentos que Aumentam a Imunidade Naturalmente",
-    content: `
-      <h2>Introdução</h2>
-      <p>Manter o sistema imunológico fortalecido é essencial para prevenir doenças e garantir qualidade de vida. A alimentação desempenha um papel fundamental nesse processo.</p>
-      
-      <h2>1. Frutas Cítricas</h2>
-      <p>Laranja, limão, acerola e kiwi são ricos em vitamina C, que aumenta a produção de glóbulos brancos.</p>
-      
-      <h2>2. Alho</h2>
-      <p>Contém alicina, composto com propriedades antibacterianas e antivirais.</p>
-      
-      <!-- Mais conteúdo... -->
-    `,
-    author: "Dra. Andreina Cawanne",
-    publishDate: "2025-09-15",
-    readTime: 5,
-    category: "saude",
-    tags: ["imunidade", "alimentação saudável", "prevenção"],
-    imageUrl: "/blog/imunidade.jpg",
-  };
+  const { locale, t } = useI18n();
 
-  const relatedPosts = [
-    {
-      id: "2",
-      title: "Mitose e Mitose: Entenda a Diferença",
-      category: "ciencia",
-    },
-    { id: "3", title: "Plano Alimentar para Gestantes", category: "gestacao" },
-    { id: "4", title: "Como Montar uma Marmita Saudável", category: "dicas" },
-  ];
+  const [post, setPost] = useState<any | null>(null);
+  const [relatedPosts, setRelated] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const { user } = useAuth();
+  const canPreview = !!user && (user.role === 'admin' || (user as any).role === 'nutri');
 
+  useEffect(() => {
+    if(!slug) return;
+    let ignore = false;
+    async function load(){
+      setLoading(true); setError(null);
+      try {
+        const base = import.meta.env.VITE_API_AUTH_BASE || 'https://login-service.avantenutri.workers.dev';
+  const r = await fetch(`${base}/blog/posts/${slug}${canPreview ? '?preview=1':''}`);
+        if(r.status === 404){ if(!ignore) { setError('NOT_FOUND'); setLoading(false);} return; }
+        if(!r.ok) throw new Error('fail');
+        const data = await r.json();
+        if(ignore) return;
+        setPost(data.post);
+        const rr = await fetch(`${base}/blog/posts/${slug}/related?limit=3`);
+        if(rr.ok){ const rd = await rr.json(); setRelated(rd.results || []); }
+      } catch(e:any){
+        if(!ignore) setError('Erro ao carregar');
+      } finally {
+        if(!ignore) setLoading(false);
+      }
+    }
+    load();
+    return ()=> { ignore = true; };
+  }, [slug, canPreview]);
+
+  const publishDate = post?.published_at || post?.created_at;
+  const seoTitle = post?.title ? `${post.title} | ${t('seo.brand')}` : t('blog.post.seo.title.fallback');
+  // Prefer explicit excerpt if exists, else derive from content_html text content
+  const rawText = post?.excerpt || (post?.content_html ? post.content_html.replace(/<[^>]+>/g,' ') : '');
+  const normalized = rawText.replace(/\s+/g,' ').trim();
+  const finalDesc = normalized ? (normalized.length > 155 ? normalized.slice(0,152).trim() + '...' : normalized) : t('blog.post.seo.desc.fallback');
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-25 py-8">
+      <SEO
+        title={seoTitle}
+        description={finalDesc}
+        type="article"
+        authorName={post?.author_name || 'Avante Nutri'}
+        publishedTimeISO={publishDate ? new Date(publishDate).toISOString() : undefined}
+        modifiedTimeISO={post?.updated_at ? new Date(post.updated_at).toISOString() : undefined}
+        section={post?.category}
+        tags={post?.tags || []}
+        readTimeMinutes={post?.read_time_min}
+        image={post?.cover_image_url || 'https://avantenutri.com.br/logo-social.png'}
+        imageWidth={1200}
+        imageHeight={630}
+        breadcrumbItems={[
+          { name: 'Início', url: 'https://avantenutri.com.br/' },
+          { name: 'Blog', url: 'https://avantenutri.com.br/blog' },
+          ...(post?.title ? [{ name: post.title, url: `https://avantenutri.com.br/blog/${post.slug}` }] : [])
+        ]}
+      />
       <div className="max-w-4xl mx-auto px-4">
-        {/* Cabeçalho do Artigo */}
-        <article className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+        {loading && <div className="py-16 text-center text-gray-600">Carregando...</div>}
+        {!loading && error === 'NOT_FOUND' && <div className="py-16 text-center text-gray-600">Artigo não encontrado.</div>}
+        {!loading && error && error !== 'NOT_FOUND' && <div className="py-16 text-center text-red-600">Erro ao carregar.</div>}
+  {!loading && !error && post && (
+  <> {/* Cabeçalho do Artigo */}
+  <article className="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
           <img
-            src={post.imageUrl}
+            src={post.cover_image_url || '/blog/placeholder.jpg'}
             alt={post.title}
             className="w-full h-64 object-cover"
           />
@@ -54,10 +87,10 @@ const BlogPostPage: React.FC = () => {
           <div className="p-8">
             <div className="flex items-center justify-between mb-4">
               <span className="px-3 py-1 bg-green-100 text-green-800 text-sm font-medium rounded-full">
-                {post.category}
+                {post.category || 'geral'}
               </span>
               <span className="text-gray-500 text-sm">
-                {post.readTime} min de leitura
+                {post.read_time_min || 1} min de leitura
               </span>
             </div>
 
@@ -70,24 +103,23 @@ const BlogPostPage: React.FC = () => {
                 <span className="text-green-600 font-bold">DA</span>
               </div>
               <div>
-                <p className="font-medium text-gray-900">{post.author}</p>
+                <p className="font-medium text-gray-900">{post.author_name || 'Avante Nutri'}</p>
                 <p className="text-sm text-gray-500">
-                  Publicado em{" "}
-                  {new Date(post.publishDate).toLocaleDateString("pt-BR")}
+                  {publishDate ? `Publicado em ${fmtDate(publishDate, locale, { dateStyle: 'long' })}`: null}
                 </p>
               </div>
+              {canPreview && (
+                <span className={`ml-4 text-xs uppercase tracking-wide px-2 py-1 rounded-full ${post.status==='published' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>{post.status || 'draft'}</span>
+              )}
             </div>
 
             {/* Conteúdo do Artigo */}
-            <div
-              className="prose prose-lg max-w-none"
-              dangerouslySetInnerHTML={{ __html: post.content }}
-            />
+            <div className="prose prose-lg max-w-none" dangerouslySetInnerHTML={{ __html: post.content_html }} />
 
             {/* Tags */}
             <div className="mt-8 pt-6 border-t border-gray-200">
               <div className="flex flex-wrap gap-2">
-                {post.tags.map((tag) => (
+                {(post.tags || []).map((tag: string) => (
                   <span
                     key={tag}
                     className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
@@ -98,7 +130,8 @@ const BlogPostPage: React.FC = () => {
               </div>
             </div>
           </div>
-        </article>
+  </article>
+  </>) }
 
         {/* Compartilhamento */}
         <Card className="p-6 mb-8">
@@ -140,6 +173,7 @@ const BlogPostPage: React.FC = () => {
         </Card>
 
         {/* Artigos Relacionados */}
+        {!loading && !error && relatedPosts.length > 0 && (
         <section className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">
             Artigos Relacionados
@@ -150,18 +184,19 @@ const BlogPostPage: React.FC = () => {
                 key={relatedPost.id}
                 className="p-4 hover:shadow-lg transition-shadow"
               >
-                <Link to={`/blog/${relatedPost.id}`} className="block">
+                <Link to={`/blog/${relatedPost.slug}`} className="block">
                   <h3 className="font-semibold text-gray-900 mb-2 hover:text-green-600 transition-colors">
                     {relatedPost.title}
                   </h3>
                   <span className="text-green-600 text-sm">
-                    {relatedPost.category}
+                    {relatedPost.category || 'geral'}
                   </span>
                 </Link>
               </Card>
             ))}
           </div>
         </section>
+        )}
 
         {/* Call-to-Action */}
         <Card className="p-8 text-center bg-gradient-to-r from-green-500 to-green-600 text-white">

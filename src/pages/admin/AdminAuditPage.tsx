@@ -1,7 +1,10 @@
 import React, { useEffect, useState, type FormEvent } from "react";
+import Skeleton from '../../components/ui/Skeleton';
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { API } from "../../config/api";
+import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 interface PasswordAuditRow {
   user_id: string;
@@ -42,6 +45,8 @@ const AdminAuditPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const pageSize = 20;
   const [userIdFilter, setUserIdFilter] = useState<string>("");
+  const [dateFrom, setDateFrom] = useState<string>("");
+  const [dateTo, setDateTo] = useState<string>("");
 
   // Caso deseje proteger com x-api-key, pode-se usar variável env pública + proxy. Aqui assumo não exposta no front -> preferir Authorization admin e backend poderia aceitar, mas atual design requer x-api-key.
   const apiKey: string =
@@ -58,6 +63,8 @@ const AdminAuditPage: React.FC = () => {
         pageSize: String(pageSize),
       });
       if (userIdFilter.trim()) params.set("user_id", userIdFilter.trim());
+      if (dateFrom) params.set('from', dateFrom);
+      if (dateTo) params.set('to', dateTo + 'T23:59:59Z');
       const r = await fetch(`${API.ADMIN_AUDIT}?${params.toString()}`, {
         headers: apiKey ? { "x-api-key": apiKey } : {},
       });
@@ -85,9 +92,42 @@ const AdminAuditPage: React.FC = () => {
     void load();
   };
 
+  const exportCsv = () => {
+    const headerMap: Record<Tab, string[]> = {
+      password: ['user_id','ip','changed_at'],
+      revoked: ['jti','user_id','reason','revoked_at','expires_at'],
+      role: ['user_id','old_role','new_role','changed_by','reason','changed_at']
+    };
+    const cols = headerMap[tab];
+    const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => {
+      const v: any = (r as any)[c];
+      if (v == null) return '';
+      return '"' + String(v).replace(/"/g,'""') + '"';
+    }).join(','))).join('\n');
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-${tab}-page${page}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  const { t } = useI18n();
   return (
     <div className="p-4 space-y-4">
-      <h1 className="text-2xl font-semibold">Auditoria</h1>
+      <SEO title={t('admin.audit.seo.title')} description={t('admin.audit.seo.desc')} />
+      <div className="flex items-start justify-between flex-wrap gap-3">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Auditoria</h1>
+          <p className="text-xs text-gray-500 mt-1">Logs de eventos de segurança e mudanças de acesso.</p>
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" variant="secondary" onClick={()=> { setPage(1); void load(); }} disabled={loading}>Recarregar</Button>
+        </div>
+      </div>
       <div className="flex gap-2">
         {(
           [
@@ -112,12 +152,26 @@ const AdminAuditPage: React.FC = () => {
           </button>
         ))}
       </div>
-      <form onSubmit={handleFilterSubmit} className="flex gap-2 items-center">
+      <form onSubmit={handleFilterSubmit} className="flex flex-wrap gap-2 items-center text-xs">
         <input
           value={userIdFilter}
           onChange={(e) => setUserIdFilter(e.target.value)}
           placeholder="Filtrar por user_id"
           className="border px-2 py-1 rounded text-sm"
+        />
+        <input
+          type="date"
+          value={dateFrom}
+          onChange={e => setDateFrom(e.target.value)}
+          className="border px-2 py-1 rounded"
+          title="Data inicial"
+        />
+        <input
+          type="date"
+          value={dateTo}
+          onChange={e => setDateTo(e.target.value)}
+          className="border px-2 py-1 rounded"
+          title="Data final"
         />
         <Button type="submit" variant="secondary">
           Filtrar
@@ -135,6 +189,11 @@ const AdminAuditPage: React.FC = () => {
             Limpar
           </button>
         )}
+        <button
+          type="button"
+          onClick={exportCsv}
+          className="text-xs text-blue-600 hover:underline"
+        >CSV</button>
       </form>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       <Card className="p-0 overflow-x-auto">
@@ -174,9 +233,7 @@ const AdminAuditPage: React.FC = () => {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="p-4">
-                  Carregando...
-                </td>
+                <td colSpan={8} className="p-4"><Skeleton lines={5} /></td>
               </tr>
             )}
             {!loading &&

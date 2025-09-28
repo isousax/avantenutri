@@ -1,15 +1,18 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { fetchPosts, fetchCategories } from "../../services/blog";
+import { useAuth } from "../../contexts/useAuth";
 import { Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import Footer from "../../components/layout/Footer";
+import { useI18n, formatDate as fmtDate } from "../../i18n";
+import { SEO } from "../../components/comum/SEO";
 
 // Tipos e dados mock (depois pode vir de uma API)
 interface BlogPost {
   id: string;
   title: string;
   excerpt: string;
-  content: string;
   author: string;
   publishDate: string;
   readTime: number;
@@ -22,123 +25,56 @@ interface BlogPost {
 const BlogPage: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
   const [searchTerm, setSearchTerm] = useState("");
+  const { locale, t } = useI18n();
 
-  // Dados mockados do blog
-  const blogPosts: BlogPost[] = [
-    {
-      id: "1",
-      title: "10 Alimentos que Aumentam a Imunidade Naturalmente",
-      excerpt:
-        "Descubra como fortalecer seu sistema imunológico através da alimentação com ingredientes simples do dia a dia.",
-      content: "",
-      author: "Dra. Andreina Cawanne",
-      publishDate: "2025-09-15",
-      readTime: 5,
-      category: "saude",
-      tags: ["imunidade", "alimentação saudável", "prevenção"],
-      imageUrl: "/blog/imunidade.jpg",
-      featured: true,
-    },
-    {
-      id: "2",
-      title: "Mitose e Mitose: Entenda a Diferença na Prática",
-      excerpt:
-        "Aprenda a distinguir esses dois processos celulares fundamentais de forma simples e prática.",
-      content: "",
-      author: "Dra. Andreina Cawanne",
-      publishDate: "2025-09-10",
-      readTime: 7,
-      category: "ciencia",
-      tags: ["mitose", "mitose", "biologia celular"],
-      imageUrl: "/blog/mitose-mitose.jpg",
-      featured: true,
-    },
-    {
-      id: "3",
-      title: "Plano Alimentar para Gestantes: Guia Completo",
-      excerpt:
-        "Tudo o que você precisa saber sobre nutrição durante a gravidez para mãe e bebê saudáveis.",
-      content: "",
-      author: "Dra. Andreina Cawanne",
-      publishDate: "2025-09-05",
-      readTime: 8,
-      category: "gestacao",
-      tags: ["gestação", "nutrição materna", "gravidez saudável"],
-      imageUrl: "/blog/gestantes.jpg",
-    },
-    {
-      id: "4",
-      title: "Como Montar uma Marmita Saudável para a Semana",
-      excerpt:
-        "Dicas práticas para preparar refeições nutritivas e economizar tempo durante a semana.",
-      content: "",
-      author: "Dra. Andreina Cawanne",
-      publishDate: "2025-08-28",
-      readTime: 6,
-      category: "dicas",
-      tags: ["meal prep", "marmita", "organização"],
-      imageUrl: "/blog/marmita.jpg",
-    },
-    {
-      id: "5",
-      title: "Os Benefícios da Dieta Mediterrânea para o Coração",
-      excerpt:
-        "Conheça os princípios dessa dieta que é campeã em saúde cardiovascular.",
-      content: "",
-      author: "Dra. Andreina Cawanne",
-      publishDate: "2025-08-20",
-      readTime: 7,
-      category: "dietas",
-      tags: ["dieta mediterrânea", "saúde cardíaca", "alimentação"],
-      imageUrl: "/blog/dieta-mediterranea.jpg",
-    },
-    {
-      id: "6",
-      title: "Suplementação Esportiva: O que Realmente Funciona",
-      excerpt:
-        "Guia completo sobre suplementos para atletas e praticantes de atividade física.",
-      content: "",
-      author: "Dra. Andreina Cawanne",
-      publishDate: "2025-08-15",
-      readTime: 10,
-      category: "esporte",
-      tags: ["suplementos", "esporte", "performance"],
-      imageUrl: "/blog/suplementacao.jpg",
-    },
-  ];
+  const [blogPosts, setBlogPosts] = useState<BlogPost[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const limit = 9;
+  const [categoriesApi, setCategoriesApi] = useState<{category:string; count:number}[]>([]);
+  const { user } = useAuth();
+  const canPreview: boolean = !!user && (user.role === 'admin' || (user as any).role === 'nutri');
+  const [tagFilter, setTagFilter] = useState('');
+
+  useEffect(()=> {
+    // load categories (no pagination; ignore errors)
+    fetchCategories().then(res=> setCategoriesApi(res.categories)).catch(()=>{});
+  }, []);
+
+  useEffect(() => {
+    let ignore = false;
+    async function load(){
+      setLoading(true); setError(null);
+      try {
+  const data = await fetchPosts({ page, limit, category: selectedCategory, search: searchTerm, tag: tagFilter || undefined, preview: canPreview || undefined });
+        if(ignore) return;
+        const mapped: BlogPost[] = (data.results||[]).map((r:any)=> ({
+          id: r.id,
+          title: r.title,
+          excerpt: r.excerpt || '',
+          author: r.author_name || 'Avante Nutri',
+          publishDate: r.published_at || '',
+          readTime: r.read_time_min || 1,
+          category: r.category || 'geral',
+          tags: r.tags || [],
+          imageUrl: r.cover_image_url || '/blog/placeholder.jpg',
+          featured: false,
+        }));
+        setBlogPosts(mapped);
+        setTotal(data.total || 0);
+      } catch(e:any){
+        if(!ignore) setError('Erro ao carregar artigos');
+      } finally { if(!ignore) setLoading(false); }
+    }
+    load();
+    return ()=> { ignore = true; };
+  }, [page, selectedCategory, searchTerm, tagFilter, canPreview]);
 
   const categories = [
-    { id: "todos", name: "Todos os Artigos", count: blogPosts.length },
-    {
-      id: "saude",
-      name: "Saúde & Bem-estar",
-      count: blogPosts.filter((p) => p.category === "saude").length,
-    },
-    {
-      id: "dietas",
-      name: "Dietas Específicas",
-      count: blogPosts.filter((p) => p.category === "dietas").length,
-    },
-    {
-      id: "gestacao",
-      name: "Nutrição na Gestação",
-      count: blogPosts.filter((p) => p.category === "gestacao").length,
-    },
-    {
-      id: "esporte",
-      name: "Nutrição Esportiva",
-      count: blogPosts.filter((p) => p.category === "esporte").length,
-    },
-    {
-      id: "dicas",
-      name: "Dicas Práticas",
-      count: blogPosts.filter((p) => p.category === "dicas").length,
-    },
-    {
-      id: "ciencia",
-      name: "Ciência da Nutrição",
-      count: blogPosts.filter((p) => p.category === "ciencia").length,
-    },
+    { id: 'todos', name: 'Todos os Artigos', count: total },
+    ...categoriesApi.map(c => ({ id: c.category, name: c.category[0].toUpperCase()+c.category.slice(1), count: c.count }))
   ];
 
   const filteredPosts = blogPosts.filter((post) => {
@@ -153,8 +89,8 @@ const BlogPage: React.FC = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const featuredPost = blogPosts.find((post) => post.featured);
-  const recentPosts = blogPosts.slice(0, 3);
+  const featuredPost = blogPosts[0];
+  const recentPosts = blogPosts.slice(0,3);
 
   const BlogPostCard: React.FC<{ post: BlogPost }> = ({ post }) => (
     <Card className="overflow-hidden hover:shadow-xl transition-all duration-300 group">
@@ -189,7 +125,7 @@ const BlogPage: React.FC = () => {
                   {post.author}
                 </p>
                 <p className="text-xs text-gray-500">
-                  {new Date(post.publishDate).toLocaleDateString("pt-BR")}
+                  {fmtDate(post.publishDate, locale, { dateStyle: 'medium'})}
                 </p>
               </div>
             </div>
@@ -204,6 +140,7 @@ const BlogPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-white to-green-25">
+      <SEO title={t('blog.list.seo.title')} description={t('blog.list.seo.desc')} />
       {/* Header do Blog */}
       <section className="bg-green-800 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -250,6 +187,13 @@ const BlogPage: React.FC = () => {
               <section className="mb-12">
                 <h2 className="text-2xl font-bold text-gray-900 mb-6">
                   Em Destaque
+              <input
+                type="text"
+                placeholder="Filtrar por tag..."
+                value={tagFilter}
+                onChange={(e) => { setPage(1); setTagFilter(e.target.value); }}
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              />
                 </h2>
                 <Card className="overflow-hidden hover:shadow-xl transition-all duration-300">
                   <Link
@@ -287,10 +231,7 @@ const BlogPage: React.FC = () => {
                               {featuredPost.author}
                             </p>
                             <p className="text-sm text-gray-500">
-                              {new Date(
-                                featuredPost.publishDate
-                              ).toLocaleDateString("pt-BR")}{" "}
-                              • {featuredPost.readTime} min de leitura
+                              {fmtDate(featuredPost.publishDate, locale, { dateStyle: 'medium'})} • {featuredPost.readTime} min de leitura
                             </p>
                           </div>
                         </div>
@@ -332,7 +273,13 @@ const BlogPage: React.FC = () => {
                 </span>
               </h2>
 
-              {filteredPosts.length === 0 ? (
+              {loading && (
+                <Card className="text-center py-12">Carregando...</Card>
+              )}
+              {!loading && error && (
+                <Card className="text-center py-12 text-red-600">{error}</Card>
+              )}
+              {!loading && !error && filteredPosts.length === 0 ? (
                 <Card className="text-center py-12">
                   <svg
                     className="w-16 h-16 text-gray-400 mx-auto mb-4"
@@ -354,12 +301,27 @@ const BlogPage: React.FC = () => {
                     Tente ajustar os filtros ou termos de busca
                   </p>
                 </Card>
-              ) : (
+              ) : !loading && !error && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                   {filteredPosts.map((post) => (
-                    <BlogPostCard key={post.id} post={post} />
+                    <div key={post.id} className="relative">
+                      {canPreview && post.publishDate === '' && (
+                        <span className="absolute top-2 left-2 text-[10px] px-2 py-1 bg-amber-500 text-white rounded-full">draft</span>
+                      )}
+                      <BlogPostCard post={post} />
+                    </div>
                   ))}
                 </div>
+              )}
+              {!loading && !error && total > limit && (
+                <div className="flex justify-center mt-8 gap-4">
+                  <Button variant="secondary" disabled={page===1} onClick={()=> setPage(p=> Math.max(1,p-1))}>Anterior</Button>
+                  <span className="text-sm text-gray-600">Página {page} de {Math.ceil(total/limit)}</span>
+                  <Button variant="secondary" disabled={page >= Math.ceil(total/limit)} onClick={()=> setPage(p=> p+1)}>Próxima</Button>
+                </div>
+              )}
+              {canPreview && (
+                <div className="mt-6 text-center text-xs text-amber-600">Modo preview ativo (exibindo drafts se existirem)</div>
               )}
             </section>
           </main>
@@ -443,7 +405,7 @@ const BlogPage: React.FC = () => {
                         {post.title}
                       </p>
                       <p className="text-xs text-gray-500">
-                        {new Date(post.publishDate).toLocaleDateString("pt-BR")}
+                        {fmtDate(post.publishDate, locale, { dateStyle: 'short'})}
                       </p>
                     </div>
                   </Link>

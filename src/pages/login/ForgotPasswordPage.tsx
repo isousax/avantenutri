@@ -5,9 +5,11 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [errors, setErrors] = useState({ email: "", general: "" });
   const [loading, setLoading] = useState(false);
@@ -17,10 +19,10 @@ const ForgotPasswordPage: React.FC = () => {
 
   const validateEmail = (email: string) => {
     if (!email.trim()) {
-      return "E-mail é obrigatório";
+      return t('auth.register.error.emailRequired');
     }
     if (!/\S+@\S+\.\S+/.test(email)) {
-      return "E-mail inválido";
+      return t('auth.register.error.emailInvalid');
     }
     return "";
   };
@@ -57,7 +59,7 @@ const ForgotPasswordPage: React.FC = () => {
         setCooldown(retry);
         setErrors({
           email: "",
-          general: `Muitas tentativas. Aguarde ${retry}s.`,
+          general: t('auth.password.forgot.error.tooMany', { seconds: String(retry) }),
         });
         return;
       }
@@ -65,7 +67,7 @@ const ForgotPasswordPage: React.FC = () => {
       if (!res.ok && data?.error) {
         setErrors({
           email: "",
-          general: data.error || "Erro ao solicitar redefinição",
+          general: data.error || t('auth.register.error.generic'),
         });
         return;
       }
@@ -76,7 +78,7 @@ const ForgotPasswordPage: React.FC = () => {
         navigate("/login", { state: { email } });
       }, 8000);
     } catch {
-      setErrors({ email: "", general: "Erro de rede. Tente novamente." });
+      setErrors({ email: "", general: t('auth.password.forgot.error.network') });
     } finally {
       setLoading(false);
     }
@@ -111,8 +113,8 @@ const ForgotPasswordPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
         <SEO
-          title="Recuperar Senha | Avante Nutri"
-          description="Recupere o acesso à sua conta Avante Nutri através do seu e-mail cadastrado."
+          title={t('forgot.seo.title')}
+          description={t('forgot.seo.desc')}
         />
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -131,13 +133,13 @@ const ForgotPasswordPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-green-800 mb-2">
-            E-mail enviado!
+            {t('auth.password.forgot.emailSent.title')}
           </h2>
           <p className="text-gray-600 mb-6">
-            Por favor, verifique sua caixa de entrada e a pasta de spam.
+            {t('auth.password.forgot.emailSent.desc')}
           </p>
           <p className="text-gray-600 mb-2 text-xs">
-            Você será redirecionado para a página de login.
+            {t('auth.password.forgot.emailSent.redirect')}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full animate-pulse"></div>
@@ -156,10 +158,10 @@ const ForgotPasswordPage: React.FC = () => {
             <LogoCroped />
           </Link>
           <h1 className="text-3xl font-bold text-green-800 mb-2">
-            Recuperar Senha
+            {t('auth.password.forgot.title')}
           </h1>
           <p className="text-gray-600 text-xs">
-            Digite seu e-mail para receber o link de recuperação
+            {t('auth.password.forgot.subtitle')}
           </p>
         </div>
 
@@ -205,7 +207,7 @@ const ForgotPasswordPage: React.FC = () => {
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.email ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="E-mail Cadastrado"
+                  placeholder={t('auth.password.forgot.placeholder')}
                   disabled={loading}
                   required
                 />
@@ -257,12 +259,12 @@ const ForgotPasswordPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Enviando...
+                  {t('auth.password.forgot.sending')}
                 </div>
               ) : cooldown > 0 ? (
-                `Aguarde ${cooldown}s`
+                t('auth.password.forgot.wait', { seconds: String(cooldown) })
               ) : (
-                "Enviar Link de Recuperação"
+                t('auth.password.forgot.submit')
               )}
             </Button>
 
@@ -297,7 +299,7 @@ const ForgotPasswordPage: React.FC = () => {
                 to="/login"
                 className="font-medium text-green-600 hover:text-green-700 transition-colors duration-200"
               >
-                Fazer login
+                {t('auth.login.submit')}
               </Link>
             </p>
           </div>

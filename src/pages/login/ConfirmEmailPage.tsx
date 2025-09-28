@@ -4,6 +4,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 import { API } from "../../config/api";
 
 const ConfirmEmailPage: React.FC = () => {
@@ -13,6 +14,7 @@ const ConfirmEmailPage: React.FC = () => {
     "loading"
   );
   const [message, setMessage] = useState("");
+  const { t } = useI18n();
 
   useEffect(() => {
     const confirmEmail = async () => {
@@ -20,7 +22,7 @@ const ConfirmEmailPage: React.FC = () => {
 
       if (!token) {
         setStatus("error");
-        setMessage("Token de confirmação não encontrado.");
+        setMessage(t('auth.register.error.generic'));
         return;
       } else if (
         typeof token !== "string" ||
@@ -28,7 +30,7 @@ const ConfirmEmailPage: React.FC = () => {
         token.length > 500
       ) {
         setStatus("error");
-        setMessage("Token de confirmação inválido.");
+        setMessage(t('auth.password.reset.invalidLink.desc'));
       }
 
       try {
@@ -44,9 +46,7 @@ const ConfirmEmailPage: React.FC = () => {
 
         if (response.ok) {
           setStatus("success");
-          setMessage(
-            "E-mail confirmado com sucesso! Redirecionando para o login..."
-          );
+          setMessage(t('auth.confirm.success.desc'));
 
           // Redirecionar após 3 segundos
           setTimeout(() => {
@@ -56,12 +56,12 @@ const ConfirmEmailPage: React.FC = () => {
           const errorData = await response.json();
           setStatus("error");
           setMessage(
-            errorData.message || "Erro ao confirmar e-mail. Tente novamente."
+            errorData.message || t('auth.confirm.error.title')
           );
         }
       } catch {
         setStatus("error");
-        setMessage("Erro de conexão com o servidor, tente novamente.");
+        setMessage(t('auth.register.error.network'));
       }
     };
 
@@ -91,8 +91,8 @@ const ConfirmEmailPage: React.FC = () => {
               />
             </svg>
           ),
-          title: "Confirmando seu e-mail...",
-          description: "Estamos validando seu token de confirmação.",
+          title: t('auth.confirm.loading.title'),
+          description: t('auth.confirm.loading.desc'),
           color: "text-green-600",
           bgColor: "bg-green-100",
         };
@@ -114,7 +114,7 @@ const ConfirmEmailPage: React.FC = () => {
               />
             </svg>
           ),
-          title: "E-mail Confirmado!",
+          title: t('auth.confirm.success.title'),
           description: message,
           color: "text-green-600",
           bgColor: "bg-green-100",
@@ -137,7 +137,7 @@ const ConfirmEmailPage: React.FC = () => {
               />
             </svg>
           ),
-          title: "Erro na Confirmação",
+          title: t('auth.confirm.error.title'),
           description: message,
           color: "text-red-600",
           bgColor: "bg-red-100",
@@ -159,8 +159,8 @@ const ConfirmEmailPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
       <SEO
-        title="Confirmação de E-mail | Avante Nutri"
-        description="Confirme seu endereço de e-mail para ativar sua conta na Avante Nutri."
+        title={t('confirmEmail.seo.title')}
+        description={t('confirmEmail.seo.desc')}
       />
 
       <div className="w-full max-w-md">
@@ -211,18 +211,18 @@ const ConfirmEmailPage: React.FC = () => {
                     d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                   />
                 </svg>
-                Tentar Novamente
+                {t('auth.confirm.retry')}
               </Button>
 
               <Link to="/login" className="block">
                 <Button variant="secondary" className="w-full">
-                  Ir para o Login
+                  {t('auth.confirm.goLogin')}
                 </Button>
               </Link>
 
               <Link to="/register" className="block">
                 <Button variant="secondary" className="w-full">
-                  Criar Nova Conta
+                  {t('auth.confirm.createAccount')}
                 </Button>
               </Link>
             </div>
@@ -230,7 +230,7 @@ const ConfirmEmailPage: React.FC = () => {
 
           {status === "loading" && (
             <div className="text-sm text-gray-500">
-              <p>Isso pode levar alguns segundos...</p>
+              <p>{t('auth.confirm.wait')}</p>
             </div>
           )}
         </Card>
@@ -254,7 +254,7 @@ const ConfirmEmailPage: React.FC = () => {
               </svg>
               <div>
                 <p className="text-sm text-blue-700 mt-1">
-                  Se o problema persistir, entre em contato.
+                  {t('auth.confirm.help')}
                 </p>
                 <div className="gap-2 text-center">
                   <a

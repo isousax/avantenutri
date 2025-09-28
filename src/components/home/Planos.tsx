@@ -2,80 +2,70 @@ import Button from "../ui/Button";
 import Card from "../ui/Card";
 import { Link, useNavigate  } from "react-router-dom";
 import { useState } from "react";
+import { useI18n } from '../../i18n';
 
 const Planos: React.FC = () => {
   const [billingCycle, setBillingCycle] = useState<"monthly" | "quarterly" | "annual">("monthly");
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   const plans = [
     {
-      id: "essencial",
-      name: "Plano Essencial",
-      tagline: "Para quem busca resultados sólidos",
-      description: "Ideal para quem quer começar com acompanhamento profissional",
-      prices: {
-        monthly: 150,
-        quarterly: 400,
-        annual: 1200
-      },
-      features: [
-        "Consulta completa",
-        "Plano alimentar personalizado",
-        "Avaliação física e metabólica",
-        "Suporte",
-        "Reavaliação"
+      id: 'essencial',
+      nameKey: 'home.plans.essencial.name',
+      taglineKey: 'home.plans.essencial.tagline',
+      descKey: 'home.plans.essencial.desc',
+      prices: { monthly: 150, quarterly: 400, annual: 1200 },
+      featureKeys: [
+        'home.plans.essencial.f1',
+        'home.plans.essencial.f2',
+        'home.plans.essencial.f3',
+        'home.plans.essencial.f4',
+        'home.plans.essencial.f5'
       ],
-      cta: "Começar Agora",
+      ctaKey: 'home.plans.cta.essencial',
       popular: false,
-      color: "green"
+      color: 'green'
     },
     {
-      id: "premium",
-      name: "Plano Premium",
-      tagline: "Resultados acelerados com suporte integral",
-      description: "Acompanhamento completo para otimizar seus resultados",
-      prices: {
-        monthly: 250,
-        quarterly: 650,
-        annual: 2000
-      },
-      features: [
-        "Tudo do plano Essencial",
-        "2 consultas",
-        "Suporte prioritário por WhatsApp",
-        "Plano de suplementação",
-        "Acompanhamento de metas",
-        "Receitas exclusivas"
+      id: 'premium',
+      nameKey: 'home.plans.premium.name',
+      taglineKey: 'home.plans.premium.tagline',
+      descKey: 'home.plans.premium.desc',
+      prices: { monthly: 250, quarterly: 650, annual: 2000 },
+      featureKeys: [
+        'home.plans.premium.f1',
+        'home.plans.premium.f2',
+        'home.plans.premium.f3',
+        'home.plans.premium.f4',
+        'home.plans.premium.f5',
+        'home.plans.premium.f6'
       ],
-      cta: "Experimente Grátis",
+      ctaKey: 'home.plans.cta.premium',
       popular: true,
-      color: "emerald"
+      color: 'emerald'
     },
     {
-      id: "vip",
-      name: "Plano VIP",
-      tagline: "Experiência personalizada máxima",
-      description: "Para quem busca transformação completa com atendimento exclusivo",
-      prices: {
-        monthly: 450,
-        quarterly: 1200,
-        annual: 3600
-      },
-      features: [
-        "Tudo do plano Premium",
-        "Consultas ilimitadas",
-        "Suporte 24/7",
-        "Plano de treino personalizado",
-        "Consultoria em compras",
-        "Análise corporal avançada",
-        "Encontros quinzenais",
-        "Relatórios detalhados"
+      id: 'vip',
+      nameKey: 'home.plans.vip.name',
+      taglineKey: 'home.plans.vip.tagline',
+      descKey: 'home.plans.vip.desc',
+      prices: { monthly: 450, quarterly: 1200, annual: 3600 },
+      featureKeys: [
+        'home.plans.vip.f1',
+        'home.plans.vip.f2',
+        'home.plans.vip.f3',
+        'home.plans.vip.f4',
+        'home.plans.vip.f5',
+        'home.plans.vip.f6',
+        'home.plans.vip.f7',
+        'home.plans.vip.f8'
       ],
-      cta: "Agendar Consultoria",
+      ctaKey: 'home.plans.cta.vip',
       popular: false,
-      color: "yellow"
+      color: 'yellow'
     }
-  ];
+  ] as const;
 
   const getSavings = (monthlyPrice: number, cyclePrice: number, cycle: string) => {
     const months = cycle === "quarterly" ? 3 : 12;
@@ -106,10 +96,10 @@ const Planos: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 relative z-10">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold text-green-800 mb-4">
-            Planos que se Adaptam a Você
+            {t('home.plans.heading')}
           </h2>
           <p className="text-sm sm:text-base text-gray-700 max-w-3xl mx-auto mb-8">
-            Escolha o acompanhamento ideal para seus objetivos. Flexibilidade total para mudar quando quiser.
+            {t('home.plans.subtitle')}
           </p>
           
           {/* Billing Cycle Toggle */}
@@ -122,7 +112,7 @@ const Planos: React.FC = () => {
                   : "text-gray-600 hover:text-green-700"
               }`}
             >
-              Mensal
+              {t('home.plans.cycle.monthly')}
             </button>
             <button
               onClick={() => setBillingCycle("quarterly")}
@@ -132,7 +122,7 @@ const Planos: React.FC = () => {
                   : "text-gray-600 hover:text-green-700"
               }`}
             >
-              Trimestral
+              {t('home.plans.cycle.quarterly')}
             </button>
             <button
               onClick={() => setBillingCycle("annual")}
@@ -142,14 +132,14 @@ const Planos: React.FC = () => {
                   : "text-gray-600 hover:text-green-700"
               }`}
             >
-              Anual
+              {t('home.plans.cycle.annual')}
             </button>
           </div>
           
           <p className="text-sm text-gray-500 mt-3">
-            {billingCycle === "quarterly" && "Economize até 20% com o plano trimestral"}
-            {billingCycle === "annual" && "Economize até 30% com o plano anual"}
-            {billingCycle === "monthly" && "Máxima flexibilidade sem compromisso"}
+            {billingCycle === "quarterly" && t('home.plans.cycle.note.quarterly')}
+            {billingCycle === "annual" && t('home.plans.cycle.note.annual')}
+            {billingCycle === "monthly" && t('home.plans.cycle.note.monthly')}
           </p>
         </div>
 
@@ -166,14 +156,14 @@ const Planos: React.FC = () => {
               >
                 {plan.popular && (
                   <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-emerald-500 text-white px-6 py-2 rounded-full text-sm font-semibold shadow-md z-10">
-                    MAIS POPULAR
+                    {t('home.plans.badge.popular')}
                   </div>
                 )}
                 
                 <div className="p-8 flex-1">
                   <div className="text-center mb-6">
-                    <h3 className="font-bold text-2xl text-green-800 mb-1">{plan.name}</h3>
-                    <p className="text-green-600 font-medium">{plan.tagline}</p>
+                    <h3 className="font-bold text-2xl text-green-800 mb-1">{t(plan.nameKey as any)}</h3>
+                    <p className="text-green-600 font-medium">{t(plan.taglineKey as any)}</p>
                   </div>
                   
                   <div className="text-center mb-6">
@@ -190,19 +180,19 @@ const Planos: React.FC = () => {
                     {billingCycle !== "monthly" && savings.savings > 0 && (
                       <div className="mt-2">
                         <span className="inline-block bg-green-100 text-green-800 text-sm px-3 py-1 rounded-full">
-                          Economize {formatPrice(savings.savings)} ({savings.percentage}%)
+                          {t('home.plans.savings', { amount: formatPrice(savings.savings), percent: savings.percentage })}
                         </span>
                         <p className="text-xs text-gray-500 mt-1">
-                          Equivale a {formatPrice(plan.prices[billingCycle] / (billingCycle === "quarterly" ? 3 : 12))}/mês
+                          {t('home.plans.equivalentPerMonth', { price: formatPrice(plan.prices[billingCycle] / (billingCycle === "quarterly" ? 3 : 12)) })}
                         </p>
                       </div>
                     )}
                   </div>
                   
-                  <p className="text-gray-600 text-center mb-6">{plan.description}</p>
+                  <p className="text-gray-600 text-center mb-6">{t(plan.descKey as any)}</p>
                   
                   <ul className="mb-8 space-y-3 flex-1">
-                    {plan.features.map((feature, index) => (
+                    {plan.featureKeys.map((feature, index) => (
                       <li key={index} className="flex items-start">
                         <svg
                           className="w-5 h-5 text-green-500 mr-3 flex-shrink-0 mt-0.5"
@@ -217,7 +207,7 @@ const Planos: React.FC = () => {
                             d="M5 13l4 4L19 7"
                           />
                         </svg>
-                        <span>{feature}</span>
+                        <span>{t(feature as any)}</span>
                       </li>
                     ))}
                   </ul>
@@ -234,13 +224,13 @@ const Planos: React.FC = () => {
                             : "bg-green-500 hover:bg-green-600"
                         } text-white font-semibold`}
                       >
-                        {plan.cta}
+                        {t(plan.ctaKey as any)}
                       </Button>
                     </Link>
                     
                     {plan.id === "premium" && (
                       <p className="text-center text-xs text-gray-500 mt-2">
-                        7 dias de avaliação gratuita
+                        {t('home.plans.trial.premium')}
                       </p>
                     )}
                   </div>
@@ -253,13 +243,13 @@ const Planos: React.FC = () => {
         {/* Additional Info */}
         <div className="text-center mt-12">
           <div className="bg-white rounded-lg p-6 shadow-sm border border-green-100 max-w-2xl mx-auto">
-            <h4 className="font-semibold text-green-800 mb-2">Dúvidas sobre os planos?</h4>
+            <h4 className="font-semibold text-green-800 mb-2">{t('home.plans.faq.heading')}</h4>
             <p className="text-gray-600 mb-4">
-              Veja nossa página de perguntas frequentes.
+              {t('home.plans.faq.desc')}
             </p>
             <div className="flex flex-wrap justify-center gap-4">
               <Button className="border-green-500 text-green-600 hover:bg-green-50" onClick={() => navigate('/faq')}>
-                FAQ
+                {t('home.plans.faq.button')}
               </Button>
             </div>
           </div>

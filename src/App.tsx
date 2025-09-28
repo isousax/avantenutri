@@ -12,6 +12,11 @@ import AdminPage from "./pages/admin/AdminPage.tsx";
 import AdminUsersPage from "./pages/admin/AdminUsersPage.tsx";
 import AdminAuditPage from "./pages/admin/AdminAuditPage.tsx";
 import AdminEntitlementsPage from "./pages/admin/AdminEntitlementsPage.tsx";
+import AdminConsultationsPage from "./pages/admin/AdminConsultationsPage";
+import AdminPlansPage from "./pages/admin/plans/AdminPlansPage";
+import AdminBillingPage from "./pages/admin/billing/AdminBillingPage";
+import AdminReportsPage from "./pages/admin/reports/AdminReportsPage";
+import AdminLayout from "./layouts/AdminLayout";
 import TermosServicoPage from "./pages/legal/TermosServicoPage.tsx";
 import PoliticaPrivacidadePage from "./pages/legal/PoliticaPrivacidadePage.tsx";
 import ForgotPasswordPage from "./pages/login/ForgotPasswordPage.tsx";
@@ -22,6 +27,7 @@ import RefeicaoRegistroPage from "./pages/client/registroAtividades/RefeicaoRegi
 import PesoRegistroPage from "./pages/client/registroAtividades/PesoRegistroPage.tsx";
 import AguaRegistroPage from "./pages/client/registroAtividades/AguaRegistroPage.tsx";
 import AgendarConsultaPage from "./pages/client/registroAtividades/AgendarConsultaPage.tsx";
+import BillingHistoryPage from "./pages/client/BillingHistoryPage.tsx";
 import NotFound from "./pages/handle/NotFound.tsx";
 import CookieBanner from "./components/comum/CookieBanner.tsx";
 
@@ -30,7 +36,53 @@ import { useEffect } from "react";
 import type { FbqFunction } from "./types/global";
 import BlogPage from "./pages/blog/BlogPage.tsx";
 import BlogPostPage from "./pages/blog/BlogPostPage.tsx";
+import BlogAdminListPage from "./pages/admin/blog/BlogAdminListPage";
+import BlogAdminEditPage from "./pages/admin/blog/BlogAdminEditPage";
+import PricingPage from "./pages/home/PricingPage.tsx";
 import DevelopmentBadge from "./components/DevelopmentProgressBanner";
+import { I18nProvider, useI18n } from './i18n';
+import { ToastProvider } from './components/ui/ToastProvider';
+import { useToast } from './components/ui/ToastProvider';
+
+function EntitlementsToastListener() {
+  const { t } = useI18n();
+  const { push } = useToast();
+  useEffect(() => {
+    const handler = () => {
+      // Evitar toast duplicado logo após pagamento aprovado
+      let recent = false;
+      try {
+        const ts = sessionStorage.getItem('lastPaymentApprovedToast');
+        if (ts) {
+          const diff = Date.now() - Number(ts);
+          // Se já mostramos em <= 8s, não repetir
+          if (diff <= 8000) recent = true;
+        }
+      } catch { }
+      if (!recent) {
+        push({ type: 'success', message: t('billing.upgrade.success') });
+      }
+    };
+    window.addEventListener('entitlements:changed', handler as any);
+    return () => window.removeEventListener('entitlements:changed', handler as any);
+  }, [push, t]);
+  return null;
+}
+
+function GlobalToastEventBridge() {
+  const { push } = useToast();
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (detail && typeof detail === 'object') {
+        push({ type: detail.type || 'info', message: detail.message || '' });
+      }
+    };
+    window.addEventListener('app:toast', handler as any);
+    return () => window.removeEventListener('app:toast', handler as any);
+  }, [push]);
+  return null;
+}
 
 function App() {
   const { grantConsent } = useCookieConsent();
@@ -94,110 +146,120 @@ function App() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <main>
-        {/* Banner de Cookies (condicional) */}
-        <CookieBanner grantConsent={grantConsent} />
-        <DevelopmentBadge />
+    <I18nProvider>
+      <ToastProvider>
+        <GlobalToastEventBridge />
+        <EntitlementsToastListener />
+        <div className="flex flex-col min-h-screen">
+          <main>
+            {/* Banner de Cookies (condicional) */}
+            <CookieBanner grantConsent={grantConsent} />
+            <DevelopmentBadge />
 
-        <Routes>
-          {/* Rotas públicas */}
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
-          <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
-          <Route path="/verify-email" element={<VerifyEmailPage />} />
-          <Route path="/confirm-email" element={<ConfirmEmailPage />} />
-          <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
-          <Route path="/termos" element={<TermosServicoPage />} />
-          <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
-          <Route path="/questionario" element={<QuestionarioPage />} />
-          <Route path="/blog" element={<BlogPage />} />
-          <Route path="/blog/:id" element={<BlogPostPage />} />
+            <Routes>
+              {/* Rotas públicas */}
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/recuperar-senha" element={<ForgotPasswordPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/confirm-email" element={<ConfirmEmailPage />} />
+              <Route path="/redefinir-senha" element={<ResetPasswordPage />} />
+              <Route path="/termos" element={<TermosServicoPage />} />
+              <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/blog/:slug" element={<BlogPostPage />} />
+              {/* Rotas protegidas (requer login) */}
+              <Route
+                path="/dashboard"
+                element={
+                  <PrivateRoute>
+                    <DashboardPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/questionario"
+                element={
+                  <PrivateRoute>
+                    <QuestionarioPage />
+                  </PrivateRoute>
+                }
+              />
 
-          {/* Rotas protegidas (requer login) */}
-          <Route
-            path="/dashboard"
-            element={
-              <PrivateRoute>
-                <DashboardPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/registro-refeicao"
-            element={
-              <PrivateRoute>
-                <RefeicaoRegistroPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/registro-peso"
-            element={
-              <PrivateRoute>
-                <PesoRegistroPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/registro-agua"
-            element={
-              <PrivateRoute>
-                <AguaRegistroPage />
-              </PrivateRoute>
-            }
-          />
-          <Route
-            path="/agendar-consulta"
-            element={
-              <PrivateRoute>
-                <AgendarConsultaPage />
-              </PrivateRoute>
-            }
-          />
+              <Route
+                path="/planos"
+                element={
+                  <PrivateRoute>
+                    <PricingPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/billing/historico"
+                element={
+                  <PrivateRoute>
+                    <BillingHistoryPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/registro-refeicao"
+                element={
+                  <PrivateRoute>
+                    <RefeicaoRegistroPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/registro-peso"
+                element={
+                  <PrivateRoute>
+                    <PesoRegistroPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/registro-agua"
+                element={
+                  <PrivateRoute>
+                    <AguaRegistroPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/agendar-consulta"
+                element={
+                  <PrivateRoute>
+                    <AgendarConsultaPage />
+                  </PrivateRoute>
+                }
+              />
 
-          {/* Rotas administrativas */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/usuarios"
-            element={
-              <AdminRoute>
-                <AdminUsersPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/audit"
-            element={
-              <AdminRoute>
-                <AdminAuditPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/entitlements"
-            element={
-              <AdminRoute>
-                <AdminEntitlementsPage />
-              </AdminRoute>
-            }
-          />
+              {/* Rotas administrativas */}
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<AdminPage />} />
+                <Route path="usuarios" element={<AdminUsersPage />} />
+                <Route path="consultas" element={<AdminConsultationsPage />} />
+                <Route path="planos" element={<AdminPlansPage />} />
+                <Route path="billing" element={<AdminBillingPage />} />
+                <Route path="relatorios" element={<AdminReportsPage />} />
+                <Route path="blog" element={<BlogAdminListPage />} />
+                <Route path="blog/new" element={<BlogAdminEditPage />} />
+                <Route path="blog/edit/:id" element={<BlogAdminEditPage />} />
+                <Route path="entitlements" element={<AdminEntitlementsPage />} />
+                <Route path="audit" element={<AdminAuditPage />} />
+              </Route>
 
-          {/* Rota para 404*/}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Analytics />
-        <SpeedInsights />
-      </main>
-    </div>
+              {/* Rota para 404*/}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+            <Analytics />
+            <SpeedInsights />
+          </main>
+        </div>
+      </ToastProvider>
+    </I18nProvider>
   );
 }
 

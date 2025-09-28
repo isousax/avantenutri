@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useI18n } from '../../i18n';
 import Card from "../ui/Card";
 
 const Servicos: React.FC = () => {
@@ -8,50 +9,15 @@ const Servicos: React.FC = () => {
   const [isDragging, setIsDragging] = useState(false);
   const sliderRef = useRef<HTMLDivElement>(null);
 
+  const { t } = useI18n();
   const servicosData = [
-    {
-      icone: "🍎",
-      titulo: "Dieta Personalizada",
-      descricao:
-        "Dietas elaboradas para seu perfil, objetivos e preferências alimentares.",
-      categoria: "Core",
-    },
-    {
-      icone: "💬",
-      titulo: "Acompanhamento Nutricional",
-      descricao:
-        "Suporte constante e ajustes periódicos para maximizar seus resultados.",
-      categoria: "Core",
-    },
-    {
-      icone: "📱",
-      titulo: "Consultas Online",
-      descricao:
-        "Atendimento flexível e conveniente, onde e quando você precisar.",
-      categoria: "Core",
-    },
-    {
-      icone: "⚖️",
-      titulo: "Avaliação Completa",
-      descricao:
-        "Cálculos de IMC, composição corporal e análise detalhada da sua saúde.",
-      categoria: "Avaliação",
-    },
-    {
-      icone: "🥗",
-      titulo: "Reeducação Alimentar",
-      descricao:
-        "Mudança de hábitos sustentáveis para manter resultados no longo prazo.",
-      categoria: "Core",
-    },
-    {
-      icone: "🛒",
-      titulo: "Lista de Compras Inteligente",
-      descricao:
-        "Listas de compras organizadas por categorias e otimizadas para sua dieta.",
-      categoria: "Suporte",
-    }
-  ];
+    { icone: '🍎', tituloKey: 'home.services.item.dieta.title', descKey: 'home.services.item.dieta.desc', categoriaKey: 'home.services.category.core' },
+    { icone: '💬', tituloKey: 'home.services.item.acompanhamento.title', descKey: 'home.services.item.acompanhamento.desc', categoriaKey: 'home.services.category.core' },
+    { icone: '📱', tituloKey: 'home.services.item.consultas.title', descKey: 'home.services.item.consultas.desc', categoriaKey: 'home.services.category.core' },
+    { icone: '⚖️', tituloKey: 'home.services.item.avaliacao.title', descKey: 'home.services.item.avaliacao.desc', categoriaKey: 'home.services.category.avaliacao' },
+    { icone: '🥗', tituloKey: 'home.services.item.reeducacao.title', descKey: 'home.services.item.reeducacao.desc', categoriaKey: 'home.services.category.core' },
+    { icone: '🛒', tituloKey: 'home.services.item.lista.title', descKey: 'home.services.item.lista.desc', categoriaKey: 'home.services.category.suporte' },
+  ] as const;
 
   const slidesCount = servicosData.length;
 
@@ -116,17 +82,16 @@ const Servicos: React.FC = () => {
         {/* Header melhorado */}
         <div className="text-center mb-8 md:mb-16 lg:mb-20">
           <span className="inline-block px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-medium mb-3">
-            Nossos Serviços
+            {t('home.services.badge')}
           </span>
           <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-green-900 mb-3 leading-snug">
-            Soluções Completas em{" "}
+            {t('home.services.heading.part1')}{" "}
             <span className="bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
-              Nutrição
+              {t('home.services.heading.highlight')}
             </span>
           </h2>
           <p className="text-sm sm:text-base text-gray-600 max-w-2xl mx-auto leading-relaxed">
-            Acompanhamento nutricional personalizado para você alcançar seus
-            objetivos de saúde e bem-estar.
+            {t('home.services.description')}
           </p>
         </div>
 
@@ -136,7 +101,7 @@ const Servicos: React.FC = () => {
             className="block md:hidden"
             role="region"
             aria-roledescription="carousel"
-            aria-label="Nossos serviços"
+            aria-label={t('home.services.carousel.aria')}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -162,14 +127,14 @@ const Servicos: React.FC = () => {
                         </div>
 
                         <div className="inline-block px-3 py-1 bg-green-500/10 text-green-700 rounded-full text-xs font-medium mb-3">
-                          {servico.categoria}
+                          {t(servico.categoriaKey as any)}
                         </div>
 
                         <h3 className="font-bold text-lg md:text-xl text-green-900 mb-3 leading-tight">
-                          {servico.titulo}
+                          {t(servico.tituloKey as any)}
                         </h3>
                         <p className="text-gray-600 leading-relaxed text-sm md:text-base whitespace-normal break-words">
-                          {servico.descricao}
+                          {t(servico.descKey as any)}
                         </p>
                       </div>
                     </div>
@@ -193,7 +158,7 @@ const Servicos: React.FC = () => {
                       ? "bg-green-500 scale-110 shadow-lg"
                       : "bg-gray-300 hover:bg-gray-400"
                   }`}
-                  aria-label={`Ir para o serviço ${index + 1}`}
+                  aria-label={`${index + 1}`}
                   aria-current={index === activeSlide ? "true" : "false"}
                 />
               ))}
@@ -214,13 +179,13 @@ const Servicos: React.FC = () => {
                   {servico.icone}
                 </div>
                 <div className="inline-block px-3 py-1 bg-green-500/10 text-green-700 rounded-full text-xs font-medium mb-3 self-center">
-                  {servico.categoria}
+                  {t(servico.categoriaKey as any)}
                 </div>
                 <h3 className="text-xl font-bold text-green-900 mb-3 text-center leading-tight">
-                  {servico.titulo}
+                  {t(servico.tituloKey as any)}
                 </h3>
                 <p className="text-gray-600 flex-grow text-center leading-relaxed">
-                  {servico.descricao}
+                  {t(servico.descKey as any)}
                 </p>
               </div>
             </Card>
@@ -230,47 +195,22 @@ const Servicos: React.FC = () => {
         {/* Seção de Especialidades Melhorada */}
         <div className="text-center mb-12">
           <h3 className="text-2xl md:text-3xl font-bold text-green-900 mb-4">
-            Áreas de Especialização
+            {t('home.services.specialties.heading')}
           </h3>
           <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
-            Atendimento especializado em diversas áreas da nutrição com foco em
-            resultados
+            {t('home.services.specialties.desc')}
           </p>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           {[
-            {
-              nome: "Emagrecimento",
-              icone: "⚡",
-              cor: "from-yellow-50 to-yellow-100",
-            },
-            {
-              nome: "Saúde da Mulher",
-              icone: "🌸",
-              cor: "from-pink-50 to-pink-100",
-            },
-            {
-              nome: "Hipertrofia",
-              icone: "💪",
-              cor: "from-blue-50 to-blue-100",
-            },
-            {
-              nome: "Nutrição Esportiva",
-              icone: "🏃‍♀️",
-              cor: "from-orange-50 to-orange-100",
-            },
-            {
-              nome: "Fertilidade",
-              icone: "👶",
-              cor: "from-purple-50 to-purple-100",
-            },
-            {
-              nome: "Reprodução Humana",
-              icone: "❤️",
-              cor: "from-red-50 to-red-100",
-            },
-          ].map((especialidade, index) => (
+            { nomeKey: 'home.services.specialties.emagrecimento', icone: '⚡', cor: 'from-yellow-50 to-yellow-100' },
+            { nomeKey: 'home.services.specialties.saudeMulher', icone: '🌸', cor: 'from-pink-50 to-pink-100' },
+            { nomeKey: 'home.services.specialties.hipertrofia', icone: '💪', cor: 'from-blue-50 to-blue-100' },
+            { nomeKey: 'home.services.specialties.nutricaoEsportiva', icone: '🏃‍♀️', cor: 'from-orange-50 to-orange-100' },
+            { nomeKey: 'home.services.specialties.fertilidade', icone: '👶', cor: 'from-purple-50 to-purple-100' },
+            { nomeKey: 'home.services.specialties.reproducaoHumana', icone: '❤️', cor: 'from-red-50 to-red-100' },
+          ].map((especialidade: any, index) => (
             <div
               key={index}
               className="text-center p-4 rounded-xl bg-gradient-to-br from-green-50 to-green-100 border border-green-200/50 hover:shadow-md hover:scale-105 transition-all duration-300 group cursor-pointer"
@@ -279,7 +219,7 @@ const Servicos: React.FC = () => {
                 {especialidade.icone}
               </div>
               <span className="text-sm font-semibold text-green-900">
-                {especialidade.nome}
+                {t(especialidade.nomeKey as any)}
               </span>
             </div>
           ))}

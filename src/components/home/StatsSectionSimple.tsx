@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from "react";
+import { useI18n } from '../../i18n';
 
-const stats = [
-  { title: "Pacientes", value: "+1.000" },
-  { title: "Satisfação", value: "98%" },
-  { title: "CRN", value: "43669/P" },
+const stats: { titleKey: import('../../types/i18n').TranslationKey; value: string }[] = [
+  { titleKey: 'home.stats.patients.title', value: "+1.000" },
+  { titleKey: 'home.stats.satisfaction.title', value: "98%" },
+  { titleKey: 'home.stats.crn.title', value: "43669/P" },
 ];
 
 const StatsSectionSimple: React.FC = () => {
@@ -80,6 +81,8 @@ const StatsSectionSimple: React.FC = () => {
     setTimeout(() => setAutoPlay(true), 8000);
   };
 
+  const { t } = useI18n();
+
   return (
     <section className="py-14 md:py-14 relative overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -97,7 +100,7 @@ const StatsSectionSimple: React.FC = () => {
               className="block md:hidden"
               role="region"
               aria-roledescription="carousel"
-              aria-label="Estatísticas da Avante Nutri"
+              aria-label={t('home.stats.carousel.aria')}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
@@ -130,7 +133,7 @@ const StatsSectionSimple: React.FC = () => {
                               {stat.value}
                             </div>
                             <div className="text-sm font-medium text-gray-600 group-hover:text-emerald-700 transition-colors duration-300">
-                              {stat.title}
+                              {t(stat.titleKey)}
                             </div>
 
                             {/* Indicador animado */}
@@ -161,8 +164,8 @@ const StatsSectionSimple: React.FC = () => {
                     }`}
                     role="tab"
                     aria-selected={index === active}
-                    aria-label={`Ir para o slide ${index + 1}`}
-                    title={`Mostrar ${stats[index].title}`}
+                    aria-label={t('home.stats.gotoSlide', { index: index + 1 })}
+                    title={t('home.stats.show', { title: t(stats[index].titleKey) })}
                   />
                 ))}
               </div>
@@ -182,7 +185,7 @@ const StatsSectionSimple: React.FC = () => {
                         {stat.value}
                       </div>
                       <div className="text-sm font-medium text-gray-500 group-hover:text-emerald-700 transition-colors duration-300">
-                        {stat.title}
+                        {t(stat.titleKey)}
                       </div>
 
                       {/* Indicador animado com delay diferente para cada card */}

@@ -208,10 +208,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 type: "application/json",
               }
             );
-            navigator.sendBeacon(
-              new URL("/auth/logout", API.API_AUTH_BASE).toString(),
-              blob
-            );
+            navigator.sendBeacon(API.LOGOUT, blob);
           } else {
             // fire-and-forget fetch
             void fetch(API.LOGOUT, {
@@ -649,10 +646,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           const blob = new Blob([JSON.stringify({ refresh_token: refresh })], {
             type: "application/json",
           });
-          navigator.sendBeacon(
-            new URL("/auth/logout", API.API_AUTH_BASE).toString(),
-            blob
-          );
+          navigator.sendBeacon(API.LOGOUT, blob);
         }
       } catch (err) {
         console.warn(
@@ -810,6 +804,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionLastVerified,
     sessionVerified,
     forceVerify: async () => runSessionVerification(true),
+    getAccessToken: async () => {
+      let access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      if (access) {
+        try {
+          const p = decodeJwt(access);
+          if (p?.exp && Date.now() < Number(p.exp) * 1000 - 60000) {
+            return access;
+          }
+        } catch {}
+      }
+      const refreshed = await contextValue.refreshSession();
+      if (!refreshed) return null;
+      return localStorage.getItem(STORAGE_ACCESS_KEY);
+    },
     login: async (
       email: string,
       password: string,

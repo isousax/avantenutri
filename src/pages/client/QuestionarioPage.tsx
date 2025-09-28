@@ -5,6 +5,7 @@ import Button from "../../components/ui/Button";
 import ProgressBar from "../../components/ui/ProgressBar";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 // Dados do questionário
 const categorias = [
@@ -215,6 +216,7 @@ const limparFormatacaoTelefone = (value: string) => {
 
 const QuestionarioPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const { questionarioData, updateQuestionario } = useQuestionario();
   const { step, categoria, planoSelecionado, respostas } = questionarioData;
   const [erros, setErros] = useState<Record<string, string>>({});
@@ -809,8 +811,8 @@ const QuestionarioPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
       <SEO
-        title="Questionário Inicial | Avante Nutri"
-        description="Preencha nosso questionário detalhado para recebermos informações importantes sobre seus objetivos e necessidades nutricionais."
+        title={t('questionario.seo.title')}
+        description={t('questionario.seo.desc')}
       />
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">

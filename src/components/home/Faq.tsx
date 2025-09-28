@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../ui/Button";
+import { useI18n } from '../../i18n';
 
 export default function Faq() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
@@ -9,38 +10,15 @@ export default function Faq() {
     setOpenFaq(openFaq === index ? null : index);
   };
 
+  const { t } = useI18n();
   const faqData = [
-    {
-      question: "Como funciona a consulta nutricional online?",
-      answer:
-        "As consultas são realizadas via videochamada. Você recebe o link de acesso após o agendamento. Durante a consulta, avaliamos seus hábitos, objetivos e necessidades para criar um plano personalizado.",
-    },
-    {
-      question: "Quanto tempo dura o acompanhamento?",
-      answer:
-        "O tempo varia conforme seus objetivos. Geralmente recomendamos um acompanhamento mínimo de 3 meses para resultados consistentes, mas você pode escolher entre nossos planos mensais ou avulsos.",
-    },
-    {
-      question: "Recebo o plano alimentar na mesma dia?",
-      answer:
-        "O plano alimentar personalizado é enviado em até 48 horas após a consulta, garantindo que todas as suas particularidades sejam consideradas.",
-    },
-    {
-      question: "Preciso fazer exames antes da consulta?",
-      answer:
-        "Não é obrigatório, mas recomendamos que traga exames recentes para uma avaliação mais completa. Caso não tenha, podemos orientar sobre quais exames seriam importantes.",
-    },
-    {
-      question: "Como é o suporte entre as consultas?",
-      answer:
-        "No plano Premium, oferecemos suporte via WhatsApp para dúvidas rápidas e ajustes necessários. No plano Básico, o suporte é realizado nas consultas agendadas.",
-    },
-    {
-      question: "Vocês atendem casos específicos como diabetes ou hipertensão?",
-      answer:
-        "Sim! Tenho experiência em nutrição clínica e atendo casos de doenças crônicas, restrições alimentares e condições especiais de saúde.",
-    },
-  ];
+    { q: 'home.faq.q1.q', a: 'home.faq.q1.a' },
+    { q: 'home.faq.q2.q', a: 'home.faq.q2.a' },
+    { q: 'home.faq.q3.q', a: 'home.faq.q3.a' },
+    { q: 'home.faq.q4.q', a: 'home.faq.q4.a' },
+    { q: 'home.faq.q5.q', a: 'home.faq.q5.a' },
+    { q: 'home.faq.q6.q', a: 'home.faq.q6.a' },
+  ] as const;
 
   return (
     <section className="py-16 bg-gradient-to-br from-green-600 to-emerald-700 text-white relative overflow-hidden">
@@ -53,10 +31,10 @@ export default function Faq() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
         <div className="text-center mb-12">
           <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-4">
-            Perguntas Frequentes
+            {t('home.faq.heading')}
           </h2>
           <p className="text-lg text-white/90 font-light max-w-2xl mx-auto">
-            Tudo o que você precisa saber sobre a Avante Nutri
+            {t('home.faq.subtitle')}
           </p>
         </div>
 
@@ -72,7 +50,7 @@ export default function Faq() {
                   className="flex w-full items-center justify-between p-6 text-left font-semibold text-white hover:text-green-100 transition-colors"
                 >
                   <span className="flex items-center text-lg">
-                    {faq.question}
+                    {t(faq.q as any)}
                   </span>
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -99,7 +77,7 @@ export default function Faq() {
                   }`}
                 >
                   <div className="p-6 pt-0 text-white/90 leading-relaxed">
-                    {faq.answer}
+                    {t(faq.a as any)}
                   </div>
                 </div>
               </div>
@@ -109,11 +87,11 @@ export default function Faq() {
 
         <div className="text-center mt-12">
           <p className="text-white/80 mb-6">
-            Ainda tem dúvidas? Entre em contato conosco!
+            {t('home.faq.moreQuestions')}
           </p>
           <Link to="/questionario">
             <Button className="bg-white text-green-700 hover:bg-green-50 px-8 py-3 font-semibold">
-              Falar com a Nutricionista
+              {t('home.faq.contactButton')}
             </Button>
           </Link>
         </div>

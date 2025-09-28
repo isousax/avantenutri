@@ -2,10 +2,14 @@ import React from "react";
 import { Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
+import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 const NotFound: React.FC = () => {
+  const { t } = useI18n();
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
+      <SEO title={t('notfound.seo.title')} description={t('notfound.seo.desc')} />
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
           <div className="relative inline-block mb-6">

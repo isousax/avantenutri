@@ -6,8 +6,10 @@ import LogoCroped from "../../components/ui/LogoCroped";
 import { normalizePhone } from "../../utils/normalizePhone";
 import { API } from "../../config/api";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 const RegisterPage: React.FC = () => {
+  const { t } = useI18n();
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
@@ -70,35 +72,34 @@ const RegisterPage: React.FC = () => {
     const regexNome = /^[A-Za-zÀ-ÿ]+(?: [A-Za-zÀ-ÿ]+)+$/;
 
     if (!formData.name.trim()) {
-      newErrors.name = "Nome completo é obrigatório";
+      newErrors.name = t('auth.register.error.nameRequired');
     } else if (!regexNome.test(formData.name.trim())) {
-      newErrors.name = "Informe o nome completo";
+      newErrors.name = t('auth.register.error.nameInvalid');
     }
 
     if (!formData.email.trim()) {
-      newErrors.email = "E-mail é obrigatório";
+      newErrors.email = t('auth.register.error.emailRequired');
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "E-mail inválido";
+      newErrors.email = t('auth.register.error.emailInvalid');
     }
 
     if (!formData.password) {
-      newErrors.password = "Senha é obrigatória";
+      newErrors.password = t('auth.register.error.passwordRequired');
     } else if (!PASSWORD_POLICY_REGEX.test(formData.password)) {
-      newErrors.password =
-        "Senha deve ter mínimo 8 caracteres, incluindo minúscula, maiúscula, número e símbolo";
+      newErrors.password = t('auth.register.error.passwordPolicy');
     }
 
     if (!formData.phone.trim()) {
-      newErrors.phone = "Telefone é obrigatório";
+      newErrors.phone = t('auth.register.error.phoneRequired');
     } else {
       const normalized = normalizePhone(formData.phone);
       if (!PHONE_E164_REGEX.test(normalized)) {
-        newErrors.phone = "Telefone inválido";
+        newErrors.phone = t('auth.register.error.phoneInvalid');
       }
     }
 
     if (!formData.acceptTerms) {
-      newErrors.acceptTerms = "Você deve aceitar os termos e políticas";
+      newErrors.acceptTerms = t('auth.register.error.acceptTerms');
     }
 
     setErrors((prev) => ({ ...prev, ...newErrors }));
@@ -150,13 +151,13 @@ const RegisterPage: React.FC = () => {
       if (res.status === 409) {
         setErrors((prev) => ({
           ...prev,
-          email: "Este e-mail já está cadastrado",
+          email: t('auth.register.error.emailExists'),
         }));
         return;
       }
 
       if (res.status === 400) {
-        const msg = data?.error || "Dados inválidos";
+        const msg = data?.error || t('auth.register.error.generic');
         setErrors((prev) => ({ ...prev, general: String(msg) }));
         return;
       }
@@ -165,20 +166,20 @@ const RegisterPage: React.FC = () => {
         const retry = res.headers.get("Retry-After") || "60";
         setErrors((prev) => ({
           ...prev,
-          general: `Muitas tentativas. Tente novamente em ${retry}s.`,
+          general: t('auth.register.error.tooMany', { seconds: retry }),
         }));
         return;
       }
 
       setErrors((prev) => ({
         ...prev,
-        general: data?.error || "Erro ao criar conta. Tente novamente.",
+        general: data?.error || t('auth.register.error.generic'),
       }));
     } catch (err) {
       console.error("[RegisterPage] submit error", err);
       setErrors((prev) => ({
         ...prev,
-        general: "Erro ao criar conta. Tente novamente mais tarde.",
+        general: t('auth.register.error.network'),
       }));
     } finally {
       setLoading(false);
@@ -203,12 +204,12 @@ const RegisterPage: React.FC = () => {
 
     const strength = getStrength(password);
     const strengthLabels = [
-      "Muito fraca",
-      "Fraca",
-      "Razoável",
-      "Boa",
-      "Forte",
-      "Muito forte",
+      t('auth.password.strength.veryWeak'),
+      t('auth.password.strength.weak'),
+      t('auth.password.strength.fair'),
+      t('auth.password.strength.good'),
+      t('auth.password.strength.strong'),
+      t('auth.password.strength.veryStrong'),
     ];
     const strengthColors = [
       "bg-red-500",
@@ -244,7 +245,7 @@ const RegisterPage: React.FC = () => {
               : "text-green-600"
           }`}
         >
-          Força da senha: {strengthLabels[strength]}
+          {`Força da senha: ${strengthLabels[strength]}`}
         </p>
       </div>
     );
@@ -344,8 +345,8 @@ const RegisterPage: React.FC = () => {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
         <SEO
-          title="Cadastro | Avante Nutri"
-          description="Crie sua conta na Avante Nutri e comece sua jornada para uma vida mais saudável com acompanhamento nutricional personalizado."
+          title={t('register.seo.title')}
+          description={t('register.seo.desc')}
         />
         <Card className="w-full max-w-md p-8 text-center">
           <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -364,10 +365,10 @@ const RegisterPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Conta criada com sucesso!
+            {t('auth.register.success.title')}
           </h2>
           <p className="text-gray-600 mb-6">
-            Enviando link de confirmação para seu e-mail...
+            {t('auth.register.success.sending')}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full animate-pulse"></div>
@@ -380,8 +381,8 @@ const RegisterPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
       <SEO
-        title="Cadastro | Avante Nutri"
-        description="Crie sua conta na Avante Nutri e comece sua jornada para uma vida mais saudável com acompanhamento nutricional personalizado."
+        title={t('register.seo.title')}
+        description={t('register.seo.desc')}
       />
 
       <div className="w-full max-w-md">
@@ -391,10 +392,10 @@ const RegisterPage: React.FC = () => {
             <LogoCroped />
           </Link>
           <h1 className="text-3xl font-bold text-green-800 mb-2">
-            Crie sua conta
+            {t('auth.register.title')}
           </h1>
           <p className="text-gray-600 text-sm">
-            Preencha os dados para se registrar
+            {t('auth.register.subtitle')}
           </p>
         </div>
 
@@ -423,7 +424,7 @@ const RegisterPage: React.FC = () => {
                     );
                   }}
                   required
-                  placeholder="Seu nome completo"
+                  placeholder={t('auth.register.name')}
                   disabled={loading}
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.name ? "border-red-500" : "border-gray-300"
@@ -465,7 +466,7 @@ const RegisterPage: React.FC = () => {
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.email ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="E-mail"
+                  placeholder={t('auth.login.email')}
                   disabled={loading}
                   required
                 />
@@ -515,7 +516,7 @@ const RegisterPage: React.FC = () => {
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.phone ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="Telefone"
+                  placeholder={t('auth.register.phone')}
                   disabled={loading}
                   required
                 />
@@ -555,7 +556,7 @@ const RegisterPage: React.FC = () => {
                   className={`flex w-full pl-10 pr-10 py-3 rounded-lg border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="Crie uma senha segura"
+                  placeholder={t('auth.register.password')}
                   disabled={loading}
                   required
                 />
@@ -605,19 +606,19 @@ const RegisterPage: React.FC = () => {
                   htmlFor="acceptTerms"
                   className="ml-3 block text-sm text-gray-700"
                 >
-                  Eu aceito os{" "}
+                  {t('auth.register.accept')} {" "}
                   <Link
                     to="/termos"
                     className="text-green-600 hover:text-green-700 hover:underline font-medium"
                   >
-                    Termos de Serviço
+                    {t('auth.register.terms')}
                   </Link>{" "}
-                  e{" "}
+                  {t('auth.register.and')} {" "}
                   <Link
                     to="/privacidade"
                     className="text-green-600 hover:text-green-700 hover:underline font-medium"
                   >
-                    Política de Privacidade
+                    {t('auth.register.privacy')}
                   </Link>
                 </label>
               </div>
@@ -668,7 +669,7 @@ const RegisterPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Criando conta...
+                  {t('auth.register.loading')}
                 </div>
               ) : (
                 <div className="flex items-center justify-center gap-2">
@@ -686,7 +687,7 @@ const RegisterPage: React.FC = () => {
                     <line x1="19" x2="19" y1="8" y2="14"></line>
                     <line x1="22" x2="16" y1="11" y2="11"></line>
                   </svg>
-                  Criar conta
+                  {t('auth.register.submit')}
                 </div>
               )}
             </Button>
@@ -717,12 +718,12 @@ const RegisterPage: React.FC = () => {
           {/* Link para Login */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600">
-              Já tem uma conta?{" "}
+              {t('auth.login.noAccount')?.replace('Não tem uma conta?','Já tem uma conta?')} {" "}
               <Link
                 to="/login"
                 className="font-medium text-green-600 hover:text-green-700 transition-colors duration-200"
               >
-                Faça login aqui
+                {t('auth.login.submit')}
               </Link>
             </p>
           </div>
@@ -744,7 +745,7 @@ const RegisterPage: React.FC = () => {
                 d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
               />
             </svg>
-            Seus dados estão protegidos e criptografados
+            {t('auth.login.secure')}
           </div>
         </div>
       </div>

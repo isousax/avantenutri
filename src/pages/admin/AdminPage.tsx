@@ -1,96 +1,123 @@
-import React, { useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import Skeleton from '../../components/ui/Skeleton';
+import { useI18n, formatDate as fmtDate } from '../../i18n';
 import { Link } from 'react-router-dom';
 import Card from '../../components/ui/Card';
 import Button from '../../components/ui/Button';
 import { useAuth } from '../../contexts';
 import { RoleRoute } from '../../components/RoleRoute';
+import { SEO } from '../../components/comum/SEO';
 
-// Simulação de pacientes
-const pacientes = [
-  { 
-    id: '2',
-    nome: 'Maria Silva',
-    email: 'maria@email.com',
-    pagamento: 'Pago',
-    questionario: 'Respondido',
-    dieta: 'dieta_maria.pdf',
-    ultimaConsulta: '2023-09-15',
-    proximaConsulta: '2023-10-15',
-    peso: 72.5,
-    pesoMeta: 70,
-    progresso: 85,
-    status: 'Em andamento'
-  },
-  { 
-    id: '3',
-    nome: 'João Santos',
-    email: 'joao@email.com',
-    pagamento: 'Pendente',
-    questionario: 'Não respondido',
-    dieta: null,
-    ultimaConsulta: '2023-09-10',
-    proximaConsulta: '2023-10-10',
-    peso: 85,
-    pesoMeta: 80,
-    progresso: 45,
-    status: 'Atrasado'
-  },
-  { 
-    id: '4',
-    nome: 'Ana Oliveira',
-    email: 'ana@email.com',
-    pagamento: 'Pago',
-    questionario: 'Respondido',
-    dieta: 'dieta_ana.pdf',
-    ultimaConsulta: '2023-09-20',
-    proximaConsulta: '2023-10-20',
-    peso: 65,
-    pesoMeta: 63,
-    progresso: 95,
-    status: 'Em andamento'
-  },
-];
+interface AdminUser {
+  id: string;
+  email: string;
+  role: string;
+  display_name?: string;
+  created_at?: string;
+  last_login_at?: string;
+  plan_id?: string;
+  email_confirmed?: number;
+}
+
+interface Consultation {
+  id: string;
+  user_id: string;
+  type: string;
+  status: string;
+  scheduled_at: string;
+  duration_min: number;
+  urgency?: string;
+}
 
 const AdminPage: React.FC = () => {
-  const { logout } = useAuth();
+  const { logout, getAccessToken } = useAuth();
   const [tab, setTab] = useState<'pacientes' | 'consultas' | 'relatorios'>('pacientes');
-  const [selected, setSelected] = useState<string | null>(null);
-  const [pdf, setPdf] = useState<File | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersHasMore, setUsersHasMore] = useState(false);
+  const [consultations, setConsultations] = useState<Consultation[]>([]);
+  const [consultLoading, setConsultLoading] = useState(false);
+  const [consultFilters, setConsultFilters] = useState<{status?: string}>({});
+  const pageSize = 20;
 
-  const handleUpload = (id: string) => {
-    // Simulação de upload
-    alert(`PDF enviado para paciente ${id}`);
-    setPdf(null);
-    setSelected(null);
-  };
+  // Fetch users (patients). API supports pagination + q filter.
+  useEffect(()=> {
+    if (tab !== 'pacientes') return;
+    let ignore = false;
+    async function load(){
+      setUsersLoading(true);
+      try {
+        const access = await getAccessToken();
+        if(!access){ if(!ignore){ setUsers([]);} return; }
+        const base = import.meta.env.VITE_API_AUTH_BASE || 'https://login-service.avantenutri.workers.dev';
+        const params = new URLSearchParams({ page: String(usersPage), pageSize: String(pageSize) });
+        if (searchTerm) params.set('q', searchTerm);
+        const r = await fetch(`${base}/admin/users?${params.toString()}`, { headers: { authorization: `Bearer ${access}` }});
+        if(!r.ok) throw new Error('fail');
+        const data = await r.json();
+        if(ignore) return;
+        setUsers(data.results || []);
+        setUsersHasMore((data.results||[]).length === pageSize);
+      } catch { if(!ignore) setUsers([]); }
+      finally { if(!ignore) setUsersLoading(false); }
+    }
+    load();
+    return () => { ignore = true; };
+  }, [tab, usersPage, searchTerm, getAccessToken]);
 
-  // Filtra pacientes baseado na busca
-  const filteredPacientes = pacientes.filter(p => 
-    p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.email.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Fetch consultations
+  useEffect(()=> {
+    if (tab !== 'consultas') return;
+    let ignore = false;
+    async function load(){
+      setConsultLoading(true);
+      try {
+        const access = await getAccessToken();
+        if(!access){ if(!ignore){ setConsultations([]);} return; }
+        const base = import.meta.env.VITE_API_AUTH_BASE || 'https://login-service.avantenutri.workers.dev';
+        const params = new URLSearchParams({ page: '1', pageSize: '50' });
+        if (consultFilters.status) params.set('status', consultFilters.status);
+        const r = await fetch(`${base}/admin/consultations?${params.toString()}`, { headers: { authorization: `Bearer ${access}` }});
+        if(!r.ok) throw new Error('fail');
+        const data = await r.json();
+        if(ignore) return;
+        setConsultations(data.results || []);
+      } catch { if(!ignore) setConsultations([]); }
+      finally { if(!ignore) setConsultLoading(false); }
+    }
+    load();
+    return () => { ignore = true; };
+  }, [tab, consultFilters, getAccessToken]);
 
-  // Stats para o dashboard
-  const stats = {
-    totalPacientes: pacientes.length,
-    pendentes: pacientes.filter(p => p.pagamento === 'Pendente').length,
-    emAndamento: pacientes.filter(p => p.status === 'Em andamento').length,
-    atrasados: pacientes.filter(p => p.status === 'Atrasado').length
-  };
+  const filteredUsers = useMemo(()=> {
+    if (!searchTerm) return users;
+    const s = searchTerm.toLowerCase();
+    return users.filter(u => (u.display_name || '').toLowerCase().includes(s) || u.email.toLowerCase().includes(s));
+  }, [users, searchTerm]);
 
+  const stats = useMemo(()=> ({
+    totalPacientes: users.length,
+    pendentes: 0, // backend ainda não fornece pagamento aqui
+    emAndamento: 0,
+    atrasados: 0
+  }), [users]);
+
+  const { t } = useI18n();
   return (
     <RoleRoute role="admin">
       <div className="min-h-screen flex flex-col bg-gray-50 p-4">
+        <SEO title={t('admin.dashboard.seo.title')} description={t('admin.dashboard.seo.desc')} />
         <div className="max-w-7xl mx-auto w-full">
           {/* Header */}
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-green-700">Área do Nutricionista</h2>
+              <h2 className="text-2xl font-bold text-green-700">{t('admin.dashboard.title')}</h2>
               <p className="text-gray-600 text-sm">Bem-vinda, Dra. Cawanne</p>
             </div>
             <div className="flex gap-3 items-center text-sm">
-              <Link to="/admin/usuarios" className="text-green-700 hover:underline">Usuários</Link>
+              <Link to="/admin/usuarios" className="text-green-700 hover:underline">{t('admin.users.title')}</Link>
               <Link to="/admin/audit" className="text-green-700 hover:underline">Auditoria</Link>
               <Link to="/admin/entitlements" className="text-green-700 hover:underline">Entitlements</Link>
               <Button variant="secondary" onClick={logout}>Sair</Button>
@@ -98,7 +125,7 @@ const AdminPage: React.FC = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <Card className="bg-white p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -112,45 +139,8 @@ const AdminPage: React.FC = () => {
                 </div>
               </div>
             </Card>
-            <Card className="bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Pagamentos Pendentes</p>
-                  <p className="text-2xl font-bold text-yellow-600">{stats.pendentes}</p>
-                </div>
-                <div className="p-3 bg-yellow-100 rounded-full">
-                  <svg className="w-6 h-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Em Andamento</p>
-                  <p className="text-2xl font-bold text-blue-600">{stats.emAndamento}</p>
-                </div>
-                <div className="p-3 bg-blue-100 rounded-full">
-                  <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
-                </div>
-              </div>
-            </Card>
-            <Card className="bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Atrasados</p>
-                  <p className="text-2xl font-bold text-red-600">{stats.atrasados}</p>
-                </div>
-                <div className="p-3 bg-red-100 rounded-full">
-                  <svg className="w-6 h-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                </div>
-              </div>
-            </Card>
+            <Card className="bg-white p-4 flex flex-col justify-center"><p className="text-sm text-gray-600 mb-1">Planos (indicativo)</p><p className="text-xl font-semibold text-green-700">-</p></Card>
+            <Card className="bg-white p-4 flex flex-col justify-center"><p className="text-sm text-gray-600 mb-1">Atividade (mês)</p><p className="text-xl font-semibold text-green-700">-</p></Card>
           </div>
 
           {/* Tabs */}
@@ -188,123 +178,73 @@ const AdminPage: React.FC = () => {
           </div>
 
           {tab === 'pacientes' && (
-            <Card>
-              {/* Search Bar */}
-              <div className="p-4 border-b">
-                <div className="flex gap-4">
-                  <div className="flex-1">
-                    <div className="relative">
-                      <input
-                        type="text"
-                        placeholder="Buscar pacientes..."
-                        className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                      />
-                      <svg
-                        className="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                        />
-                      </svg>
-                    </div>
-                  </div>
-                  <Button>Novo Paciente</Button>
+            <Card className="p-0 overflow-hidden">
+              <div className="p-4 border-b flex flex-col md:flex-row gap-4 md:items-center">
+                <div className="flex-1 relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome ou email..."
+                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                  />
+                  <svg className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                </div>
+                <div className="flex gap-2">
+                  <Button variant="secondary" className="text-sm">Exportar</Button>
+                  <Button className="text-sm">Novo Paciente</Button>
                 </div>
               </div>
-
-              {/* Table */}
               <div className="overflow-x-auto">
-                <table className="w-full text-left border-separate border-spacing-y-2">
-                  <thead>
-                    <tr className="text-green-700">
-                      <th className="p-4">Paciente</th>
-                      <th className="p-4">Status</th>
-                      <th className="p-4">Progresso</th>
-                      <th className="p-4">Próx. Consulta</th>
-                      <th className="p-4">Pagamento</th>
-                      <th className="p-4">Ações</th>
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-gray-50 text-gray-700">
+                    <tr>
+                      <th className="py-3 px-4 font-medium">Paciente</th>
+                      <th className="py-3 px-4 font-medium">Plano</th>
+                      <th className="py-3 px-4 font-medium">Role</th>
+                      <th className="py-3 px-4 font-medium">Criado</th>
+                      <th className="py-3 px-4 font-medium">Último Login</th>
+                      <th className="py-3 px-4 font-medium"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredPacientes.map(p => (
-                      <tr key={p.id} className="bg-white hover:bg-green-50">
-                        <td className="p-4">
-                          <div className="flex items-center">
-                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 font-medium">
-                              {p.nome.charAt(0)}
+                    {usersLoading && (
+                      <tr>
+                        <td colSpan={6} className="py-6 px-4">
+                          <div className="space-y-4">
+                            <Skeleton lines={3} />
+                            <Skeleton lines={3} />
+                            <Skeleton lines={3} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {!usersLoading && filteredUsers.length === 0 && (
+                      <tr><td colSpan={6} className="py-10 text-center text-gray-500">Nenhum usuário encontrado.</td></tr>
+                    )}
+                    {!usersLoading && filteredUsers.map(u => (
+                      <tr key={u.id} className="border-t hover:bg-green-50">
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-green-700 text-xs font-semibold">
+                              {(u.display_name || u.email).charAt(0).toUpperCase()}
                             </div>
-                            <div className="ml-3">
-                              <p className="font-medium">{p.nome}</p>
-                              <p className="text-sm text-gray-500">{p.email}</p>
+                            <div>
+                              <p className="font-medium text-gray-900 leading-tight">{u.display_name || '—'}</p>
+                              <p className="text-gray-500 text-xs">{u.email}</p>
                             </div>
                           </div>
                         </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            p.status === 'Em andamento'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}>
-                            {p.status}
-                          </span>
+                        <td className="py-3 px-4 text-gray-700">{u.plan_id || '—'}</td>
+                        <td className="py-3 px-4">
+                          <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 uppercase tracking-wide">{u.role}</span>
                         </td>
-                        <td className="p-4">
-                          <div className="flex items-center">
-                            <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div
-                                className="h-full bg-green-500"
-                                style={{ width: `${p.progresso}%` }}
-                              />
-                            </div>
-                            <span className="ml-2 text-sm text-gray-600">{p.progresso}%</span>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm">
-                            <p>{new Date(p.proximaConsulta).toLocaleDateString('pt-BR')}</p>
-                            <p className="text-gray-500">14:00</p>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            p.pagamento === 'Pago'
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-red-100 text-red-700'
-                          }`}>
-                            {p.pagamento}
-                          </span>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex gap-2">
-                            {selected === p.id ? (
-                              <form className="flex gap-2 items-center" onSubmit={e => { e.preventDefault(); handleUpload(p.id); }}>
-                                <input
-                                  type="file"
-                                  accept="application/pdf"
-                                  onChange={e => setPdf(e.target.files?.[0] || null)}
-                                  className="text-xs"
-                                />
-                                <Button type="submit" className="text-xs" disabled={!pdf}>Enviar</Button>
-                                <Button type="button" variant="secondary" className="text-xs" onClick={() => setSelected(null)}>
-                                  Cancelar
-                                </Button>
-                              </form>
-                            ) : (
-                              <>
-                                <Button variant="secondary" className="text-xs" onClick={() => setSelected(p.id)}>
-                                  Nova Dieta
-                                </Button>
-                                <Button variant="secondary" className="text-xs">Ver Perfil</Button>
-                              </>
-                            )}
+                        <td className="py-3 px-4 text-gray-600 text-xs">{u.created_at ? fmtDate(u.created_at,'pt',{ dateStyle:'short'}) : '—'}</td>
+                        <td className="py-3 px-4 text-gray-600 text-xs">{u.last_login_at ? fmtDate(u.last_login_at,'pt',{ dateStyle:'short'}) : '—'}</td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="secondary" className="text-xs">Perfil</Button>
+                            <Button variant="secondary" className="text-xs">Planos</Button>
                           </div>
                         </td>
                       </tr>
@@ -312,13 +252,77 @@ const AdminPage: React.FC = () => {
                   </tbody>
                 </table>
               </div>
+              <div className="p-4 border-t flex items-center justify-between text-sm bg-gray-50">
+                <span>Página {usersPage}</span>
+                <div className="flex gap-2">
+                  <Button variant="secondary" disabled={usersPage===1 || usersLoading} onClick={()=> setUsersPage(p=> Math.max(1,p-1))}>Anterior</Button>
+                  <Button variant="secondary" disabled={!usersHasMore || usersLoading} onClick={()=> setUsersPage(p=> p+1)}>Próxima</Button>
+                </div>
+              </div>
             </Card>
           )}
 
           {tab === 'consultas' && (
-            <Card className="p-6">
-              <h3 className="text-lg font-medium mb-4">Agenda de Consultas</h3>
-              <p className="text-gray-600">Em desenvolvimento...</p>
+            <Card className="p-0 overflow-hidden">
+              <div className="p-4 border-b flex flex-col md:flex-row gap-4 md:items-center">
+                <div className="flex gap-2 items-center text-sm">
+                  <label className="text-gray-600">Status:</label>
+                  <select onChange={(e)=> setConsultFilters({ status: e.target.value || undefined })} value={consultFilters.status || ''} className="border rounded px-2 py-1 text-sm focus:ring-green-500 focus:border-green-500">
+                    <option value="">Todos</option>
+                    <option value="scheduled">Programadas</option>
+                    <option value="completed">Concluídas</option>
+                    <option value="canceled">Canceladas</option>
+                  </select>
+                </div>
+                <div className="flex gap-2 ml-auto">
+                  <Button variant="secondary" className="text-sm">Exportar</Button>
+                  <Button className="text-sm">Criar Consulta</Button>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-full text-left text-sm">
+                  <thead className="bg-gray-50 text-gray-700">
+                    <tr>
+                      <th className="py-3 px-4 font-medium">Data/Hora</th>
+                      <th className="py-3 px-4 font-medium">Paciente</th>
+                      <th className="py-3 px-4 font-medium">Tipo</th>
+                      <th className="py-3 px-4 font-medium">Duração</th>
+                      <th className="py-3 px-4 font-medium">Status</th>
+                      <th className="py-3 px-4 font-medium">Urgência</th>
+                      <th className="py-3 px-4 font-medium"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {consultLoading && (
+                      <tr>
+                        <td colSpan={7} className="py-6 px-4">
+                          <div className="space-y-4">
+                            <Skeleton lines={3} />
+                            <Skeleton lines={3} />
+                            <Skeleton lines={3} />
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {!consultLoading && consultations.length === 0 && <tr><td colSpan={7} className="py-10 text-center text-gray-500">Nenhuma consulta encontrada.</td></tr>}
+                    {!consultLoading && consultations.map(c => {
+                      const dt = new Date(c.scheduled_at);
+                      const dateStr = fmtDate(dt.toISOString(),'pt',{ dateStyle:'short'}) + ' ' + dt.toISOString().slice(11,16);
+                      return (
+                        <tr key={c.id} className="border-t hover:bg-green-50">
+                          <td className="py-3 px-4 text-gray-800 whitespace-nowrap">{dateStr}</td>
+                          <td className="py-3 px-4 text-gray-700">{c.user_id.slice(0,8)}...</td>
+                          <td className="py-3 px-4 capitalize">{c.type}</td>
+                          <td className="py-3 px-4 text-gray-600">{c.duration_min} min</td>
+                          <td className="py-3 px-4"><span className={`px-2 py-0.5 rounded-full text-[11px] font-medium uppercase tracking-wide ${c.status === 'scheduled' ? 'bg-blue-100 text-blue-700':'bg-gray-100 text-gray-600'}`}>{c.status}</span></td>
+                          <td className="py-3 px-4 text-xs">{c.urgency || '—'}</td>
+                          <td className="py-3 px-4 text-right"><Button variant="secondary" className="text-xs">Detalhes</Button></td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </Card>
           )}
 

@@ -1,77 +1,69 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
+import { useWaterLogs } from "../../../hooks/useWaterLogs";
+import { usePermissions } from "../../../hooks/usePermissions";
+import { CAPABILITIES } from "../../../types/capabilities";
+import { useI18n, formatNumber } from '../../../i18n';
+import { useToast } from '../../../components/ui/ToastProvider';
 
 const AguaRegistroPage: React.FC = () => {
-  useEffect(() => {
-    document.title = "Registro de Hidratação - Avante Nutris";
-    // Adiciona meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute(
-        "content",
-        "Registre e acompanhe seu consumo diário de água com nossa ferramenta de controle de hidratação."
-      );
-    }
-  }, []);
+  const { t } = useI18n();
+  const { push } = useToast();
+  useEffect(() => { document.title = t('water.log.title') + ' - Avante Nutri'; }, [t]);
   const navigate = useNavigate();
-  const [coposHoje, setCoposHoje] = useState(0);
-  const [metaDiaria] = useState(8);
-  interface RegistroAgua {
-    data: string;
-    copos: number;
-    meta: number;
-  }
+  const { logs, add, totalToday, avgPerDay, bestDay, summaryDays, dailyGoalCups, goalSource, cupSize, updateGoal, updateCupSize, limit } = useWaterLogs(7);
+  const { can } = usePermissions();
+  const canLog = can(CAPABILITIES.AGUA_LOG);
+  const [metaDiaria, setMetaDiaria] = useState<number>(8);
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState('8');
 
-  const [historico, setHistorico] = useState<RegistroAgua[]>([]);
-
-  // Simulação de histórico
-  useEffect(() => {
-    const historicoSimulado = [
-      { data: "2025-09-01", copos: 7, meta: 8 },
-      { data: "2025-08-31", copos: 8, meta: 8 },
-      { data: "2025-08-30", copos: 6, meta: 8 },
-      { data: "2025-08-29", copos: 9, meta: 8 },
-    ];
-    setHistorico(historicoSimulado);
-  }, []);
-
-  const adicionarCopo = () => {
-    if (coposHoje < 20) {
-      // Limite razoável
-      setCoposHoje(coposHoje + 1);
+  // Sync persisted goal when loaded
+  useEffect(()=> {
+    if (dailyGoalCups && dailyGoalCups !== metaDiaria) {
+      setMetaDiaria(dailyGoalCups);
+      setGoalInput(String(dailyGoalCups));
     }
-  };
-
-  const removerCopo = () => {
-    if (coposHoje > 0) {
-      setCoposHoje(coposHoje - 1);
+  }, [dailyGoalCups]);
+  const mlPorCopo = cupSize || 250; // conversão personalizada
+  const coposHoje = Math.round(totalToday / mlPorCopo);
+  const historico = useMemo(() => {
+    if (summaryDays) {
+      return summaryDays.map(d => ({ data: d.date, copos: Math.round(d.total_ml / mlPorCopo), meta: metaDiaria }));
     }
-  };
+    const byDate: { date: string; amount: number }[] = [];
+    const map = logs.reduce<Record<string, number>>((acc,l)=> { acc[l.log_date] = (acc[l.log_date]||0)+l.amount_ml; return acc; }, {});
+    Object.entries(map).forEach(([date, amount])=> byDate.push({ date, amount }));
+    return byDate.sort((a,b)=> a.date.localeCompare(b.date)).map(d => ({ data: d.date, copos: Math.round(d.amount / mlPorCopo), meta: metaDiaria }));
+  }, [logs, metaDiaria, summaryDays]);
+
+  const [pendingCops, setPendingCops] = useState(0); // incrementos locais antes do push
+  const adicionarCopo = () => { if (pendingCops + coposHoje < 40) setPendingCops(p => p + 1); };
+  const removerCopo = () => { if (pendingCops > 0) setPendingCops(p => p - 1); };
 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async () => {
+  if (!canLog) { push({ type:'error', message: t('water.plan.blocked')}); return; }
+  if (pendingCops <= 0) { navigate('/dashboard'); return; }
     try {
       setIsSaving(true);
-      // Simulação de salvamento
-      console.log("Registro de água:", { copos: coposHoje, data: new Date() });
-
-      // Simula um delay de requisição
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Feedback de sucesso usando um toast ou notificação mais elegante
-      // Por enquanto usaremos um alert, mas idealmente deveria ser substituído
-      alert("Registro de água salvo com sucesso!");
-      navigate("/dashboard");
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      alert("Erro ao salvar o registro. Tente novamente.");
-    } finally {
-      setIsSaving(false);
-    }
+  const totalMl = pendingCops * mlPorCopo;
+      const ok = await add(totalMl);
+      if (ok) {
+        push({ type:'success', message: t('water.toast.saved') });
+        setPendingCops(0);
+        navigate('/dashboard');
+      } else {
+        push({ type:'error', message: t('water.toast.partial') });
+      }
+    } catch (err) {
+      console.error('Erro ao registrar água', err);
+      push({ type:'error', message: t('water.toast.error') });
+    } finally { setIsSaving(false); }
   };
 
   const calcularProgresso = () => {
@@ -85,36 +77,22 @@ const AguaRegistroPage: React.FC = () => {
 
   const getMensagemMotivacional = (): MensagemMotivacional => {
     const progresso = calcularProgresso();
-    if (progresso >= 100)
-      return { mensagem: "Parabéns! Meta atingida! 🎉", cor: "text-green-600" };
-    if (progresso >= 75)
-      return { mensagem: "Quase lá! Continue assim! 💪", cor: "text-blue-600" };
-    if (progresso >= 50)
-      return {
-        mensagem: "Bom trabalho! Metade do caminho! 👍",
-        cor: "text-yellow-600",
-      };
-    return {
-      mensagem: "Vamos começar! Cada copo conta! 💧",
-      cor: "text-orange-600",
-    };
+    if (progresso >= 100) return { mensagem: t('water.mot.100'), cor: 'text-green-600'};
+    if (progresso >= 75) return { mensagem: t('water.mot.75'), cor: 'text-blue-600'};
+    if (progresso >= 50) return { mensagem: t('water.mot.50'), cor: 'text-yellow-600'};
+    return { mensagem: t('water.mot.start'), cor: 'text-orange-600'};
   };
 
   const mensagem = getMensagemMotivacional();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 py-8 px-4">
-      <SEO
-        title="Registro de Hidratação | Avante Nutri"
-        description="Mantenha o controle da sua hidratação diária. Registre e acompanhe seu consumo de água para uma vida mais saudável."
-      />
+  <SEO title={t('water.log.seo.title')} description={t('water.log.seo.desc')} />
       <div className="max-w-4xl mx-auto">
         {/* Cabeçalho */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-2">
-            Controle de Hidratação
-          </h1>
-          <p className="text-gray-600">Acompanhe seu consumo de água diário</p>
+          <h1 className="text-3xl font-bold text-blue-800 mb-2">{t('water.log.heading')}</h1>
+          <p className="text-gray-600">{t('water.log.subheading')}</p>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">
@@ -124,7 +102,7 @@ const AguaRegistroPage: React.FC = () => {
               <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <span className="text-4xl">💧</span>
               </div>
-              <h2 className="text-2xl font-bold text-blue-800">Hoje</h2>
+              <h2 className="text-2xl font-bold text-blue-800">{t('common.today')}</h2>
               <p className="text-gray-600">
                 {new Date().toLocaleDateString("pt-BR", {
                   weekday: "long",
@@ -134,28 +112,66 @@ const AguaRegistroPage: React.FC = () => {
               </p>
             </div>
 
-            {/* Contador */}
+            {/* Contador / Meta */}
             <div className="text-center mb-6">
               <div className="text-6xl font-bold text-blue-600 mb-2">
-                {coposHoje}
+                {coposHoje + pendingCops}
               </div>
-              <p className="text-gray-600">copos de água</p>
+              <p className="text-gray-600 flex items-center justify-center gap-2">
+                {t('water.cups')}
+                {goalSource && (
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wide">
+                    {goalSource === 'user' && t('water.goal.source.user')}
+                    {goalSource === 'plan' && t('water.goal.source.plan')}
+                    {goalSource === 'default' && t('water.goal.source.default')}
+                  </span>
+                )}
+              </p>
+              <div className="mt-3 space-y-2">
+                {!editingGoal && (
+                  <button type="button" onClick={()=> { setGoalInput(String(metaDiaria)); setEditingGoal(true); }} className="text-xs text-blue-600 underline">
+                    {t('water.goal.edit')}: {metaDiaria}
+                  </button>
+                )}
+                {editingGoal && (
+                  <div className="flex items-center justify-center gap-2 text-xs">
+                    <label className="text-slate-600">
+                      {t('water.goal.daily')}
+                      <input value={goalInput} onChange={e=> setGoalInput(e.target.value.replace(/[^0-9]/g,''))} className="ml-1 w-14 border rounded px-1 py-0.5 text-center" />
+                    </label>
+                    <button type="button" onClick={async ()=> {
+                      const v = Math.max(1, Math.min(40, Number(goalInput||'0')));
+                      if (v === metaDiaria) { setEditingGoal(false); return; }
+                      const ok = await updateGoal(v);
+                      if (ok) { setMetaDiaria(v); push({ type:'success', message: t('water.goal.updated')}); }
+                      setEditingGoal(false);
+                    }} className="text-green-600">{t('water.goal.save')}</button>
+                    <button type="button" onClick={()=> setEditingGoal(false)} className="text-red-500">{t('water.goal.cancel')}</button>
+                  </div>
+                )}
+                <CupSizeEditor current={mlPorCopo} onSave={async (newSize)=> { const ok = await updateCupSize(newSize); if (ok) push({ type:'success', message: t('water.cup.updated').replace('{ml}', String(newSize)) }); }} />
+              </div>
             </div>
 
             {/* Barra de Progresso */}
             <div className="mb-6">
               <div className="flex justify-between text-sm text-blue-800 mb-2">
-                <span>Progresso</span>
-                <span>{calcularProgresso().toFixed(0)}%</span>
+                <span>{t('water.progress')}</span>
+                <span>{Math.min(((coposHoje + pendingCops)/ metaDiaria)*100,100).toFixed(0)}%</span>
               </div>
               <div className="w-full bg-blue-200 rounded-full h-4">
                 <div
                   className="bg-blue-500 h-4 rounded-full transition-all duration-500"
-                  style={{ width: `${calcularProgresso()}%` }}
+                  style={{ width: `${Math.min(((coposHoje + pendingCops)/ metaDiaria)*100,100)}%` }}
                 ></div>
               </div>
               <p className="text-center text-sm text-blue-600 mt-2">
-                {coposHoje} de {metaDiaria} copos
+                {coposHoje + pendingCops} / {metaDiaria} {t('water.cups')} ({mlPorCopo}ml)
+                {limit != null && (
+                  <span className="block text-[11px] text-slate-500 mt-1">
+                    {t('water.limit.plan')}: {t('water.limit.plan.ml').replace('{ml}', String(limit)).replace('{cups}', String(Math.max(1, Math.round(limit/250))))}
+                  </span>
+                )}
               </p>
             </div>
 
@@ -180,7 +196,7 @@ const AguaRegistroPage: React.FC = () => {
                 onClick={removerCopo}
                 variant="secondary"
                 className="w-full flex items-center justify-center"
-                disabled={coposHoje === 0}
+                disabled={pendingCops === 0}
                 aria-label="Remover um copo de água"
               >
                 <svg
@@ -197,7 +213,7 @@ const AguaRegistroPage: React.FC = () => {
                     d="M20 12H4"
                   />
                 </svg>
-                Remover
+                {t('water.remove.pending')}
               </Button>
               <Button
                 onClick={adicionarCopo}
@@ -218,85 +234,39 @@ const AguaRegistroPage: React.FC = () => {
                     d="M12 4v16m8-8H4"
                   />
                 </svg>
-                Adicionar
+                {t('water.add250')}
               </Button>
             </div>
 
             {/* Botão Salvar */}
-            <Button
-              onClick={handleSubmit}
-              className="w-full flex items-center justify-center"
-              disabled={isSaving}
-            >
-              {isSaving ? (
-                <>
-                  <svg
-                    className="w-5 h-5 mr-2 animate-spin"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    />
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <svg
-                    className="w-5 h-5 mr-2"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M5 13l4 4L19 7"
-                    />
-                  </svg>
-                  Salvar Registro
-                </>
-              )}
+            <Button onClick={handleSubmit} className="w-full flex items-center justify-center" disabled={!canLog || isSaving}>
+              {isSaving ? t('common.saving') : t('water.save')}
             </Button>
-          </Card>
-
           {/* Estatísticas e Histórico */}
           <div className="space-y-6">
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Estatísticas da Semana
+                {t('water.stats.week')}
               </h3>
               <div className="space-y-4">
                 <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                  <span className="text-blue-800">Média diária</span>
-                  <span className="font-bold text-blue-800">7.5 copos</span>
+                  <span className="text-blue-800">{t('water.stats.dailyAvg')}</span>
+                  <span className="font-bold text-blue-800">{avgPerDay ? formatNumber(+ (avgPerDay / mlPorCopo).toFixed(1), 'pt') : '0'} {t('water.cups')}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <span className="text-green-800">Dias na meta</span>
-                  <span className="font-bold text-green-800">3/7 dias</span>
+                  <span className="text-green-800">{t('water.stats.daysOnTarget')}</span>
+                  <span className="font-bold text-green-800">{historico.filter(h => h.copos >= metaDiaria).length}/{historico.length}</span>
                 </div>
                 <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                  <span className="text-purple-800">Melhor dia</span>
-                  <span className="font-bold text-purple-800">9 copos</span>
+                  <span className="text-purple-800">{t('water.stats.bestDay')}</span>
+                  <span className="font-bold text-purple-800">{bestDay ? formatNumber(Math.round(bestDay.amount / mlPorCopo), 'pt') : 0} {t('water.cups')}</span>
                 </div>
               </div>
             </Card>
 
             <Card className="p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                Histórico de Consumo de Água da Última Semana
+                {t('water.history.week')}
               </h3>
               <div
                 className="space-y-3"
@@ -326,10 +296,10 @@ const AguaRegistroPage: React.FC = () => {
                             : "text-orange-600"
                         }`}
                       >
-                        {registro.copos} copos
+                        {formatNumber(registro.copos, 'pt')} {t('water.cups')}
                       </p>
                       <p className="text-sm text-gray-500">
-                        meta: {registro.meta}
+                        {t('common.goal')}: {registro.meta}
                       </p>
                     </div>
                   </div>
@@ -340,18 +310,44 @@ const AguaRegistroPage: React.FC = () => {
             {/* Dicas */}
             <Card className="p-6 bg-cyan-50 border border-cyan-100">
               <h3 className="text-lg font-semibold text-cyan-800 mb-3">
-                💡 Dicas de Hidratação
+                💡 {t('water.tips.title')}
               </h3>
               <ul className="space-y-2 text-sm text-cyan-700">
-                <li>• Beba 1 copo ao acordar</li>
-                <li>• Mantenha uma garrafa sempre por perto</li>
-                <li>• Use lembretes no celular</li>
-                <li>• Água com limão ajuda no hábito</li>
+                <li>• {t('water.tip.1')}</li>
+                <li>• {t('water.tip.2')}</li>
+                <li>• {t('water.tip.3')}</li>
+                <li>• {t('water.tip.4')}</li>
               </ul>
             </Card>
           </div>
+          </Card>
         </div>
       </div>
+    </div>
+  );
+};
+
+interface CupSizeEditorProps { current: number; onSave: (n: number) => void | Promise<void>; }
+const CupSizeEditor: React.FC<CupSizeEditorProps> = ({ current, onSave }) => {
+  const { t } = useI18n();
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(String(current));
+  useEffect(()=> { setValue(String(current)); }, [current]);
+  return (
+    <div className="text-xs text-slate-600 flex flex-col items-center gap-1">
+      {!open && (
+        <button type="button" onClick={()=> setOpen(true)} className="underline text-blue-600">
+          {t('water.cup.adjust')} ({current}ml)
+        </button>
+      )}
+      {open && (
+        <div className="flex items-center gap-2">
+          <input value={value} onChange={e=> setValue(e.target.value.replace(/[^0-9]/g,''))} className="w-16 border rounded px-1 py-0.5 text-center" />
+          <span>ml</span>
+          <button type="button" className="text-green-600" onClick={async ()=> { const n = Math.max(50, Math.min(1000, Number(value||'0'))); if (!n) return; await onSave(n); setOpen(false); }}>{t('common.save')}</button>
+          <button type="button" className="text-red-500" onClick={()=> setOpen(false)}>{t('common.cancel')}</button>
+        </div>
+      )}
     </div>
   );
 };

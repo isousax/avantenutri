@@ -30,4 +30,6 @@ export interface AuthContextType {
   sessionLastVerified?: number | null;
   sessionVerified?: boolean | null;
   forceVerify: () => Promise<boolean>;
+  /** Returns a fresh access token if available (refreshing if needed). */
+  getAccessToken: () => Promise<string | null>;
 }

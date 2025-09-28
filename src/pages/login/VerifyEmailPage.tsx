@@ -5,9 +5,11 @@ import { API } from "../../config/api";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 const CheckEmailPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [countdown, setCountdown] = useState(60);
   const [canResend, setCanResend] = useState(false);
@@ -47,7 +49,7 @@ const CheckEmailPage: React.FC = () => {
       if (res.status === 200) {
         setCountdown(60);
         setCanResend(false);
-        setFeedbackMsg("E-mail de verificação reenviado com sucesso!");
+        setFeedbackMsg(t('auth.verify.resend.success'));
         return;
       }
 
@@ -81,8 +83,8 @@ const CheckEmailPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
       <SEO
-        title="Verifique seu E-mail | Avante Nutri"
-        description="Verifique seu endereço de e-mail para completar seu cadastro na Avante Nutri."
+        title={t('verifyEmail.seo.title')}
+        description={t('verifyEmail.seo.desc')}
       />
 
       <div className="w-full max-w-md">
@@ -92,10 +94,10 @@ const CheckEmailPage: React.FC = () => {
             <LogoCroped />
           </Link>
           <h1 className="text-3xl font-bold text-green-800 mb-2">
-            Verifique seu E-mail
+            {t('auth.verify.title')}
           </h1>
           <p className="text-gray-600 text-sm">
-            Estamos quase lá! Confirme seu endereço de e-mail
+            {t('auth.verify.subtitle')}
           </p>
         </div>
 
@@ -118,10 +120,10 @@ const CheckEmailPage: React.FC = () => {
             </div>
 
             <h2 className="text-xl font-semibold text-gray-900 mb-2">
-              Confirmação Necessária
+              {t('auth.verify.card.title')}
             </h2>
             <p className="text-gray-600 mb-4 text-xs">
-              Enviamos um link de confirmação para:
+              {t('auth.verify.card.desc')}
             </p>
             <p className="font-semibold text-green-700 text-lg break-all">
               {email}
@@ -144,12 +146,12 @@ const CheckEmailPage: React.FC = () => {
                     d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                O que fazer agora?
+                {t('auth.verify.card.whatNow')}
               </h3>
               <ul className="text-xs text-blue-700 space-y-1">
-                <li>• Verifique sua caixa de entrada</li>
-                <li>• Procure na pasta de spam/lixo eletrônico</li>
-                <li>• Clique no link de confirmação</li>
+                <li>• {t('auth.verify.card.step1')}</li>
+                <li>• {t('auth.verify.card.step2')}</li>
+                <li>• {t('auth.verify.card.step3')}</li>
               </ul>
             </div>
 
@@ -174,10 +176,10 @@ const CheckEmailPage: React.FC = () => {
                       d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
                     />
                   </svg>
-                  Reenviar E-mail
+                  {t('auth.verify.resend')}
                 </>
               ) : (
-                `Reenviar em ${countdown}s`
+                t('auth.verify.resend.in', { seconds: String(countdown) })
               )}
             </Button>
 
@@ -186,7 +188,7 @@ const CheckEmailPage: React.FC = () => {
                 onClick={handleLogout}
                 className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
               >
-                Usar outro e-mail
+                {t('auth.verify.useAnother')}
               </button>
             </div>
             {feedbackMsg && (

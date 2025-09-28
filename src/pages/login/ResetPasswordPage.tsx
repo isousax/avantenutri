@@ -5,9 +5,11 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token");
 
@@ -47,12 +49,12 @@ const ResetPasswordPage: React.FC = () => {
 
     const strength = getStrength(password);
     const strengthLabels = [
-      "Muito fraca",
-      "Fraca",
-      "Razoável",
-      "Boa",
-      "Forte",
-      "Muito forte",
+      t('auth.password.strength.veryWeak'),
+      t('auth.password.strength.weak'),
+      t('auth.password.strength.fair'),
+      t('auth.password.strength.good'),
+      t('auth.password.strength.strong'),
+      t('auth.password.strength.veryStrong'),
     ];
     const strengthColors = [
       "bg-red-500",
@@ -88,7 +90,7 @@ const ResetPasswordPage: React.FC = () => {
               : "text-green-600"
           }`}
         >
-          Força da senha: {strengthLabels[strength]}
+          {`Força da senha: ${strengthLabels[strength]}`}
         </p>
       </div>
     );
@@ -102,20 +104,19 @@ const ResetPasswordPage: React.FC = () => {
     };
 
     if (!formData.password) {
-      newErrors.password = "Senha é obrigatória";
+      newErrors.password = t('auth.password.reset.error.passwordRequired');
     } else if (
       !/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$/.test(
         formData.password
       )
     ) {
-      newErrors.password =
-        "Mín 8 caracteres com minúscula, maiúscula, número e símbolo";
+      newErrors.password = t('auth.password.reset.error.passwordPolicy');
     }
 
     if (!formData.confirmPassword) {
-      newErrors.confirmPassword = "Confirme sua senha";
+      newErrors.confirmPassword = t('auth.password.reset.error.confirmRequired');
     } else if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "As senhas não coincidem";
+      newErrors.confirmPassword = t('auth.password.reset.error.noMatch');
     }
 
     setErrors(newErrors);
@@ -162,28 +163,28 @@ const ResetPasswordPage: React.FC = () => {
       if (res.status === 400 || res.status === 422) {
         setErrors((prev) => ({
           ...prev,
-          general: data?.error || "Token ou senha inválidos.",
+          general: data?.error || t('auth.password.reset.invalidLink.desc'),
         }));
         return;
       }
       if (res.status === 404) {
         setErrors((prev) => ({
           ...prev,
-          general: "Token não encontrado ou já utilizado.",
+          general: t('auth.password.reset.error.tokenNotFound'),
         }));
         return;
       }
       if (res.status === 429) {
         setErrors((prev) => ({
           ...prev,
-          general: "Muitas tentativas. Aguarde e tente novamente.",
+          general: t('auth.password.reset.error.tooMany'),
         }));
         return;
       }
       if (!res.ok) {
         setErrors((prev) => ({
           ...prev,
-          general: data?.error || "Erro inesperado.",
+          general: data?.error || t('auth.password.reset.error.generic'),
         }));
         return;
       }
@@ -192,7 +193,7 @@ const ResetPasswordPage: React.FC = () => {
     } catch {
       setErrors((prev) => ({
         ...prev,
-        general: "Erro de rede ao redefinir. Tente novamente.",
+        general: t('auth.password.reset.error.network'),
       }));
     } finally {
       setLoading(false);
@@ -219,13 +220,13 @@ const ResetPasswordPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-red-800 mb-2">
-            Link Inválido
+            {t('auth.password.reset.invalidLink.title')}
           </h2>
           <p className="text-gray-600 mb-4">
-            Este link de recuperação é inválido ou expirou.
+            {t('auth.password.reset.invalidLink.desc')}
           </p>
           <Link to="/recuperar-senha">
-            <Button className="w-full">Solicitar Novo Link</Button>
+            <Button className="w-full">{t('auth.password.reset.invalidLink.requestNew')}</Button>
           </Link>
         </Card>
       </div>
@@ -252,17 +253,17 @@ const ResetPasswordPage: React.FC = () => {
             </svg>
           </div>
           <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Senha Redefinida!
+            {t('auth.password.reset.success.title')}
           </h2>
           <p className="text-gray-600 mb-4">
-            Sua senha foi redefinida com sucesso. Redirecionando para o login...
+            {t('auth.password.reset.success.desc')}
           </p>
           <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
             <div className="bg-green-500 h-2 rounded-full animate-pulse"></div>
           </div>
           <Link to="/login">
             <Button variant="secondary" className="w-full">
-              Ir para Login Agora
+              {t('auth.password.reset.goLoginNow')}
             </Button>
           </Link>
         </Card>
@@ -273,8 +274,8 @@ const ResetPasswordPage: React.FC = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-25 py-8 px-4">
       <SEO
-        title="Redefinir Senha | Avante Nutri"
-        description="Defina uma nova senha para sua conta Avante Nutri e mantenha seu acesso seguro."
+        title={t('reset.seo.title')}
+        description={t('reset.seo.desc')}
       />
       <div className="w-full max-w-md">
         {/* Logo e Cabeçalho */}
@@ -282,8 +283,8 @@ const ResetPasswordPage: React.FC = () => {
           <Link to="/" className="inline-flex items-center justify-center mb-6">
             <LogoCroped />
           </Link>
-          <h1 className="text-3xl font-bold text-green-800 mb-2">Nova Senha</h1>
-          <p className="text-gray-600">Crie uma nova senha para sua conta</p>
+          <h1 className="text-3xl font-bold text-green-800 mb-2">{t('auth.password.reset.title')}</h1>
+          <p className="text-gray-600">{t('auth.password.reset.subtitle')}</p>
         </div>
 
         <Card className="p-8 shadow-xl border border-green-100">
@@ -294,7 +295,7 @@ const ResetPasswordPage: React.FC = () => {
                 htmlFor="password"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Nova Senha
+                {t('auth.password.reset.new')}
               </label>
               <div className="relative">
                 <input
@@ -306,7 +307,7 @@ const ResetPasswordPage: React.FC = () => {
                   className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 ${
                     errors.password ? "border-red-500" : "border-gray-300"
                   }`}
-                  placeholder="Mín 8 c/ maiúscula, minúscula, número e símbolo"
+                  placeholder={t('auth.password.reset.placeholder')}
                   disabled={loading}
                   autoFocus
                 />
@@ -316,7 +317,7 @@ const ResetPasswordPage: React.FC = () => {
                   onClick={() => setShowPwd((p) => !p)}
                   tabIndex={-1}
                 >
-                  {showPwd ? "Ocultar" : "Mostrar"}
+                  {showPwd ? t('auth.password.reset.hide') : t('auth.password.reset.show')}
                 </button>
               </div>
               <PasswordStrengthIndicator password={formData.password} />
@@ -346,7 +347,7 @@ const ResetPasswordPage: React.FC = () => {
                 htmlFor="confirmPassword"
                 className="block text-sm font-medium text-gray-700 mb-2"
               >
-                Confirmar Nova Senha
+                {t('auth.password.reset.confirm')}
               </label>
               <input
                 id="confirmPassword"
@@ -407,10 +408,10 @@ const ResetPasswordPage: React.FC = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     ></path>
                   </svg>
-                  Redefinindo...
+                  {t('auth.password.reset.loading')}
                 </div>
               ) : (
-                "Redefinir Senha"
+                t('auth.password.reset.submit')
               )}
             </Button>
 
@@ -445,7 +446,7 @@ const ResetPasswordPage: React.FC = () => {
                 to="/login"
                 className="font-medium text-green-600 hover:text-green-700 transition-colors duration-200"
               >
-                Fazer login
+                {t('auth.login.submit')}
               </Link>
             </p>
           </div>
