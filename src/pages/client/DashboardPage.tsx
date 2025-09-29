@@ -18,7 +18,7 @@ import { useWeightLogs } from "../../hooks/useWeightLogs";
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 
-// Diet plan types derive from hook summaries (simplified view mapping)
+// Modern Diet Plan Card
 interface DietPlanCardProps {
   id: string;
   name: string;
@@ -40,49 +40,41 @@ const DietPlanCard: React.FC<{
   const isCurrent = diet.status === "active";
 
   return (
-    <Card
-      className={`p-4 hover:shadow-lg transition-all duration-300 border-l-4 ${
-        isCurrent ? "border-l-green-500" : "border-l-gray-300"
-      }`}
-    >
-      <div className="flex items-start justify-between mb-3">
+    <Card className="p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
+      <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
-          <h3 className="text-base font-semibold text-gray-900 truncate">
-            {diet.name}
-          </h3>
-          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+          <div className="flex items-center gap-2 mb-2">
+            <div
+              className={`w-2 h-2 rounded-full ${
+                isCurrent ? "bg-green-500 animate-pulse" : "bg-gray-300"
+              }`}
+            />
+            <h3 className="text-lg font-bold text-gray-900 truncate">
+              {diet.name}
+            </h3>
+          </div>
+          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
             {diet.description || "Sem descrição"}
           </p>
         </div>
-        <span
-          className={`ml-2 px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
-            isCurrent
-              ? "bg-green-100 text-green-800"
-              : "bg-gray-100 text-gray-800"
-          }`}
-        >
-          {isCurrent
-            ? "Ativa"
-            : diet.status === "archived"
-            ? "Arquivada"
-            : "Inativa"}
-        </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
-        <div>
-          <span className="text-gray-500 text-xs">Início:</span>
-          <p className="font-medium text-sm">
+      <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            Início
+          </span>
+          <p className="font-semibold text-gray-900">
             {diet.start_date
               ? fmtDate(diet.start_date, locale as any, { dateStyle: "short" })
               : "-"}
           </p>
         </div>
-        <div>
-          <span className="text-gray-500 text-xs">
-            {isCurrent ? "Término:" : "Fim:"}
+        <div className="space-y-1">
+          <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+            {isCurrent ? "Término" : "Fim"}
           </span>
-          <p className="font-medium text-sm">
+          <p className="font-semibold text-gray-900">
             {diet.end_date
               ? fmtDate(diet.end_date, locale as any, { dateStyle: "short" })
               : "-"}
@@ -91,26 +83,30 @@ const DietPlanCard: React.FC<{
       </div>
 
       {diet.results_summary && (
-        <div className="mb-3 p-2 bg-green-50 rounded-lg">
-          <p className="text-xs font-medium text-green-800 line-clamp-2">
-            Resultados: {diet.results_summary}
+        <div className="mb-4 p-3 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
+          <p className="text-sm font-medium text-green-800 line-clamp-2 flex items-center gap-2">
+            <span className="text-green-600">📈</span>
+            {diet.results_summary}
           </p>
         </div>
       )}
 
-      <div className="flex gap-2">
-        <Button className="flex-1 text-sm py-2" onClick={() => onView(diet.id)}>
+      <div className="flex gap-3">
+        <Button
+          className="flex-1 text-sm py-3 rounded-xl font-medium bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 text-white shadow-lg shadow-green-500/25"
+          onClick={() => onView(diet.id)}
+        >
           Ver Detalhes
         </Button>
         {canEdit && (
           <Button
             variant="secondary"
-            className="px-3 py-2 min-w-[44px]"
+            className="px-4 py-3 min-w-[52px] rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm"
             onClick={() => onRevise && onRevise(diet.id)}
             title="Nova Revisão"
           >
             <svg
-              className="w-4 h-4"
+              className="w-5 h-5 text-gray-600"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -129,53 +125,7 @@ const DietPlanCard: React.FC<{
   );
 };
 
-interface QuickActionProps {
-  icon: string;
-  label: string;
-  description: string;
-  onClick: () => void;
-  color?: string;
-}
-
-const QuickAction: React.FC<QuickActionProps> = ({
-  icon,
-  label,
-  description,
-  onClick,
-  color = "green",
-}) => {
-  const colorClasses = {
-    green: "bg-green-100 text-green-600",
-    blue: "bg-blue-100 text-blue-600",
-    cyan: "bg-cyan-100 text-cyan-600",
-    purple: "bg-purple-100 text-purple-600",
-    amber: "bg-amber-100 text-amber-600",
-  };
-
-  return (
-    <div onClick={onClick} className="touch-manipulation">
-      <Card className="p-3 cursor-pointer hover:shadow-md transition-all duration-200 active:scale-95">
-        <div className="flex items-center">
-          <div
-            className={`p-2 rounded-lg ${
-              colorClasses[color as keyof typeof colorClasses]
-            } mr-3`}
-          >
-            <span className="text-lg">{icon}</span>
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-gray-900 text-sm truncate">
-              {label}
-            </h4>
-            <p className="text-xs text-gray-600 truncate">{description}</p>
-          </div>
-        </div>
-      </Card>
-    </div>
-  );
-};
-
-// Bottom Navigation Component for Mobile
+// Modern Bottom Navigation
 const BottomNav: React.FC<{
   activeTab: string;
   onTabChange: (tab: any) => void;
@@ -189,22 +139,135 @@ const BottomNav: React.FC<{
   ];
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 md:hidden">
-      <div className="flex justify-around">
+    <nav className="fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-2xl shadow-black/10 z-40 md:hidden">
+      <div className="flex justify-around p-1">
         {tabs.map((tab) => (
           <button
             key={tab.id}
             onClick={() => onTabChange(tab.id)}
-            className={`flex flex-col items-center py-2 px-1 flex-1 min-w-0 ${
-              activeTab === tab.id ? "text-green-600" : "text-gray-600"
+            className={`flex flex-col items-center py-2 px-1 flex-1 min-w-0 rounded-xl transition-all duration-300 ${
+              activeTab === tab.id
+                ? "text-green-600 bg-green-50/80"
+                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50/50"
             }`}
           >
-            <span className="text-lg mb-1">{tab.icon}</span>
-            <span className="text-xs font-medium truncate">{tab.label}</span>
+            <span className="text-lg mb-1 transition-transform duration-300">
+              {tab.icon}
+            </span>
+            <span className="text-xs font-semibold truncate">{tab.label}</span>
           </button>
         ))}
       </div>
     </nav>
+  );
+};
+
+// Modern Weight Goal Component
+const WeightGoal: React.FC<{
+  latestWeight: number | null | undefined;
+  weightDiff: number | null;
+  weightDiffPct: number | null;
+  goal: number | null;
+  editingGoal: boolean;
+  goalInput: string;
+  setEditingGoal: (editing: boolean) => void;
+  setGoalInput: (goal: string) => void;
+  saveGoal: () => void;
+  series: any[];
+  gradient?: string;
+}> = ({
+  latestWeight,
+  weightDiff,
+  weightDiffPct,
+  goal,
+  editingGoal,
+  goalInput,
+  setEditingGoal,
+  setGoalInput,
+  saveGoal,
+  series,
+  gradient,
+}) => {
+  return (
+    <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+      <div className="flex items-start justify-between mb-4">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-3">
+            <div className={`p-4 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
+              <span className="text-xl">⚖️</span>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-gray-900">
+                Peso Atual
+              </h4>
+              <div className="text-2xl font-bold text-gray-900 mt-1">
+                {latestWeight ? `${latestWeight.toFixed(1)} kg` : "-"}
+              </div>
+            </div>
+          </div>
+
+          {weightDiffPct != null && (
+            <div
+              className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                weightDiffPct < 0
+                  ? "bg-green-100 text-green-800"
+                  : weightDiffPct > 0
+                  ? "bg-amber-100 text-amber-800"
+                  : "bg-gray-100 text-gray-800"
+              }`}
+            >
+              {weightDiffPct < 0 ? "↘️" : weightDiffPct > 0 ? "↗️" : "➡️"}Δ{" "}
+              {weightDiff?.toFixed(1)} kg ({weightDiffPct.toFixed(1)}%)
+            </div>
+          )}
+        </div>
+
+        <div className="flex flex-col items-end gap-2">
+          {!editingGoal ? (
+            <button
+              onClick={() => setEditingGoal(true)}
+              className="text-sm text-blue-600 hover:text-blue-700 font-medium whitespace-nowrap bg-blue-50 hover:bg-blue-100 px-3 py-2 rounded-xl transition-colors"
+            >
+              Meta: {goal != null ? `${goal.toFixed(1)} kg` : "🎯 Definir"}
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl p-2">
+              <input
+                value={goalInput}
+                onChange={(e) => setGoalInput(e.target.value)}
+                className="w-16 border-0 bg-transparent px-2 py-1 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+                type="number"
+                step="0.1"
+                placeholder="Meta"
+              />
+              <button
+                onClick={saveGoal}
+                className="text-green-600 hover:text-green-700 p-1"
+              >
+                ✓
+              </button>
+              <button
+                onClick={() => {
+                  setEditingGoal(false);
+                  setGoalInput(goal != null ? goal.toString() : "");
+                }}
+                className="text-red-500 hover:text-red-600 p-1"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      <div className="mt-4">
+        <Sparkline
+          data={series.slice(-20)}
+          height={50}
+          gradient={["#10b981", "#059669"]}
+        />
+      </div>
+    </Card>
   );
 };
 
@@ -360,9 +423,16 @@ const DashboardPage: React.FC = () => {
   const { locale, t } = useI18n();
   const quickActions = [
     {
+      icon: "📅",
+      label: "Agendar Consulta",
+      description: "Marque nova consulta",
+      onClick: () => navigate("/agendar-consulta"),
+      color: "purple",
+    },
+    {
       icon: "📋",
       label: "Registrar Refeição",
-      description: "Adicione o que comeu hoje",
+      description: "Adicione o que comeu",
       onClick: () => navigate("/registro-refeicao"),
       color: "blue",
     },
@@ -380,28 +450,13 @@ const DashboardPage: React.FC = () => {
       onClick: () => navigate("/registro-agua"),
       color: "cyan",
     },
-    {
-      icon: "📅",
-      label: "Agendar Consulta",
-      description: "Marque nova consulta",
-      onClick: () => navigate("/agendar-consulta"),
-      color: "purple",
-    },
-    {
-      icon: "💳",
-      label: locale === "pt" ? "Faturamento / Plano" : "Billing / Plan",
-      description:
-        locale === "pt" ? "Histórico de pagamentos" : "Payment history",
-      onClick: () => navigate("/billing/historico"),
-      color: "amber",
-    },
   ];
 
   const formatDate = (date: Date): string =>
     fmtDate(date, locale, { dateStyle: "full" });
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex">
       <SEO
         title={t("dashboard.seo.title")}
         description={t("dashboard.seo.desc")}
@@ -410,15 +465,15 @@ const DashboardPage: React.FC = () => {
       {/* Sidebar Mobile Overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+          className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      {/* Modern Sidebar */}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-50 w-80 bg-white shadow-xl transform transition-transform duration-300 ease-in-out
+          fixed md:static inset-y-0 left-0 z-50 w-80 bg-white/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-gray-200/60
           ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }
@@ -426,19 +481,19 @@ const DashboardPage: React.FC = () => {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="p-4 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-200/60">
             <div className="flex items-center">
-              <div className="flex items-center pr-3 border-r border-gray-300">
+              <div className="flex items-center pr-4 border-r border-gray-300/60">
                 <LogoCroped />
               </div>
-              <div className="pl-3">
-                <p className="text-xs text-gray-500">Área do Paciente</p>
+              <div className="pl-4">
+                <p className="text-xs text-gray-500 mt-1">Área do Paciente</p>
               </div>
             </div>
           </div>
 
           {/* User Info */}
-          <div className="p-4 border-b border-gray-100">
+          <div className="p-6 border-b border-gray-200/60">
             <div className="flex items-center">
               <img
                 src={
@@ -448,13 +503,14 @@ const DashboardPage: React.FC = () => {
                   }&background=22c55e&color=fff`
                 }
                 alt={user?.full_name}
-                className="h-12 w-12 rounded-full border-2 border-green-100"
+                className="h-14 w-14 rounded-2xl border-2 border-green-200 shadow-lg"
               />
-              <div className="ml-3 min-w-0 flex-1">
-                <h3 className="font-semibold text-gray-900 text-sm truncate">
+              <div className="ml-4 min-w-0 flex-1">
+                <h3 className="font-bold text-gray-900 text-base truncate">
                   {user?.full_name}
                 </h3>
-                <p className="text-xs text-green-600 font-medium truncate">
+                <p className="text-green-600 font-semibold text-sm truncate flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                   Plano Ativo
                 </p>
               </div>
@@ -462,7 +518,7 @@ const DashboardPage: React.FC = () => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-3">
+          <nav className="flex-1 p-4">
             {[
               { id: "overview", label: "Visão Geral", icon: "📊" },
               { id: "dietas", label: "Minhas Dietas", icon: "🍽️" },
@@ -473,37 +529,30 @@ const DashboardPage: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(
-                    item.id as
-                      | "overview"
-                      | "dietas"
-                      | "perfil"
-                      | "suporte"
-                      | "consultas"
-                  );
+                  setActiveTab(item.id as any);
                   setSidebarOpen(false);
                 }}
-                className={`w-full flex items-center px-3 py-2.5 rounded-lg mb-1 transition-all duration-200 ${
+                className={`w-full flex items-center px-4 py-3.5 rounded-2xl mb-2 transition-all duration-300 ${
                   activeTab === item.id
-                    ? "bg-green-50 text-green-700 border-l-4 border-l-green-500"
-                    : "text-gray-600 hover:bg-gray-50"
+                    ? "bg-gradient-to-r from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/25"
+                    : "text-gray-700 hover:bg-gray-50/80 hover:text-gray-900"
                 }`}
               >
-                <span className="text-lg mr-3">{item.icon}</span>
-                <span className="font-medium text-sm">{item.label}</span>
+                <span className="text-xl mr-3">{item.icon}</span>
+                <span className="font-semibold text-sm">{item.label}</span>
               </button>
             ))}
           </nav>
 
           {/* Footer */}
-          <div className="p-3 border-t border-gray-100">
+          <div className="p-4 border-t border-gray-200/60">
             <Button
               variant="secondary"
-              className="w-full flex justify-center text-center py-2 text-sm"
+              className="w-full flex justify-center text-center py-3.5 text-sm rounded-2xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
               onClick={handleLogout}
             >
               <svg
-                className="w-4 h-4 mr-2"
+                className="w-5 h-5 mr-2"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
@@ -522,18 +571,18 @@ const DashboardPage: React.FC = () => {
       </aside>
 
       {/* Main Content */}
-      <main className="flex-1 min-w-0 pb-16 md:pb-0">
-        {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-30">
-          <div className="px-4 py-3">
+      <main className="flex-1 min-w-0 pb-24 md:pb-0">
+        {/* Modern Header */}
+        <header className="bg-white/80 backdrop-blur-xl border-b border-gray-200/60 sticky top-0 z-30">
+          <div className="px-5 py-4">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
                 <button
-                  className="md:hidden p-2 mr-2 rounded-lg hover:bg-gray-100 touch-manipulation"
+                  className="md:hidden p-2.5 mr-3 rounded-2xl hover:bg-gray-100/80 touch-manipulation transition-colors"
                   onClick={() => setSidebarOpen(true)}
                 >
                   <svg
-                    className="w-5 h-5"
+                    className="w-6 h-6 text-gray-700"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -547,20 +596,21 @@ const DashboardPage: React.FC = () => {
                   </svg>
                 </button>
                 <div className="min-w-0">
-                  <h1 className="text-lg font-bold text-gray-900 truncate capitalize">
+                  <h1 className="text-xl font-bold text-gray-900 truncate capitalize">
                     {activeTab === "overview" && "Visão Geral"}
                     {activeTab === "dietas" && "Minhas Dietas"}
                     {activeTab === "consultas" && "Minhas Consultas"}
                     {activeTab === "perfil" && "Meu Perfil"}
                     {activeTab === "suporte" && "Suporte"}
                   </h1>
-                  <p className="text-gray-600 text-xs truncate">
+                  <p className="text-gray-600 text-sm truncate flex items-center gap-2 mt-1">
+                    <span>📅</span>
                     {formatDate(currentTime)}
                   </p>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-3">
+              <div className="flex items-center space-x-4">
                 <NotificationBell
                   notifications={notifications}
                   onNotificationClick={handleNotificationClick}
@@ -571,94 +621,135 @@ const DashboardPage: React.FC = () => {
         </header>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-5">
           {activeTab === "overview" && (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {/* Quick Actions */}
-              <div>
-                <h2 className="text-base font-semibold text-gray-900 mb-3">
-                  Ações Rápidas
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-3">
+              {/* Quick Actions - Versão Redesenhada para Mobile */}
+              <div className="mb-8">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
+                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
+                      <span className="text-lg">🚀</span>
+                    </div>
+                    Ações Rápidas
+                  </h2>
+                </div>
+
+                {/* Layout horizontal scroll para mobile */}
+                <div className="md:hidden">
+                  <div className="flex space-x-4 pb-4 overflow-x-auto scrollbar-hide -mx-1 px-1">
+                    {quickActions.map((action, index) => (
+                      <div
+                        key={index}
+                        onClick={action.onClick}
+                        className="flex-none w-40 touch-manipulation active:scale-95 transition-transform"
+                      >
+                        <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                          <div
+                            className={`p-3 rounded-xl bg-gradient-to-br ${
+                              action.color === "blue"
+                                ? "from-blue-500 to-cyan-600"
+                                : action.color === "green"
+                                ? "from-green-500 to-emerald-600"
+                                : action.color === "cyan"
+                                ? "from-cyan-500 to-blue-600"
+                                : action.color === "purple"
+                                ? "from-purple-500 to-indigo-600"
+                                : "from-amber-500 to-orange-600"
+                            } text-white shadow-lg w-12 h-12 flex items-center justify-center mb-3`}
+                          >
+                            <span className="text-xl">{action.icon}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">
+                              {action.label}
+                            </h4>
+                            <p className="text-xs text-gray-600 leading-relaxed line-clamp-2">
+                              {action.description}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Layout grid para desktop */}
+                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
                   {quickActions.map((action, index) => (
-                    <QuickAction key={index} {...action} />
+                    <div
+                      key={index}
+                      onClick={action.onClick}
+                      className="touch-manipulation active:scale-95 transition-transform"
+                    >
+                      <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col group">
+                        <div className="flex items-start justify-between mb-4">
+                          <div
+                            className={`p-3 rounded-xl bg-gradient-to-br ${
+                              action.color === "blue"
+                                ? "from-blue-500 to-cyan-600"
+                                : action.color === "green"
+                                ? "from-green-500 to-emerald-600"
+                                : action.color === "cyan"
+                                ? "from-cyan-500 to-blue-600"
+                                : action.color === "purple"
+                                ? "from-purple-500 to-indigo-600"
+                                : "from-amber-500 to-orange-600"
+                            } text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                          >
+                            <span className="text-xl">{action.icon}</span>
+                          </div>
+                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-bold text-gray-900 text-base leading-tight mb-2">
+                            {action.label}
+                          </h4>
+                          <p className="text-sm text-gray-600 leading-relaxed">
+                            {action.description}
+                          </p>
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-gray-100">
+                          <button className="text-xs text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-800">
+                            Acessar
+                            <svg
+                              className="w-3 h-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M9 5l7 7-7 7"
+                              />
+                            </svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   ))}
                 </div>
               </div>
 
               {/* Stats */}
-              <div className="grid gap-4 md:grid-cols-3">
-                <StatsCard
-                  title="Revisões (mês)"
-                  value={(usage?.DIETA_REVISOES_MES?.used ?? 0).toString()}
-                  description={
-                    usage?.DIETA_REVISOES_MES?.limit != null
-                      ? `Limite: ${usage.DIETA_REVISOES_MES.limit}`
-                      : ""
-                  }
-                  icon="📝"
+              <div className="grid gap-5 md:grid-cols-3">
+                <WeightGoal
+                  latestWeight={latestWeight?.weight_kg}
+                  weightDiff={weightDiff}
+                  weightDiffPct={weightDiffPct}
+                  goal={goal}
+                  editingGoal={editingGoal}
+                  goalInput={goalInput}
+                  setEditingGoal={setEditingGoal}
+                  setGoalInput={setGoalInput}
+                  saveGoal={saveGoal}
+                  series={series}
+                  gradient="from-green-500 to-emerald-600"
                 />
-                <Card className="p-4 flex flex-col justify-between">
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex-1">
-                      <h4 className="text-sm font-medium text-gray-600">
-                        Peso Atual
-                      </h4>
-                      <div className="text-xl font-semibold text-gray-900 mt-1">
-                        {latestWeight
-                          ? `${latestWeight.weight_kg.toFixed(1)} kg`
-                          : "-"}
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {weightDiffPct != null
-                          ? `Δ ${weightDiff?.toFixed(
-                              1
-                            )} kg (${weightDiffPct.toFixed(1)}%)`
-                          : "Sem variação"}
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      {!editingGoal && (
-                        <button
-                          onClick={() => setEditingGoal(true)}
-                          className="text-xs text-blue-600 hover:underline whitespace-nowrap"
-                        >
-                          Meta:{" "}
-                          {goal != null ? `${goal.toFixed(1)} kg` : "definir"}
-                        </button>
-                      )}
-                      {editingGoal && (
-                        <div className="flex items-center gap-1">
-                          <input
-                            value={goalInput}
-                            onChange={(e) => setGoalInput(e.target.value)}
-                            className="w-16 border rounded px-1 py-0.5 text-xs"
-                            type="number"
-                            step="0.1"
-                          />
-                          <button
-                            onClick={saveGoal}
-                            className="text-xs text-green-600"
-                          >
-                            OK
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingGoal(false);
-                              setGoalInput(goal != null ? goal.toString() : "");
-                            }}
-                            className="text-xs text-red-500"
-                          >
-                            X
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <div className="mt-2">
-                    <Sparkline data={series.slice(-20)} height={40} />
-                  </div>
-                </Card>
+
                 <StatsCard
                   title="Água Hoje"
                   value={
@@ -674,22 +765,33 @@ const DashboardPage: React.FC = () => {
                       : ""
                   }
                   icon="💧"
+                  gradient="from-blue-500 to-cyan-600"
+                />
+
+                <StatsCard
+                  title="Adesão à Dieta"
+                  value="85%"
+                  description="Meta 100%"
+                  icon="📊"
+                  gradient="from-purple-500 to-indigo-600"
                 />
               </div>
 
               {/* Progress and Diet Plans */}
-              <div className="grid gap-5 lg:grid-cols-2">
-                <Card className="p-4">
-                  <h3 className="text-base font-semibold text-gray-900 mb-3">
+              <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                    <span>🎯</span>
                     Progresso dos Objetivos
                   </h3>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     <Progress
                       current={72.5}
                       target={70}
                       label="Meta de Peso"
                       unit="kg"
                       size="sm"
+                      gradient="from-green-500 to-emerald-600"
                     />
                     <Progress
                       current={1850}
@@ -697,6 +799,7 @@ const DashboardPage: React.FC = () => {
                       label="Meta de Calorias"
                       unit="kcal"
                       size="sm"
+                      gradient="from-amber-500 to-orange-600"
                     />
                     <Progress
                       current={7}
@@ -704,6 +807,7 @@ const DashboardPage: React.FC = () => {
                       label="Copos de Água"
                       unit=""
                       size="sm"
+                      gradient="from-blue-500 to-cyan-600"
                     />
                     <Progress
                       current={85}
@@ -711,28 +815,28 @@ const DashboardPage: React.FC = () => {
                       label="Adesão à Dieta"
                       unit="%"
                       size="sm"
+                      gradient="from-purple-500 to-indigo-600"
                     />
                   </div>
                 </Card>
 
-                <Card className="p-4">
-                  <div className="flex justify-between items-center mb-3">
-                    <h3 className="text-base font-semibold text-gray-900">
+                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <span>🍽️</span>
                       Dietas Recentes
                     </h3>
                     {canViewDiets && (
                       <Button
                         variant="secondary"
-                        onClick={() => {
-                          setActiveTab("dietas");
-                        }}
-                        className="text-sm py-1 px-3"
+                        onClick={() => setActiveTab("dietas")}
+                        className="text-sm py-2 px-4 rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
                       >
                         Ver Todas
                       </Button>
                     )}
                   </div>
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {canViewDiets &&
                       plans
                         .slice(0, 3)
@@ -747,8 +851,11 @@ const DashboardPage: React.FC = () => {
                           />
                         ))}
                     {!canViewDiets && (
-                      <div className="text-sm text-gray-500 text-center py-4">
-                        Seu plano não permite visualizar dietas.
+                      <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
+                        <div className="text-4xl mb-3">🔒</div>
+                        <p className="text-gray-600 font-medium">
+                          Seu plano não permite visualizar dietas.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -756,29 +863,30 @@ const DashboardPage: React.FC = () => {
               </div>
 
               {/* Upcoming Appointments */}
-              <Card className="p-4">
-                <h3 className="text-base font-semibold text-gray-900 mb-3">
+              <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                  <span>📅</span>
                   Próximas Consultas
                 </h3>
-                <div className="space-y-2">
+                <div className="space-y-3">
                   {upcomingAppointments.map((appointment) => (
                     <div
                       key={appointment.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                      className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 hover:border-green-200 transition-colors"
                     >
                       <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 text-sm truncate">
+                        <p className="font-bold text-gray-900 text-sm truncate">
                           {appointment.type}
                         </p>
-                        <p className="text-xs text-gray-600">
+                        <p className="text-xs text-gray-600 mt-1">
                           {appointment.date} às {appointment.time}
                         </p>
                       </div>
                       <span
-                        className={`ml-2 px-2 py-1 text-xs font-medium rounded-full whitespace-nowrap ${
+                        className={`ml-3 px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap ${
                           appointment.status === "confirmada"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
+                            ? "bg-green-100 text-green-800 border border-green-200"
+                            : "bg-amber-100 text-amber-800 border border-amber-200"
                         }`}
                       >
                         {appointment.status}

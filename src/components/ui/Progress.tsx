@@ -6,6 +6,7 @@ interface ProgressProps {
   label: string;
   unit?: string;
   size?: "sm" | "md" | "lg";
+  gradient?: string;
 }
 
 const Progress: React.FC<ProgressProps> = ({
@@ -14,6 +15,7 @@ const Progress: React.FC<ProgressProps> = ({
   label,
   unit = "",
   size = "md",
+  gradient,
 }) => {
   const percentage = Math.min(Math.round((current / target) * 100), 100);
 
@@ -35,7 +37,9 @@ const Progress: React.FC<ProgressProps> = ({
       </div>
       <div className={`w-full bg-gray-200 rounded-full ${heightClass}`}>
         <div
-          className={`bg-brand-600 ${heightClass} rounded-full transition-all duration-300 ease-in-out`}
+          className={`${
+            gradient ? `bg-gradient-to-r ${gradient}` : "bg-brand-600"
+          } ${heightClass} rounded-full transition-all duration-300 ease-in-out`}
           style={{ width: `${percentage}%` }}
         >
           <span className="sr-only">{percentage}% Completo</span>
