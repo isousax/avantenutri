@@ -1,26 +1,41 @@
-import React from 'react';
+import React from "react";
 
 interface ProgressProps {
   current: number;
   target: number;
   label: string;
   unit?: string;
+  size?: "sm" | "md" | "lg";
 }
 
-const Progress: React.FC<ProgressProps> = ({ current, target, label, unit = '' }) => {
+const Progress: React.FC<ProgressProps> = ({
+  current,
+  target,
+  label,
+  unit = "",
+  size = "md",
+}) => {
   const percentage = Math.min(Math.round((current / target) * 100), 100);
-  
+
+  const heightClass = {
+    sm: "h-2",
+    md: "h-2.5",
+    lg: "h-3.5",
+  }[size];
+
   return (
     <div className="w-full">
       <div className="flex justify-between items-center mb-1">
         <span className="text-sm font-medium text-gray-700">{label}</span>
         <span className="text-sm font-medium text-gray-500">
-          {current}{unit} / {target}{unit}
+          {current}
+          {unit} / {target}
+          {unit}
         </span>
       </div>
-      <div className="w-full bg-gray-200 rounded-full h-2.5">
+      <div className={`w-full bg-gray-200 rounded-full ${heightClass}`}>
         <div
-          className="bg-brand-600 h-2.5 rounded-full transition-all duration-300 ease-in-out"
+          className={`bg-brand-600 ${heightClass} rounded-full transition-all duration-300 ease-in-out`}
           style={{ width: `${percentage}%` }}
         >
           <span className="sr-only">{percentage}% Completo</span>

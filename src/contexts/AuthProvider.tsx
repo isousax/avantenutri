@@ -824,6 +824,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       rememberMe: boolean = false
     ) => {
       try {
+        console.log("LOGIN URL: ",API.LOGIN)
         const res = await fetch(API.LOGIN, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
