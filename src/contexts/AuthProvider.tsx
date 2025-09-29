@@ -283,6 +283,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 email: (p.email ?? "") as string,
                 role: normalizeRole(p.role),
                 full_name: (p.full_name ?? p.name ?? "") as string,
+                display_name: (p.display_name ?? "") as string,
               };
               setUser(derived);
               saveUserToStorage(derived, rememberMe);
@@ -482,6 +483,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: (payload.email ?? "") as string,
           role: normalizeRole(payload.role),
           full_name: (payload.full_name ?? payload.name ?? "") as string,
+          display_name: (payload.display_name ?? "") as string,
         };
         setUser(derived);
         // detecta rememberMe pela existência no sessionStorage (espelho) – se não existir assume rememberMe=true
@@ -538,6 +540,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   full_name: (me.full_name ||
                     me.name ||
                     derived.full_name) as string,
+                  display_name: (me.display_name ?? "") as string,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
@@ -746,6 +749,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             data.name ||
             user?.full_name ||
             "") as string,
+          display_name: (data.display_name ?? "") as string,
         };
         const changed = JSON.stringify(updated) !== JSON.stringify(user);
         if (changed) {
@@ -824,7 +828,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       rememberMe: boolean = false
     ) => {
       try {
-        console.log("LOGIN URL: ",API.LOGIN)
+        console.log("LOGIN URL: ", API.LOGIN);
         const res = await fetch(API.LOGIN, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -849,7 +853,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               expiresAt = new Date(Number(p.exp) * 1000).toISOString();
           }
 
-          let userObj: User = { id: "", email, role: "patient", full_name: "" };
+          let userObj: User = {
+            id: "",
+            email,
+            role: "patient",
+            full_name: "",
+            display_name: "",
+          };
           if (access) {
             const p = decodeJwt(access);
             if (p) {
@@ -858,6 +868,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 email: (p.email ?? email) as string,
                 role: normalizeRole(p.role),
                 full_name: (p.full_name ?? p.name ?? "") as string,
+                display_name: (p.display_name ?? "") as string,
               };
             }
           } else {
@@ -866,12 +877,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               role: normalizeRole(body?.role),
               email: body?.email ?? email,
               full_name: body?.full_name ?? "",
+              display_name: body?.full_name ?? "",
             };
             userObj = {
               id: returnedUser.id ?? "",
               email: returnedUser.email ?? email,
               role: returnedUser.role,
               full_name: returnedUser.full_name ?? "",
+              display_name: returnedUser.full_name ?? "",
             };
           }
 
@@ -906,6 +919,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     full_name: (meData.full_name ||
                       meData.name ||
                       userObj.full_name) as string,
+                    display_name: meData.full_name ?? "",
                   } as User;
                   setUser(updated);
                   saveUserToStorage(updated, rememberMe);
@@ -1021,6 +1035,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               email: (p.email ?? "") as string,
               role: normalizeRole(p.role),
               full_name: (p.full_name ?? p.name ?? "") as string,
+              display_name: (p.display_name ?? "") as string,
             });
           }
           return true;
@@ -1121,6 +1136,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               data.name ||
               user?.full_name ||
               "") as string,
+            display_name: data.full_name ?? "",
           };
           setUser(updated);
           const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);

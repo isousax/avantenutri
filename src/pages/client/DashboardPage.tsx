@@ -17,6 +17,7 @@ import { CAPABILITIES } from "../../types/capabilities";
 import { useWeightLogs } from "../../hooks/useWeightLogs";
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
+import {MealIcon,WeightIcon,WaterIcon,CalendarIcon } from "../../components/dashboard/icon";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -193,8 +194,12 @@ const WeightGoal: React.FC<{
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-3">
-            <div className={`p-4 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}>
-              <span className="text-xl">⚖️</span>
+            <div
+              className={`p-4 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}
+            >
+              <span className="text-xl">
+                <MealIcon className="w-8 h-8" />
+              </span>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-gray-900">
@@ -272,7 +277,7 @@ const WeightGoal: React.FC<{
 };
 
 const DashboardPage: React.FC = () => {
-  const { user = { full_name: "", email: "", photoUrl: "" }, logout } =
+  const { user = { full_name: "", email: "", photoUrl: "", display_name: ""}, logout } =
     useAuth();
   const navigate = useNavigate();
 
@@ -289,7 +294,6 @@ const DashboardPage: React.FC = () => {
     "overview" | "dietas" | "perfil" | "suporte" | "consultas"
   >("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Notifications data
   const notifications = [
@@ -408,36 +412,25 @@ const DashboardPage: React.FC = () => {
     },
   ];
 
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
-
-    return () => clearInterval(timer);
-  }, []);
-
   const handleNotificationClick = (id: string) => {
     console.log(`Notification ${id} clicked`);
   };
 
   const { locale, t } = useI18n();
+  // Ícones SVG para substituir emojis (você pode usar Lucide, Heroicons, ou qualquer outra lib)
+
   const quickActions = [
     {
-      icon: "📅",
-      label: "Agendar Consulta",
-      description: "Marque nova consulta",
-      onClick: () => navigate("/agendar-consulta"),
-      color: "purple",
-    },
-    {
-      icon: "📋",
+      icon: "📋", // Fallback emoji
+      iconComponent: MealIcon, // Ícone SVG
       label: "Registrar Refeição",
-      description: "Adicione o que comeu",
+      description: "Adicione o que comeu hoje",
       onClick: () => navigate("/registro-refeicao"),
       color: "blue",
     },
     {
       icon: "⚖️",
+      iconComponent: WeightIcon,
       label: "Registrar Peso",
       description: "Atualize seu peso atual",
       onClick: () => navigate("/registro-peso"),
@@ -445,16 +438,21 @@ const DashboardPage: React.FC = () => {
     },
     {
       icon: "💧",
+      iconComponent: WaterIcon,
       label: "Registrar Água",
       description: "Controle sua hidratação",
       onClick: () => navigate("/registro-agua"),
       color: "cyan",
     },
+    {
+      icon: "📅",
+      iconComponent: CalendarIcon,
+      label: "Agendar Consulta",
+      description: "Marque nova consulta",
+      onClick: () => navigate("/agendar-consulta"),
+      color: "purple",
+    },
   ];
-
-  const formatDate = (date: Date): string =>
-    fmtDate(date, locale, { dateStyle: "full" });
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex">
       <SEO
@@ -503,11 +501,11 @@ const DashboardPage: React.FC = () => {
                   }&background=22c55e&color=fff`
                 }
                 alt={user?.full_name}
-                className="h-14 w-14 rounded-2xl border-2 border-green-200 shadow-lg"
+                className="h-14 w-14 rounded-full border-2 border-green-200 shadow-lg"
               />
               <div className="ml-4 min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900 text-base truncate">
-                  {user?.full_name}
+                  {user?.display_name}
                 </h3>
                 <p className="text-green-600 font-semibold text-sm truncate flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -603,10 +601,6 @@ const DashboardPage: React.FC = () => {
                     {activeTab === "perfil" && "Meu Perfil"}
                     {activeTab === "suporte" && "Suporte"}
                   </h1>
-                  <p className="text-gray-600 text-sm truncate flex items-center gap-2 mt-1">
-                    <span>📅</span>
-                    {formatDate(currentTime)}
-                  </p>
                 </div>
               </div>
 
@@ -625,12 +619,23 @@ const DashboardPage: React.FC = () => {
           {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Quick Actions */}
-              {/* Quick Actions - Versão Redesenhada para Mobile */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 px-1">
-                  <h2 className="text-xl font-bold text-gray-900 flex items-center gap-3">
-                    <div className="p-2 bg-gradient-to-r from-blue-500 to-purple-600 rounded-xl text-white">
-                      <span className="text-lg">🚀</span>
+                  <h2 className="text-lg font-semibold text-gray-700 flex items-center gap-3">
+                    <div className="p-1.5 bg-gradient-to-r from-blue-100 to-purple-100 rounded-lg">
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M13 10V3L4 14h7v7l9-11h-7z"
+                        />
+                      </svg>
                     </div>
                     Ações Rápidas
                   </h2>
@@ -645,21 +650,25 @@ const DashboardPage: React.FC = () => {
                         onClick={action.onClick}
                         className="flex-none w-40 touch-manipulation active:scale-95 transition-transform"
                       >
-                        <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col">
+                        <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col group">
                           <div
-                            className={`p-3 rounded-xl bg-gradient-to-br ${
+                            className={`p-3 rounded-xl border-2 w-12 h-12 flex items-center justify-center mb-3 transition-all duration-300 group-hover:scale-110 ${
                               action.color === "blue"
-                                ? "from-blue-500 to-cyan-600"
+                                ? "bg-blue-50 border-blue-200 text-blue-600 group-hover:bg-blue-100"
                                 : action.color === "green"
-                                ? "from-green-500 to-emerald-600"
+                                ? "bg-green-50 border-green-200 text-green-600 group-hover:bg-green-100"
                                 : action.color === "cyan"
-                                ? "from-cyan-500 to-blue-600"
+                                ? "bg-cyan-50 border-cyan-200 text-cyan-600 group-hover:bg-cyan-100"
                                 : action.color === "purple"
-                                ? "from-purple-500 to-indigo-600"
-                                : "from-amber-500 to-orange-600"
-                            } text-white shadow-lg w-12 h-12 flex items-center justify-center mb-3`}
+                                ? "bg-purple-50 border-purple-200 text-purple-600 group-hover:bg-purple-100"
+                                : "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
+                            }`}
                           >
-                            <span className="text-xl">{action.icon}</span>
+                            {action.iconComponent ? (
+                              <action.iconComponent className="w-6 h-6" />
+                            ) : (
+                              <span className="text-lg">{action.icon}</span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">
@@ -686,21 +695,37 @@ const DashboardPage: React.FC = () => {
                       <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col group">
                         <div className="flex items-start justify-between mb-4">
                           <div
-                            className={`p-3 rounded-xl bg-gradient-to-br ${
+                            className={`p-3 rounded-xl border-2 transition-all duration-300 group-hover:scale-110 ${
                               action.color === "blue"
-                                ? "from-blue-500 to-cyan-600"
+                                ? "bg-blue-50 border-blue-200 text-blue-600 group-hover:bg-blue-100"
                                 : action.color === "green"
-                                ? "from-green-500 to-emerald-600"
+                                ? "bg-green-50 border-green-200 text-green-600 group-hover:bg-green-100"
                                 : action.color === "cyan"
-                                ? "from-cyan-500 to-blue-600"
+                                ? "bg-cyan-50 border-cyan-200 text-cyan-600 group-hover:bg-cyan-100"
                                 : action.color === "purple"
-                                ? "from-purple-500 to-indigo-600"
-                                : "from-amber-500 to-orange-600"
-                            } text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                                ? "bg-purple-50 border-purple-200 text-purple-600 group-hover:bg-purple-100"
+                                : "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
+                            }`}
                           >
-                            <span className="text-xl">{action.icon}</span>
+                            {action.iconComponent ? (
+                              <action.iconComponent className="w-6 h-6" />
+                            ) : (
+                              <span className="text-xl">{action.icon}</span>
+                            )}
                           </div>
-                          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                          <div
+                            className={`w-2 h-2 rounded-full animate-pulse ${
+                              action.color === "blue"
+                                ? "bg-blue-400"
+                                : action.color === "green"
+                                ? "bg-green-400"
+                                : action.color === "cyan"
+                                ? "bg-cyan-400"
+                                : action.color === "purple"
+                                ? "bg-purple-400"
+                                : "bg-amber-400"
+                            }`}
+                          ></div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-bold text-gray-900 text-base leading-tight mb-2">
@@ -711,7 +736,7 @@ const DashboardPage: React.FC = () => {
                           </p>
                         </div>
                         <div className="mt-4 pt-3 border-t border-gray-100">
-                          <button className="text-xs text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-800">
+                          <button className="text-xs text-blue-600 font-semibold flex items-center gap-1 hover:text-blue-800 transition-colors">
                             Acessar
                             <svg
                               className="w-3 h-3"
@@ -747,7 +772,7 @@ const DashboardPage: React.FC = () => {
                   setGoalInput={setGoalInput}
                   saveGoal={saveGoal}
                   series={series}
-                  gradient="from-green-500 to-emerald-600"
+                  gradient="from-green-300 to-emerald-600"
                 />
 
                 <StatsCard
@@ -757,23 +782,15 @@ const DashboardPage: React.FC = () => {
                       ? `${(usage.WATER_ML_DIA.used / 1000).toFixed(1)} L`
                       : "-"
                   }
-                  description={
-                    usage?.WATER_ML_DIA?.limit
-                      ? `Limite ${(usage.WATER_ML_DIA.limit / 1000).toFixed(
-                          1
-                        )} L`
-                      : ""
-                  }
-                  icon="💧"
-                  gradient="from-blue-500 to-cyan-600"
+                  icon="water"
+                  gradient="from-blue-300 to-cyan-600 "
                 />
 
                 <StatsCard
                   title="Adesão à Dieta"
                   value="85%"
-                  description="Meta 100%"
-                  icon="📊"
-                  gradient="from-purple-500 to-indigo-600"
+                  icon="stats"
+                  gradient="from-purple-300 to-indigo-600"
                 />
               </div>
 
@@ -901,9 +918,6 @@ const DashboardPage: React.FC = () => {
           {activeTab === "dietas" && (
             <div className="space-y-5">
               <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold text-gray-900">
-                  Minhas Dietas
-                </h2>
                 {canEditDiets && (
                   <Button
                     onClick={() => setShowCreateModal(true)}
