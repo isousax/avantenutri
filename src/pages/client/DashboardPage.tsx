@@ -723,9 +723,6 @@ const DashboardPage: React.FC = () => {
                     {activeTab === "perfil" && "Meu Perfil"}
                     {activeTab === "suporte" && "Suporte"}
                   </h1>
-                  <p className="text-gray-600 text-xs sm:text-sm">
-                    {formatDate(currentTime)}
-                  </p>
                 </div>
               </div>
 
@@ -1056,23 +1053,7 @@ const DashboardPage: React.FC = () => {
           )}
 
           {activeTab === "dietas" && (
-            <div className="space-y-5">
-              <div className="flex justify-between items-center">
-                <h2 className="text-2xl font-bold text-gray-900">Minhas Dietas</h2>
-                {canEditDiets ? (
-                  <Button
-                    onClick={() => setShowCreateModal(true)}
-                    className="text-sm py-2"
-                  >
-                    Nova Dieta
-                  </Button>
-                ) : (
-                  <div className="text-xs text-gray-500 max-w-xs text-right">
-                    As dietas são definidas pela nutricionista. Você poderá apenas visualizar e baixar PDFs.
-                  </div>
-                )}
-              </div>
-              
+            <div className="space-y-5">              
               {dietError && (
                 <div className="text-sm text-red-600 p-3 bg-red-50 rounded-lg">
                   {dietError}
