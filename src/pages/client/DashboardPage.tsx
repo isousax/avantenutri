@@ -340,7 +340,6 @@ const DashboardPage: React.FC = () => {
     "overview" | "dietas" | "perfil" | "suporte" | "consultas"
   >("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Notifications data
   const notifications = [
@@ -438,14 +437,6 @@ const DashboardPage: React.FC = () => {
       void load();
     }
   }, [canViewDiets, load]);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000); // Atualiza a cada minuto
-
-    return () => clearInterval(timer);
-  }, []);
 
   const openDetail = async (id: string) => {
     setSelectedPlanId(id);
@@ -572,8 +563,6 @@ const DashboardPage: React.FC = () => {
       color: "amber",
     },
   ];
-
-  const formatDate = (date: Date): string => fmtDate(date, locale, { dateStyle: 'full' });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex">
