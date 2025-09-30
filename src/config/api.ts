@@ -22,6 +22,7 @@ export const API = {
   ADMIN_AUDIT: `${API_AUTH_BASE}/admin/audit`,
   ADMIN_CONSULTATIONS: `${API_AUTH_BASE}/admin/consultations`,
   ADMIN_CONSULTATION_AVAILABILITY: `${API_AUTH_BASE}/admin/consultations/availability`,
+  ADMIN_CONSULTATION_AVAILABILITY_LOG: `${API_AUTH_BASE}/admin/consultations/availability/log`,
   ADMIN_CONSULTATION_BLOCK: `${API_AUTH_BASE}/admin/consultations/block-slot`,
   adminUserRole: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/role`,
   adminUserPlan: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/plan`,

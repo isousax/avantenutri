@@ -14,10 +14,13 @@ import Suporte from "../../components/dashboard/Suporte";
 import { useDietPlans } from "../../hooks/useDietPlans";
 import { usePermissions } from "../../hooks/usePermissions";
 import { CAPABILITIES } from "../../types/capabilities";
+import CapabilitySection from "../../components/auth/CapabilitySection";
+import PermissionGate from "../../components/auth/PermissionGate";
 import { useWeightLogs } from "../../hooks/useWeightLogs";
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
-import {MealIcon,WeightIcon,WaterIcon,CalendarIcon } from "../../components/dashboard/icon";
+import { useQuestionario } from "../../contexts/useQuestionario";
+import { MealIcon, WeightIcon, WaterIcon, CalendarIcon, BillingIcon } from "../../components/dashboard/icon";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -29,6 +32,7 @@ interface DietPlanCardProps {
   results_summary?: string | null;
   status: "active" | "archived";
   isCurrent?: boolean;
+  format?: string;
 }
 
 const DietPlanCard: React.FC<{
@@ -39,6 +43,16 @@ const DietPlanCard: React.FC<{
   locale: string;
 }> = ({ diet, onView, onRevise, canEdit, locale }) => {
   const isCurrent = diet.status === "active";
+  
+  // Detectar formato da dieta
+  const formatLabel = diet.format ? 
+    (diet.format === 'pdf' ? 'PDF' : 
+     diet.format === 'structured' ? 'Estruturado' : diet.format) : 
+    (() => {
+      if (/^\s*\[PDF\]/i.test(diet.description || '')) return 'PDF';
+      if (/^\s*\[(STR|STRUCT)\]/i.test(diet.description || '')) return 'Estruturado';
+      return null;
+    })();
 
   return (
     <Card className="p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
@@ -59,6 +73,15 @@ const DietPlanCard: React.FC<{
           </p>
         </div>
       </div>
+
+      {/* Badge de formato */}
+      {formatLabel && (
+        <div className="mb-3 -mt-1">
+          <span className="inline-block text-[10px] tracking-wide font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
+            {formatLabel}
+          </span>
+        </div>
+      )}
 
       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
         <div className="space-y-1">
@@ -163,7 +186,7 @@ const BottomNav: React.FC<{
   );
 };
 
-// Modern Weight Goal Component
+// Modern Weight Goal Component com IMC
 const WeightGoal: React.FC<{
   latestWeight: number | null | undefined;
   weightDiff: number | null;
@@ -176,6 +199,8 @@ const WeightGoal: React.FC<{
   saveGoal: () => void;
   series: any[];
   gradient?: string;
+  bmi?: number;
+  bmiClass?: string;
 }> = ({
   latestWeight,
   weightDiff,
@@ -188,6 +213,8 @@ const WeightGoal: React.FC<{
   saveGoal,
   series,
   gradient,
+  bmi,
+  bmiClass,
 }) => {
   return (
     <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
@@ -198,7 +225,7 @@ const WeightGoal: React.FC<{
               className={`p-4 rounded-xl bg-gradient-to-br ${gradient} text-white shadow-lg`}
             >
               <span className="text-xl">
-                <MealIcon className="w-8 h-8" />
+                <WeightIcon className="w-8 h-8" />
               </span>
             </div>
             <div>
@@ -223,6 +250,25 @@ const WeightGoal: React.FC<{
             >
               {weightDiffPct < 0 ? "↘️" : weightDiffPct > 0 ? "↗️" : "➡️"}Δ{" "}
               {weightDiff?.toFixed(1)} kg ({weightDiffPct.toFixed(1)}%)
+            </div>
+          )}
+
+          {/* Informações de IMC */}
+          {bmi && (
+            <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-sm font-medium text-blue-800">
+                    IMC: {bmi.toFixed(1)}
+                  </p>
+                  {bmiClass && (
+                    <p className="text-xs text-blue-600 mt-1">
+                      Classificação: {bmiClass}
+                    </p>
+                  )}
+                </div>
+                <div className="text-blue-600 text-lg">⚖️</div>
+              </div>
             </div>
           )}
         </div>
@@ -294,6 +340,7 @@ const DashboardPage: React.FC = () => {
     "overview" | "dietas" | "perfil" | "suporte" | "consultas"
   >("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
   // Notifications data
   const notifications = [
@@ -335,6 +382,20 @@ const DashboardPage: React.FC = () => {
     goal,
     series,
   } = useWeightLogs(30);
+  
+  // Questionário para altura e IMC
+  const { questionarioData } = useQuestionario();
+  const heightCmRaw = questionarioData?.respostas?.['Altura (cm)'];
+  const heightCm = heightCmRaw ? parseFloat(heightCmRaw.replace(',','.')) : undefined;
+  const bmi = (latestWeight && heightCm && heightCm > 0) ? latestWeight.weight_kg / Math.pow(heightCm/100, 2) : undefined;
+  const bmiClass = bmi ? (
+    bmi < 18.5 ? 'Baixo peso' :
+    bmi < 25 ? 'Normal' :
+    bmi < 30 ? 'Sobrepeso' :
+    bmi < 35 ? 'Obesidade I' :
+    bmi < 40 ? 'Obesidade II' : 'Obesidade III'
+  ) : undefined;
+
   const [editingGoal, setEditingGoal] = React.useState(false);
   const [goalInput, setGoalInput] = React.useState<string>(
     goal ? goal.toString() : ""
@@ -352,11 +413,20 @@ const DashboardPage: React.FC = () => {
   };
 
   const canViewDiets = can(CAPABILITIES.DIETA_VIEW);
-  const canEditDiets = can(CAPABILITIES.DIETA_EDIT);
+  const canEditDiets = false; // Pacientes não editam dietas, apenas admin
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingName, setCreatingName] = useState("");
   const [creatingDesc, setCreatingDesc] = useState("");
+  // Campos para criação estruturada
+  const [metaKcal, setMetaKcal] = useState("");
+  const [metaProt, setMetaProt] = useState("");
+  const [metaCarb, setMetaCarb] = useState("");
+  const [metaFat, setMetaFat] = useState("");
+  // Suporte a PDF
+  const [planFormat, setPlanFormat] = useState<'structured'|'pdf'>('structured');
+  const [pdfBase64, setPdfBase64] = useState<string>('');
+  const [pdfName, setPdfName] = useState<string>('');
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [includeData, setIncludeData] = useState(false);
@@ -368,6 +438,14 @@ const DashboardPage: React.FC = () => {
       void load();
     }
   }, [canViewDiets, load]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 60000); // Atualiza a cada minuto
+
+    return () => clearInterval(timer);
+  }, []);
 
   const openDetail = async (id: string) => {
     setSelectedPlanId(id);
@@ -382,11 +460,45 @@ const DashboardPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    const id = await create({ name: creatingName, description: creatingDesc });
+    let data: any = undefined;
+    if (planFormat === 'pdf') {
+      if (pdfBase64) {
+        data = {
+          format: 'pdf',
+          file: {
+            name: pdfName,
+            mime: 'application/pdf',
+            base64: pdfBase64,
+          },
+          observacoes: creatingDesc || null,
+        };
+      }
+    } else {
+      if (metaKcal || metaProt || metaCarb || metaFat) {
+        data = {
+          metas: {
+            kcal_dia: metaKcal ? +metaKcal : null,
+            proteina_g: metaProt ? +metaProt : null,
+            carbo_g: metaCarb ? +metaCarb : null,
+            gordura_g: metaFat ? +metaFat : null,
+          },
+          refeicoes: [],
+          observacoes: creatingDesc || null,
+          format: 'structured'
+        };
+      }
+    }
+    let finalDesc = creatingDesc;
+    if (planFormat === 'pdf' && finalDesc && !/^\s*\[PDF\]/i.test(finalDesc)) {
+      finalDesc = `[PDF] ${finalDesc}`;
+    }
+    const id = await create({ name: creatingName, description: finalDesc, data });
     if (id) {
       setShowCreateModal(false);
-      setCreatingName("");
-      setCreatingDesc("");
+      setCreatingName(""); setCreatingDesc("");
+      setMetaKcal(""); setMetaProt(""); setMetaCarb(""); setMetaFat("");
+      setPlanFormat('structured');
+      setPdfBase64(''); setPdfName('');
     }
   };
 
@@ -417,16 +529,15 @@ const DashboardPage: React.FC = () => {
   };
 
   const { locale, t } = useI18n();
-  // Ícones SVG para substituir emojis (você pode usar Lucide, Heroicons, ou qualquer outra lib)
-
+  
   const quickActions = [
     {
-      icon: "📋", // Fallback emoji
-      iconComponent: MealIcon, // Ícone SVG
-      label: "Registrar Refeição",
-      description: "Adicione o que comeu hoje",
-      onClick: () => navigate("/registro-refeicao"),
-      color: "blue",
+      icon: "📅",
+      iconComponent: CalendarIcon,
+      label: "Agendar Consulta",
+      description: "Marque nova consulta",
+      onClick: () => navigate("/agendar-consulta"),
+      color: "purple",
     },
     {
       icon: "⚖️",
@@ -437,6 +548,14 @@ const DashboardPage: React.FC = () => {
       color: "green",
     },
     {
+      icon: "📋",
+      iconComponent: MealIcon,
+      label: "Registrar Refeição",
+      description: "Adicione o que comeu hoje",
+      onClick: () => navigate("/registro-refeicao"),
+      color: "blue",
+    },
+    {
       icon: "💧",
       iconComponent: WaterIcon,
       label: "Registrar Água",
@@ -445,14 +564,17 @@ const DashboardPage: React.FC = () => {
       color: "cyan",
     },
     {
-      icon: "📅",
-      iconComponent: CalendarIcon,
-      label: "Agendar Consulta",
-      description: "Marque nova consulta",
-      onClick: () => navigate("/agendar-consulta"),
-      color: "purple",
+      icon: "💳",
+      iconComponent: BillingIcon,
+      label: "Billing / Plano",
+      description: "Histórico de pagamentos",
+      onClick: () => navigate('/billing/historico'),
+      color: "amber",
     },
   ];
+
+  const formatDate = (date: Date): string => fmtDate(date, locale, { dateStyle: 'full' });
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex">
       <SEO
@@ -601,6 +723,9 @@ const DashboardPage: React.FC = () => {
                     {activeTab === "perfil" && "Meu Perfil"}
                     {activeTab === "suporte" && "Suporte"}
                   </h1>
+                  <p className="text-gray-600 text-xs sm:text-sm">
+                    {formatDate(currentTime)}
+                  </p>
                 </div>
               </div>
 
@@ -661,6 +786,8 @@ const DashboardPage: React.FC = () => {
                                 ? "bg-cyan-50 border-cyan-200 text-cyan-600 group-hover:bg-cyan-100"
                                 : action.color === "purple"
                                 ? "bg-purple-50 border-purple-200 text-purple-600 group-hover:bg-purple-100"
+                                : action.color === "amber"
+                                ? "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
                                 : "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
                             }`}
                           >
@@ -685,7 +812,7 @@ const DashboardPage: React.FC = () => {
                 </div>
 
                 {/* Layout grid para desktop */}
-                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-5 gap-4">
                   {quickActions.map((action, index) => (
                     <div
                       key={index}
@@ -704,6 +831,8 @@ const DashboardPage: React.FC = () => {
                                 ? "bg-cyan-50 border-cyan-200 text-cyan-600 group-hover:bg-cyan-100"
                                 : action.color === "purple"
                                 ? "bg-purple-50 border-purple-200 text-purple-600 group-hover:bg-purple-100"
+                                : action.color === "amber"
+                                ? "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
                                 : "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
                             }`}
                           >
@@ -723,6 +852,8 @@ const DashboardPage: React.FC = () => {
                                 ? "bg-cyan-400"
                                 : action.color === "purple"
                                 ? "bg-purple-400"
+                                : action.color === "amber"
+                                ? "bg-amber-400"
                                 : "bg-amber-400"
                             }`}
                           ></div>
@@ -773,6 +904,8 @@ const DashboardPage: React.FC = () => {
                   saveGoal={saveGoal}
                   series={series}
                   gradient="from-green-300 to-emerald-600"
+                  bmi={bmi}
+                  bmiClass={bmiClass}
                 />
 
                 <StatsCard
@@ -782,13 +915,15 @@ const DashboardPage: React.FC = () => {
                       ? `${(usage.WATER_ML_DIA.used / 1000).toFixed(1)} L`
                       : "-"
                   }
+                  description={usage?.WATER_ML_DIA?.limit ? `Limite ${(usage.WATER_ML_DIA.limit/1000).toFixed(1)} L` : ''}
                   icon="water"
                   gradient="from-blue-300 to-cyan-600 "
                 />
 
                 <StatsCard
-                  title="Adesão à Dieta"
-                  value="85%"
+                  title="Revisões (mês)"
+                  value={(usage?.DIETA_REVISOES_MES?.used ?? 0).toString()}
+                  description={usage?.DIETA_REVISOES_MES?.limit != null ? `Limite: ${usage.DIETA_REVISOES_MES.limit}` : ''}
                   icon="stats"
                   gradient="from-purple-300 to-indigo-600"
                 />
@@ -837,22 +972,27 @@ const DashboardPage: React.FC = () => {
                   </div>
                 </Card>
 
-                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                      <span>🍽️</span>
-                      Dietas Recentes
-                    </h3>
-                    {canViewDiets && (
-                      <Button
-                        variant="secondary"
-                        onClick={() => setActiveTab("dietas")}
-                        className="text-sm py-2 px-4 rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
-                      >
-                        Ver Todas
-                      </Button>
-                    )}
-                  </div>
+                <CapabilitySection
+                  title="Dietas Recentes"
+                  anyOf={[CAPABILITIES.DIETA_VIEW]}
+                  toolbar={canViewDiets ? (
+                    <Button
+                      variant="secondary"
+                      onClick={() => setActiveTab("dietas")}
+                      className="text-sm py-2 px-4 rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
+                    >
+                      Ver Todas
+                    </Button>
+                  ) : null}
+                  loadingFallback={<div className="text-xs text-gray-400">Carregando permissões...</div>}
+                  reloadingFallback={<div className="text-xs text-gray-400">Atualizando...</div>}
+                  fallback={<div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
+                    <div className="text-4xl mb-3">🔒</div>
+                    <p className="text-gray-600 font-medium">
+                      Seu plano não permite visualizar dietas.
+                    </p>
+                  </div>}
+                >
                   <div className="space-y-4">
                     {canViewDiets &&
                       plans
@@ -876,7 +1016,7 @@ const DashboardPage: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </Card>
+                </CapabilitySection>
               </div>
 
               {/* Upcoming Appointments */}
@@ -918,49 +1058,57 @@ const DashboardPage: React.FC = () => {
           {activeTab === "dietas" && (
             <div className="space-y-5">
               <div className="flex justify-between items-center">
-                {canEditDiets && (
+                <h2 className="text-2xl font-bold text-gray-900">Minhas Dietas</h2>
+                {canEditDiets ? (
                   <Button
                     onClick={() => setShowCreateModal(true)}
                     className="text-sm py-2"
                   >
                     Nova Dieta
                   </Button>
+                ) : (
+                  <div className="text-xs text-gray-500 max-w-xs text-right">
+                    As dietas são definidas pela nutricionista. Você poderá apenas visualizar e baixar PDFs.
+                  </div>
                 )}
               </div>
+              
               {dietError && (
                 <div className="text-sm text-red-600 p-3 bg-red-50 rounded-lg">
                   {dietError}
                 </div>
               )}
-              {!canViewDiets && (
-                <div className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
-                  Seu plano não inclui acesso a dietas.
-                </div>
-              )}
-              {canViewDiets && usage?.DIETA_REVISOES_MES && (
-                <Card className="p-3 bg-gray-50">
-                  <div className="text-xs text-gray-600 flex flex-wrap gap-3 justify-between">
-                    <div>
-                      <span className="font-semibold">Revisões usadas:</span>{" "}
-                      {usage.DIETA_REVISOES_MES.used}
+              
+              <PermissionGate
+                anyOf={[CAPABILITIES.DIETA_VIEW]}
+                fallback={<div className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">Seu plano não inclui acesso a dietas.</div>}
+                loadingFallback={<div className="text-sm text-gray-400">Carregando permissões...</div>}
+                reloadingFallback={<div className="text-sm text-gray-400">Atualizando...</div>}
+              >
+                {usage?.DIETA_REVISOES_MES && (
+                  <Card className="p-3 bg-gray-50">
+                    <div className="text-xs text-gray-600 flex flex-wrap gap-3 justify-between">
+                      <div>
+                        <span className="font-semibold">Revisões usadas:</span>{" "}
+                        {usage.DIETA_REVISOES_MES.used}
+                      </div>
+                      {usage.DIETA_REVISOES_MES.limit != null && (
+                        <div>
+                          <span className="font-semibold">Limite:</span>{" "}
+                          {usage.DIETA_REVISOES_MES.limit}
+                        </div>
+                      )}
+                      {usage.DIETA_REVISOES_MES.limit != null && (
+                        <div>
+                          <span className="font-semibold">Restantes:</span>{" "}
+                          {usage.DIETA_REVISOES_MES.remaining}
+                        </div>
+                      )}
                     </div>
-                    {usage.DIETA_REVISOES_MES.limit != null && (
-                      <div>
-                        <span className="font-semibold">Limite:</span>{" "}
-                        {usage.DIETA_REVISOES_MES.limit}
-                      </div>
-                    )}
-                    {usage.DIETA_REVISOES_MES.limit != null && (
-                      <div>
-                        <span className="font-semibold">Restantes:</span>{" "}
-                        {usage.DIETA_REVISOES_MES.remaining}
-                      </div>
-                    )}
-                  </div>
-                </Card>
-              )}
-              {canViewDiets && (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  </Card>
+                )}
+                
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
                   {plans.map((diet) => (
                     <DietPlanCard
                       key={diet.id}
@@ -977,7 +1125,7 @@ const DashboardPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-              )}
+              </PermissionGate>
             </div>
           )}
 
@@ -989,8 +1137,8 @@ const DashboardPage: React.FC = () => {
         {/* Bottom Navigation for Mobile */}
         <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
 
-        {/* Create Diet Modal */}
-        {showCreateModal && (
+        {/* Create Diet Modal - apenas para admin */}
+        {canEditDiets && showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
               <h2 className="text-lg font-semibold">Criar Nova Dieta</h2>
@@ -1014,6 +1162,73 @@ const DashboardPage: React.FC = () => {
                     className="w-full border rounded-lg px-3 py-2 text-sm h-24 resize-none"
                   />
                 </div>
+                
+                <div className="flex items-center gap-4 text-xs">
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="planFormat" 
+                      value="structured" 
+                      checked={planFormat==='structured'} 
+                      onChange={()=> setPlanFormat('structured')} 
+                    /> Estruturado
+                  </label>
+                  <label className="flex items-center gap-1 cursor-pointer">
+                    <input 
+                      type="radio" 
+                      name="planFormat" 
+                      value="pdf" 
+                      checked={planFormat==='pdf'} 
+                      onChange={()=> setPlanFormat('pdf')} 
+                    /> PDF
+                  </label>
+                </div>
+
+                {planFormat === 'pdf' && (
+                  <div className="space-y-2 text-sm">
+                    <label className="block text-sm font-medium mb-1">Arquivo PDF</label>
+                    <input
+                      type="file"
+                      accept="application/pdf"
+                      onChange={e=> {
+                        const f = e.target.files?.[0];
+                        if (!f) { setPdfBase64(''); setPdfName(''); return; }
+                        if (f.size > 5*1024*1024) { alert('Limite de 5MB'); return; }
+                        setPdfName(f.name);
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          const res = reader.result as string;
+                          const base64 = res.split(',')[1] || '';
+                          setPdfBase64(base64);
+                        };
+                        reader.readAsDataURL(f);
+                      }}
+                    />
+                    {pdfName && <p className="text-xs text-gray-600">Selecionado: {pdfName}</p>}
+                  </div>
+                )}
+
+                {planFormat === 'structured' && (
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Kcal/dia</label>
+                      <input value={metaKcal} onChange={e=> setMetaKcal(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 2000" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Proteína (g)</label>
+                      <input value={metaProt} onChange={e=> setMetaProt(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 120" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Carbo (g)</label>
+                      <input value={metaCarb} onChange={e=> setMetaCarb(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 180" />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium mb-1">Gordura (g)</label>
+                      <input value={metaFat} onChange={e=> setMetaFat(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 60" />
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex justify-end gap-2 pt-2">
                   <Button
                     type="button"
@@ -1132,9 +1347,9 @@ const DetailContent: React.FC<DetailContentProps> = ({
   revising,
   locale,
 }) => {
-  // We rely on data passed via props (detailJson) for simplicity. Could be extended to accept cache map.
   const cached = detailJson;
   if (!cached) return <div className="text-sm text-gray-500">Sem dados.</div>;
+  
   return (
     <div className="space-y-4">
       <div>
@@ -1162,6 +1377,52 @@ const DetailContent: React.FC<DetailContentProps> = ({
                 </span>
               </div>
               {v.notes && <div className="text-gray-500 italic">{v.notes}</div>}
+              
+              {/* Suporte a PDF */}
+              {includeData && v.data?.format === 'pdf' && (v.data?.file?.base64 || v.data?.file?.key) && (
+                <div className="mt-1">
+                  <button
+                    type="button"
+                    className="text-[11px] text-blue-600 underline"
+                    onClick={() => {
+                      // Prefer backend streaming quando key presente
+                      if (v.data.file?.key && cached?.id) {
+                        const url = `${location.origin}/diet/plans/${cached.id}/version/${v.id}/file`;
+                        fetch(url, { headers: { 'authorization': localStorage.getItem('access_token') ? `Bearer ${localStorage.getItem('access_token')}` : '' } })
+                          .then(async r => {
+                            if (!r.ok) throw new Error('HTTP '+r.status);
+                            const blob = await r.blob();
+                            const dlUrl = URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = dlUrl;
+                            a.download = v.data.file.name || `plano_v${v.version_number}.pdf`;
+                            document.body.appendChild(a); a.click(); a.remove();
+                            setTimeout(()=> URL.revokeObjectURL(dlUrl), 2000);
+                          })
+                          .catch(err => { console.error(err); alert('Falha ao baixar PDF'); });
+                        return;
+                      }
+                      // Fallback para base64
+                      if (v.data.file?.base64) {
+                        try {
+                          const base64 = v.data.file.base64 as string;
+                          const byteStr = atob(base64);
+                          const bytes = new Uint8Array(byteStr.length);
+                          for (let i=0;i<byteStr.length;i++) bytes[i] = byteStr.charCodeAt(i);
+                          const blob = new Blob([bytes], { type: 'application/pdf' });
+                          const url = URL.createObjectURL(blob);
+                          const a = document.createElement('a');
+                          a.href = url;
+                          a.download = v.data.file.name || `plano_v${v.version_number}.pdf`;
+                          document.body.appendChild(a); a.click(); a.remove();
+                          setTimeout(()=> URL.revokeObjectURL(url), 2000);
+                        } catch (err) { console.error(err); alert('Falha ao gerar download do PDF'); }
+                      }
+                    }}
+                  >Baixar PDF</button>
+                </div>
+              )}
+              
               {includeData && v.data && (
                 <pre className="mt-1 bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px]">
                   {JSON.stringify(v.data, null, 2)}

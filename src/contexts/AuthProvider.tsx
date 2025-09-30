@@ -26,6 +26,9 @@ const SESSION_EXPIRY = 4 * 60 * 60 * 1000; // 4h meta expiry
 const LEADER_KEY = "@AvanteNutri:leader";
 const LEADER_TTL_MS = 5000;
 const LEADER_HEARTBEAT_MS = 2000;
+// Cross-tab refresh lock to evitar corrida de rotação simultânea
+const REFRESH_LOCK_KEY = "@AvanteNutri:refresh_lock";
+const REFRESH_LOCK_TTL_MS = 15000; // 15s máximo para uma tentativa de refresh
 
 function nowMs() {
   return Date.now();
@@ -242,6 +245,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     refreshToken: string,
     rememberMe = false
   ) => {
+    // Aquisição de lock global para evitar duas abas batendo /auth/refresh ao mesmo tempo
+    if (!(await acquireRefreshLock())) {
+      // Outra aba está fazendo refresh. Aguardar e reidratar.
+      const ok = await waitForOtherTabRefresh();
+      return ok;
+    }
     const maxAttempts = 4; // 1 + 3 retries
     let attempt = 0;
     let delayMs = 0;
@@ -313,6 +322,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // exhausted attempts -> logout
     await contextLogout();
+    releaseRefreshLock();
     return false;
   };
 
@@ -809,14 +819,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionVerified,
     forceVerify: async () => runSessionVerification(true),
     getAccessToken: async () => {
-      let access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
       if (access) {
         try {
           const p = decodeJwt(access);
           if (p?.exp && Date.now() < Number(p.exp) * 1000 - 60000) {
             return access;
           }
-        } catch {}
+        } catch {
+          console.warn("Erro na serealização do json");
+        }
       }
       const refreshed = await contextValue.refreshSession();
       if (!refreshed) return null;
@@ -828,7 +840,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       rememberMe: boolean = false
     ) => {
       try {
-        console.log("LOGIN URL: ", API.LOGIN);
         const res = await fetch(API.LOGIN, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -884,7 +895,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               email: returnedUser.email ?? email,
               role: returnedUser.role,
               full_name: returnedUser.full_name ?? "",
-              display_name: returnedUser.full_name ?? "",
+              display_name: returnedUser.display_name ?? "",
             };
           }
 
@@ -919,7 +930,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     full_name: (meData.full_name ||
                       meData.name ||
                       userObj.full_name) as string,
-                    display_name: meData.full_name ?? "",
                   } as User;
                   setUser(updated);
                   saveUserToStorage(updated, rememberMe);
@@ -999,19 +1009,47 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           localStorage.getItem(STORAGE_REFRESH_KEY) ||
           sessionStorage.getItem(STORAGE_REFRESH_KEY);
         if (!refresh) return false;
+        // Tenta lock cross-tab
+        if (!(await acquireRefreshLock())) {
+          // Outra aba já está atualizando – aguarda resultado
+          const ok = await waitForOtherTabRefresh();
+          return ok;
+        }
         // Se líder, usa fluxo de retry existente
         if (isLeaderRef.current) {
-          return await doRefreshWithRetry(
+          const res = await doRefreshWithRetry(
             refresh,
             !sessionStorage.getItem(STORAGE_ACCESS_KEY)
           );
+          releaseRefreshLock();
+          return res;
         }
         const r = await fetch(API.REFRESH, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ refresh_token: refresh }),
         });
-        if (!r.ok) return false;
+        if (!r.ok) {
+          // Caso 401 pode ser corrida: outra aba rotacionou e nosso refresh antigo ficou inválido.
+          if (r.status === 401) {
+            // Tenta reidratar rapidamente para ver se já existe novo access token
+            await new Promise((res) => setTimeout(res, 300));
+            const maybeAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+            if (maybeAccess) {
+              try {
+                const p = decodeJwt(maybeAccess);
+                if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) {
+                  releaseRefreshLock();
+                  return true; // outro tab já renovou
+                }
+              } catch {
+                console.warn("Erro ao reidratar refresh");
+              }
+            }
+          }
+          releaseRefreshLock();
+          return false;
+        }
         const data = await r.json();
         const newAccess = data?.access_token;
         const newRefresh = data?.refresh_token ?? refresh;
@@ -1038,11 +1076,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               display_name: (p.display_name ?? "") as string,
             });
           }
+          releaseRefreshLock();
           return true;
         }
+        releaseRefreshLock();
         return false;
       } catch (err) {
         console.warn("[AuthProvider] refreshSession failed", err);
+        releaseRefreshLock();
         return false;
       }
     },
@@ -1136,7 +1177,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               data.name ||
               user?.full_name ||
               "") as string,
-            display_name: data.full_name ?? "",
+            display_name: (data.display_name ?? "") as string,
           };
           setUser(updated);
           const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
@@ -1149,6 +1190,71 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false;
       }
     },
+    updateProfile: async (payload) => {
+      try {
+        const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+        if (!access) return { ok: false, error: "Sem sessão" } as const;
+        const r = await fetch(API.PROFILE, {
+          method: "PATCH",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${access}`,
+          },
+          body: JSON.stringify(payload),
+        });
+        const data = await (async () => {
+          try {
+            return await r.json();
+          } catch {
+            return null;
+          }
+        })();
+        if (!r.ok) {
+          const err =
+            (data && (data.error || data.message)) || "Falha ao atualizar";
+          // Se backend sinalizar token outdated, tenta refresh silencioso
+          if (r.status === 401 && data?.error === "Token outdated") {
+            const refreshed = await contextValue.refreshSession?.();
+            if (refreshed) {
+              return (
+                (await contextValue.updateProfile?.(payload)) ?? {
+                  ok: false,
+                  error: err,
+                }
+              );
+            }
+          }
+          return { ok: false, error: err } as const;
+        }
+        // Se veio novo access token (session_version mudou), persistir sem exigir logout
+        if (data?.access_token) {
+          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
+          persistTokens(
+            data.access_token,
+            localStorage.getItem(STORAGE_REFRESH_KEY) ||
+              sessionStorage.getItem(STORAGE_REFRESH_KEY),
+            data.expires_at,
+            rememberFlag
+          );
+        }
+        // Atualiza user local se campos retornados
+        const updatedPartial: Partial<User> = {};
+        if (data?.display_name) updatedPartial.display_name = data.display_name;
+        if (data?.full_name) updatedPartial.full_name = data.full_name;
+        if (data?.phone !== undefined) updatedPartial.phone = data.phone;
+        if (Object.keys(updatedPartial).length > 0 && user) {
+          const merged = { ...user, ...updatedPartial } as User;
+          setUser(merged);
+          saveUserToStorage(
+            merged,
+            !sessionStorage.getItem(STORAGE_ACCESS_KEY)
+          );
+        }
+        return { ok: true, updated: updatedPartial } as const;
+      } catch {
+        return { ok: false, error: "Erro inesperado" } as const;
+      }
+    },
   };
 
   return (
@@ -1157,3 +1263,81 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 };
 
 export default AuthProvider;
+
+// ===== Helper de Lock Global de Refresh =====
+function getLockData() {
+  try {
+    const raw = localStorage.getItem(REFRESH_LOCK_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as { id: string; ts: number } | null;
+  } catch {
+    return null;
+  }
+}
+
+async function acquireRefreshLock(): Promise<boolean> {
+  try {
+    const now = Date.now();
+    const existing = getLockData();
+    if (existing && existing.ts + REFRESH_LOCK_TTL_MS > now) {
+      return false; // lock ativo
+    }
+    const newLock = {
+      id:
+        (window as any)._avTabId || "tab" + Math.random().toString(36).slice(2),
+      ts: now,
+    };
+    localStorage.setItem(REFRESH_LOCK_KEY, JSON.stringify(newLock));
+    // Verifica se realmente é nosso
+    const confirm = getLockData();
+    if (confirm && confirm.id === newLock.id) {
+      return true;
+    }
+    return false;
+  } catch (err) {
+    console.warn("[AuthProvider] acquireRefreshLock falhou", err);
+    return true; // fallback: não bloquear refresh
+  }
+}
+
+function releaseRefreshLock() {
+  try {
+    const existing = getLockData();
+    if (!existing) return;
+    // Simplesmente remove (não precisamos do id do tab aqui porque geração é best-effort)
+    localStorage.removeItem(REFRESH_LOCK_KEY);
+  } catch {
+    console.warn("erro ao remover id do tab");
+  }
+}
+
+async function waitForOtherTabRefresh(): Promise<boolean> {
+  // Aguarda até 5s tokens serem atualizados ou lock sumir
+  const start = Date.now();
+  const initialAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+  while (Date.now() - start < 5000) {
+    await new Promise((r) => setTimeout(r, 300));
+    const lock = getLockData();
+    const currentAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+    if (!lock) {
+      // lock liberado – se access mudou e é válido, sucesso; senão sai para permitir tentativa
+      if (currentAccess && currentAccess !== initialAccess) {
+        try {
+          const p = decodeJwt(currentAccess);
+          if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) return true;
+        } catch {
+        console.warn("erro no decode do jwt");}
+      }
+      return !!currentAccess;
+    }
+    if (currentAccess && currentAccess !== initialAccess) {
+      try {
+        const p = decodeJwt(currentAccess);
+        if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) return true;
+      } catch {
+        console.warn("erro no decode do jwt");
+      }
+    }
+  }
+  return false;
+}

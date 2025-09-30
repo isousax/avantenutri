@@ -42,10 +42,12 @@ export function useWeightLogs(defaultDays = 90) {
     finally { setLoading(false); }
   }, [authenticatedFetch, can, defaultDays]);
 
-  const upsert = useCallback(async (weight_kg: number, note?: string) => {
+  const upsert = useCallback(async (weight_kg: number, note?: string, date?: string) => {
     if (!can(CAPABILITIES.PESO_LOG)) throw new Error('Sem permissão');
     setError(null);
-    const body: any = { weight_kg }; if (note) body.note = note;
+    const body: any = { weight_kg };
+    if (note) body.note = note;
+    if (date) body.date = date; // permite registrar peso em data específica (corrige confusão de fuso horário)
     const r = await authenticatedFetch(API.WEIGHT_LOGS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
     const data = await r.json().catch(()=>({}));
     if (!r.ok) throw new Error(data.error || 'Erro ao registrar peso');

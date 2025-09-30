@@ -33,4 +33,9 @@ export interface AuthContextType {
   forceVerify: () => Promise<boolean>;
   /** Returns a fresh access token if available (refreshing if needed). */
   getAccessToken: () => Promise<string | null>;
+  updateProfile?: (payload: {
+    display_name?: string;
+    full_name?: string;
+    phone?: string | null;
+  }) => Promise<{ ok: true; updated: Partial<User> } | { ok: false; error: string }>;
 }

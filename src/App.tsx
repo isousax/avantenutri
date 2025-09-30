@@ -39,7 +39,6 @@ import BlogPostPage from "./pages/blog/BlogPostPage.tsx";
 import BlogAdminListPage from "./pages/admin/blog/BlogAdminListPage";
 import BlogAdminEditPage from "./pages/admin/blog/BlogAdminEditPage";
 import PricingPage from "./pages/home/PricingPage.tsx";
-import DevelopmentBadge from "./components/DevelopmentProgressBanner";
 import { I18nProvider, useI18n } from './i18n';
 import { ToastProvider } from './components/ui/ToastProvider';
 import { useToast } from './components/ui/ToastProvider';
@@ -154,7 +153,6 @@ function App() {
           <main>
             {/* Banner de Cookies (condicional) */}
             <CookieBanner grantConsent={grantConsent} />
-            <DevelopmentBadge />
 
             <Routes>
               {/* Rotas públicas */}

@@ -1,5 +1,5 @@
 import React, { useEffect, useState, type FormEvent } from "react";
-import Skeleton from '../../components/ui/Skeleton';
+import Skeleton from "../../components/ui/Skeleton";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { API } from "../../config/api";
@@ -63,8 +63,8 @@ const AdminAuditPage: React.FC = () => {
         pageSize: String(pageSize),
       });
       if (userIdFilter.trim()) params.set("user_id", userIdFilter.trim());
-      if (dateFrom) params.set('from', dateFrom);
-      if (dateTo) params.set('to', dateTo + 'T23:59:59Z');
+      if (dateFrom) params.set("from", dateFrom);
+      if (dateTo) params.set("to", dateTo + "T23:59:59Z");
       const r = await fetch(`${API.ADMIN_AUDIT}?${params.toString()}`, {
         headers: apiKey ? { "x-api-key": apiKey } : {},
       });
@@ -94,19 +94,34 @@ const AdminAuditPage: React.FC = () => {
 
   const exportCsv = () => {
     const headerMap: Record<Tab, string[]> = {
-      password: ['user_id','ip','changed_at'],
-      revoked: ['jti','user_id','reason','revoked_at','expires_at'],
-      role: ['user_id','old_role','new_role','changed_by','reason','changed_at']
+      password: ["user_id", "ip", "changed_at"],
+      revoked: ["jti", "user_id", "reason", "revoked_at", "expires_at"],
+      role: [
+        "user_id",
+        "old_role",
+        "new_role",
+        "changed_by",
+        "reason",
+        "changed_at",
+      ],
     };
     const cols = headerMap[tab];
-    const csv = [cols.join(',')].concat(rows.map(r => cols.map(c => {
-      const v: any = (r as any)[c];
-      if (v == null) return '';
-      return '"' + String(v).replace(/"/g,'""') + '"';
-    }).join(','))).join('\n');
-    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const csv = [cols.join(",")]
+      .concat(
+        rows.map((r) =>
+          cols
+            .map((c) => {
+              const v: any = (r as any)[c];
+              if (v == null) return "";
+              return '"' + String(v).replace(/"/g, '""') + '"';
+            })
+            .join(",")
+        )
+      )
+      .join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = url;
     a.download = `audit-${tab}-page${page}.csv`;
     document.body.appendChild(a);
@@ -118,14 +133,29 @@ const AdminAuditPage: React.FC = () => {
   const { t } = useI18n();
   return (
     <div className="p-4 space-y-4">
-      <SEO title={t('admin.audit.seo.title')} description={t('admin.audit.seo.desc')} />
+      <SEO
+        title={t("admin.audit.seo.title")}
+        description={t("admin.audit.seo.desc")}
+      />
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Auditoria</h1>
-          <p className="text-xs text-gray-500 mt-1">Logs de eventos de segurança e mudanças de acesso.</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Logs de eventos de segurança e mudanças de acesso.
+          </p>
         </div>
         <div className="flex gap-2">
-          <Button type="button" variant="secondary" onClick={()=> { setPage(1); void load(); }} disabled={loading}>Recarregar</Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => {
+              setPage(1);
+              void load();
+            }}
+            disabled={loading}
+          >
+            Recarregar
+          </Button>
         </div>
       </div>
       <div className="flex gap-2">
@@ -152,7 +182,10 @@ const AdminAuditPage: React.FC = () => {
           </button>
         ))}
       </div>
-      <form onSubmit={handleFilterSubmit} className="flex flex-wrap gap-2 items-center text-xs">
+      <form
+        onSubmit={handleFilterSubmit}
+        className="flex flex-wrap gap-2 items-center text-xs"
+      >
         <input
           value={userIdFilter}
           onChange={(e) => setUserIdFilter(e.target.value)}
@@ -162,14 +195,14 @@ const AdminAuditPage: React.FC = () => {
         <input
           type="date"
           value={dateFrom}
-          onChange={e => setDateFrom(e.target.value)}
+          onChange={(e) => setDateFrom(e.target.value)}
           className="border px-2 py-1 rounded"
           title="Data inicial"
         />
         <input
           type="date"
           value={dateTo}
-          onChange={e => setDateTo(e.target.value)}
+          onChange={(e) => setDateTo(e.target.value)}
           className="border px-2 py-1 rounded"
           title="Data final"
         />
@@ -193,7 +226,9 @@ const AdminAuditPage: React.FC = () => {
           type="button"
           onClick={exportCsv}
           className="text-xs text-blue-600 hover:underline"
-        >CSV</button>
+        >
+          CSV
+        </button>
       </form>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       <Card className="p-0 overflow-x-auto">
@@ -233,7 +268,9 @@ const AdminAuditPage: React.FC = () => {
           <tbody>
             {loading && (
               <tr>
-                <td colSpan={8} className="p-4"><Skeleton lines={5} /></td>
+                <td colSpan={8} className="p-4">
+                  <Skeleton lines={5} />
+                </td>
               </tr>
             )}
             {!loading &&
@@ -306,6 +343,73 @@ const AdminAuditPage: React.FC = () => {
           </tbody>
         </table>
       </Card>
+      {/* Mobile list */}
+      <div className="space-y-3 md:hidden">
+        {loading && (
+          <Card className="p-4">
+            <Skeleton lines={4} />
+          </Card>
+        )}
+        {!loading && rows.length === 0 && (
+          <Card className="p-4 text-center text-xs text-gray-500">
+            Sem registros
+          </Card>
+        )}
+        {!loading &&
+          rows.map((r, i) => (
+            <Card key={i} className="p-4 space-y-1">
+              {tab === "password" && "ip" in r && "changed_at" in r && (
+                <>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>{(r as any).user_id}</span>
+                    <span className="text-[10px] text-gray-500">PW</span>
+                  </div>
+                  <div className="text-[11px] text-gray-600 break-all">
+                    IP: {(r as any).ip}
+                  </div>
+                  <div className="text-[11px] text-gray-600">
+                    {(r as any).changed_at}
+                  </div>
+                </>
+              )}
+              {tab === "revoked" && "jti" in r && (
+                <>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>{(r as any).user_id}</span>
+                    <span className="text-[10px] text-gray-500">REV</span>
+                  </div>
+                  <div className="text-[11px] font-mono break-all">
+                    {(r as any).jti}
+                  </div>
+                  <div className="text-[11px] text-gray-600">
+                    {(r as any).reason}
+                  </div>
+                  <div className="text-[10px] text-gray-500 flex flex-wrap gap-2">
+                    <span>rev: {(r as any).revoked_at}</span>
+                    <span>exp: {(r as any).expires_at}</span>
+                  </div>
+                </>
+              )}
+              {tab === "role" && "old_role" in r && (
+                <>
+                  <div className="flex justify-between text-sm font-medium">
+                    <span>{(r as any).user_id}</span>
+                    <span className="text-[10px] text-gray-500">ROLE</span>
+                  </div>
+                  <div className="text-[11px] text-gray-600">
+                    {(r as any).old_role} → {(r as any).new_role}
+                  </div>
+                  <div className="text-[11px] text-gray-600">
+                    {(r as any).reason}
+                  </div>
+                  <div className="text-[10px] text-gray-500">
+                    {(r as any).changed_at}
+                  </div>
+                </>
+              )}
+            </Card>
+          ))}
+      </div>
       <div className="flex gap-2 items-center">
         <Button
           type="button"
