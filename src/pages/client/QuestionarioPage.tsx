@@ -7,52 +7,57 @@ import { useQuestionario } from "../../contexts/useQuestionario";
 import { SEO } from "../../components/comum/SEO";
 import { useI18n } from "../../i18n";
 
-// Dados do questionário
+// Categorias
 const categorias = [
   {
     label: "Nutrição Infantil",
     value: "infantil",
     icon: "👶",
     description: "Para crianças de 0 a 12 anos",
+    color: "from-blue-50 to-blue-100",
+    borderColor: "border-blue-200",
+    activeColor: "border-blue-500 bg-blue-50",
   },
   {
     label: "Nutrição na Gestação",
     value: "gestante",
     icon: "🤰",
     description: "Acompanhamento pré e pós-parto",
+    color: "from-pink-50 to-pink-100",
+    borderColor: "border-pink-200",
+    activeColor: "border-pink-500 bg-pink-50",
   },
   {
     label: "Nutrição Adulto/Idoso",
     value: "adulto",
     icon: "👩‍💼",
     description: "Para adultos e melhor idade",
+    color: "from-green-50 to-green-100",
+    borderColor: "border-green-200",
+    activeColor: "border-green-500 bg-green-50",
   },
   {
     label: "Nutrição Esportiva",
     value: "esportiva",
     icon: "🏃‍♀️",
     description: "Otimização de performance",
+    color: "from-orange-50 to-orange-100",
+    borderColor: "border-orange-200",
+    activeColor: "border-orange-500 bg-orange-50",
   },
 ];
 
-const perguntasPorCategoria: Record<
-  string,
-  Array<{
-    pergunta: string;
-    tipo: string;
-    expansivel?: boolean;
-    placeholderExt?: string;
-    opcoes?: string[];
-  }>
-> = {
+// Perguntas por categoria
+const perguntasPorCategoria = {
   infantil: [
-    { pergunta: "Nome da criança", tipo: "texto" },
-    { pergunta: "Idade", tipo: "numero" },
-    { pergunta: "Peso atual (kg)", tipo: "numero" },
-    { pergunta: "Altura (cm)", tipo: "numero" },
+    { pergunta: "Nome da criança", tipo: "texto", icon: "👧" },
+    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { pergunta: "Peso atual (kg)", tipo: "numero", icon: "⚖️" },
+    { pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
       pergunta: "Possui alguma restrição alimentar?",
       tipo: "select",
+      icon: "🚫",
       expansivel: true,
       placeholderExt: "Descreva a restrição alimentar",
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
@@ -60,6 +65,7 @@ const perguntasPorCategoria: Record<
     {
       pergunta: "Objetivo principal",
       tipo: "select",
+      icon: "🎯",
       expansivel: true,
       placeholderExt: "Descreva o objetivo nutricional",
       opcoes: [
@@ -73,17 +79,18 @@ const perguntasPorCategoria: Record<
     {
       pergunta: "Descreva brevemente os hábitos alimentares atuais",
       tipo: "textarea",
+      icon: "📝",
     },
   ],
   gestante: [
-    { pergunta: "Nome completo", tipo: "texto" },
-    { pergunta: "Idade", tipo: "numero" },
-    { pergunta: "Tempo de gestação (semanas)", tipo: "numero" },
-    { pergunta: "Peso antes da gravidez (kg)", tipo: "numero" },
-    { pergunta: "Peso atual (kg)", tipo: "numero" },
+    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { pergunta: "Tempo de gestação (semanas)", tipo: "numero", icon: "📅" },
+    { pergunta: "Peso antes da gravidez (kg)", tipo: "numero", icon: "⚖️" },
+    { pergunta: "Peso atual (kg)", tipo: "numero", icon: "⚖️" },
     {
       pergunta: "Possui restrições alimentares?",
       tipo: "select",
+      icon: "🚫",
       expansivel: true,
       placeholderExt: "Descreva a restrição alimentar",
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
@@ -91,10 +98,12 @@ const perguntasPorCategoria: Record<
     {
       pergunta: "Teve algum problema de saúde durante a gestação?",
       tipo: "textarea",
+      icon: "🏥",
     },
     {
       pergunta: "Objetivo nutricional",
       tipo: "select",
+      icon: "🎯",
       expansivel: true,
       placeholderExt: "Descreva o objetivo nutricional",
       opcoes: [
@@ -106,14 +115,14 @@ const perguntasPorCategoria: Record<
     },
   ],
   adulto: [
-    { pergunta: "Nome completo", tipo: "texto" },
-    { pergunta: "Idade", tipo: "numero" },
-    { pergunta: "Profissão", tipo: "texto" },
-    { pergunta: "Peso (kg)", tipo: "numero" },
-    { pergunta: "Altura (cm)", tipo: "numero" },
+    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { pergunta: "Profissão", tipo: "texto", icon: "💼" },
+    { pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
+    { pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
       pergunta: "Nível de atividade física",
       tipo: "select",
+      icon: "💪",
       expansivel: false,
       opcoes: [
         "Sedentário",
@@ -125,6 +134,7 @@ const perguntasPorCategoria: Record<
     {
       pergunta: "Possui restrições alimentares?",
       tipo: "select",
+      icon: "🚫",
       expansivel: true,
       placeholderExt: "Descreva a restrição alimentar",
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
@@ -132,6 +142,7 @@ const perguntasPorCategoria: Record<
     {
       pergunta: "Objetivo principal",
       tipo: "select",
+      icon: "🎯",
       expansivel: true,
       placeholderExt: "Descreva o objetivo nutricional",
       opcoes: [
@@ -143,23 +154,28 @@ const perguntasPorCategoria: Record<
         "Outros",
       ],
     },
-    { pergunta: "Descreva sua rotina alimentar atual", tipo: "textarea" },
+    {
+      pergunta: "Descreva sua rotina alimentar atual",
+      tipo: "textarea",
+      icon: "📝",
+    },
   ],
   esportiva: [
-    { pergunta: "Nome completo", tipo: "texto" },
-    { pergunta: "Idade", tipo: "numero" },
-    { pergunta: "Esporte praticado", tipo: "texto" },
+    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { pergunta: "Esporte praticado", tipo: "texto", icon: "⚽" },
     {
       pergunta: "Frequência de treinos",
       tipo: "select",
+      icon: "📊",
       expansivel: false,
       opcoes: ["3-4x/semana", "5-6x/semana", "Diário", "Profissional"],
     },
-    { pergunta: "Peso (kg)", tipo: "numero" },
-    { pergunta: "Altura (cm)", tipo: "numero" },
+    { pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
+    { pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
       pergunta: "Objetivo principal",
       tipo: "select",
+      icon: "🎯",
       expansivel: false,
       opcoes: [
         "Melhorar performance",
@@ -169,60 +185,24 @@ const perguntasPorCategoria: Record<
         "Competição específica",
       ],
     },
-    { pergunta: "Suplementos utilizados atualmente", tipo: "textarea" },
+    {
+      pergunta: "Suplementos utilizados atualmente",
+      tipo: "textarea",
+      icon: "💊",
+    },
   ],
 };
 
-const planos = [
-  {
-    nome: "Consulta Avulsa",
-    preco: 150,
-    descricao: "Ideal para uma orientação inicial",
-    beneficios: [
-      "1 consulta",
-      "Plano alimentar personalizado",
-      "Acesso por 2 anos",
-    ],
-  },
-  {
-    nome: "Plano Premium",
-    preco: 250,
-    popular: true,
-    descricao: "Acompanhamento completo",
-    beneficios: [
-      "2 consultas (1 por mês)",
-      "Plano alimentar personalizado",
-      "Ajustes quinzenais",
-      "Suporte por WhatsApp",
-      "Acesso por 4 anos",
-    ],
-  },
-];
-
-const etapas = ["Contato", "Categoria", "Questionário", "Plano", "Confirmação"];
-
-const formatarTelefone = (value: string) => {
-  const numero = value.replace(/\D/g, "");
-  if (numero.length <= 10) {
-    return numero.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3").trim();
-  } else {
-    return numero.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3").trim();
-  }
-};
-
-const limparFormatacaoTelefone = (value: string) => {
-  return value.replace(/\D/g, "");
-};
+const etapas = ["", "", ""];
 
 const QuestionarioPage: React.FC = () => {
   const navigate = useNavigate();
   const { t } = useI18n();
   const { questionarioData, updateQuestionario } = useQuestionario();
-  const { step, categoria, planoSelecionado, respostas } = questionarioData;
+  const { step, categoria, respostas } = questionarioData;
   const [erros, setErros] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Efeito para rolar para o topo quando mudar de etapa
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
@@ -230,43 +210,14 @@ const QuestionarioPage: React.FC = () => {
   const validarEtapa = (etapa: number): boolean => {
     const novosErros: Record<string, string> = {};
 
-    if (etapa === 0) {
-      if (!respostas.nome?.trim()) {
-        novosErros.nome = "Nome é obrigatório";
-      } else if (respostas.nome.trim().length < 2) {
-        novosErros.nome = "Nome deve ter pelo menos 2 caracteres";
-      }
+    if (etapa === 0 && !categoria) return false;
 
-      if (!respostas.email?.trim()) {
-        novosErros.email = "E-mail é obrigatório";
-      } else if (!/\S+@\S+\.\S+/.test(respostas.email)) {
-        novosErros.email = "E-mail inválido";
-      }
-
-      if (!respostas.telefone?.trim()) {
-        novosErros.telefone = "Telefone é obrigatório";
-      } else {
-        const numeroLimpo = limparFormatacaoTelefone(respostas.telefone);
-        if (numeroLimpo.length !== 10 && numeroLimpo.length !== 11) {
-          novosErros.telefone = "Telefone deve ter 10 ou 11 dígitos";
-        }
-      }
-    }
-
-    if (etapa === 1 && !categoria) {
-      return false;
-    }
-
-    if (etapa === 2 && categoria) {
+    if (etapa === 1 && categoria) {
       perguntasPorCategoria[categoria].forEach((perguntaObj) => {
         if (!respostas[perguntaObj.pergunta]?.trim()) {
           novosErros[perguntaObj.pergunta] = "Campo obrigatório";
         }
       });
-    }
-
-    if (etapa === 3 && planoSelecionado === null) {
-      return false;
     }
 
     setErros(novosErros);
@@ -285,27 +236,17 @@ const QuestionarioPage: React.FC = () => {
 
   const handleInputChange = (campo: string, valor: string) => {
     updateQuestionario({ respostas: { ...respostas, [campo]: valor } });
-    // Remove erro do campo quando usuário começar a digitar
-    if (erros[campo]) {
-      setErros((prev) => ({ ...prev, [campo]: "" }));
-    }
+    if (erros[campo]) setErros((prev) => ({ ...prev, [campo]: "" }));
   };
 
   const handleSubmit = async () => {
     if (!validarEtapa(step)) return;
 
     setIsSubmitting(true);
-
-    // Simulação de envio
     try {
       await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Dados enviados:", {
-        categoria,
-        plano: planos[planoSelecionado!],
-        respostas,
-      });
+      console.log("Dados enviados:", { categoria, respostas });
       updateQuestionario({ step: etapas.length - 1 });
-      setTimeout(() => {}, 3000);
     } catch (error) {
       console.error("Erro ao enviar:", error);
     } finally {
@@ -313,153 +254,74 @@ const QuestionarioPage: React.FC = () => {
     }
   };
 
-  // Renderização condicional por etapa
+  // Render por etapa
   let conteudo;
 
   if (step === 0) {
     conteudo = (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Informações Básicas
-          </h2>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Nome completo *
-            </label>
-            <input
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                erros.nome ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="Seu nome completo"
-              value={respostas.nome || ""}
-              onChange={(e) => handleInputChange("nome", e.target.value)}
-            />
-            {erros.nome && (
-              <p className="text-red-500 text-sm mt-1">{erros.nome}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              E-mail *
-            </label>
-            <input
-              type="email"
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                erros.email ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="seu@email.com"
-              value={respostas.email || ""}
-              onChange={(e) => handleInputChange("email", e.target.value)}
-            />
-            {erros.email && (
-              <p className="text-red-500 text-sm mt-1">{erros.email}</p>
-            )}
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Telefone/WhatsApp *
-            </label>
-            <input
-              className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                erros.telefone ? "border-red-500" : "border-gray-300"
-              }`}
-              placeholder="(61) 99999-9999"
-              value={respostas.telefone || ""}
-              onChange={(e) => {
-                // Formata o valor para exibição
-                const formattedValue = formatarTelefone(e.target.value);
-                // Salva no estado apenas os números
-                const numericValue = limparFormatacaoTelefone(formattedValue);
-                // Só atualiza se o número tiver 10 ou 11 dígitos ou estiver vazio
-                if (numericValue.length <= 11) {
-                  handleInputChange("telefone", formattedValue);
-                }
-              }}
-            />
-            {erros.telefone && (
-              <p className="text-red-500 text-sm mt-1">{erros.telefone}</p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button onClick={handleNext} className="flex-1 py-3">
-            Continuar
-          </Button>
-        </div>
-      </div>
-    );
-  } else if (step === 1) {
-    conteudo = (
-      <div className="space-y-6">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Selecione sua Categoria
-          </h2>
-          <p className="text-gray-600">
-            Escolha o tipo de acompanhamento que melhor se adequa às suas
-            necessidades
+          <p className="text-gray-600 text-lg">
+            Selecione a categoria que melhor se adequa às suas necessidades
           </p>
         </div>
-
-        <div className="grid gap-4">
+        <div className="grid gap-4 md:gap-6">
           {categorias.map((cat) => (
             <div
               key={cat.value}
-              className={`p-4 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
+              className={`p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
                 categoria === cat.value
-                  ? "border-green-500 bg-green-50 shadow-md"
-                  : "border-gray-200 hover:border-green-300 hover:bg-green-25"
+                  ? `${cat.activeColor} shadow-lg scale-105`
+                  : `${cat.borderColor} ${cat.color} hover:shadow-md`
               }`}
-              onClick={() => {
-                // Atualiza a categoria
-                updateQuestionario({
-                  categoria: cat.value,
-                  // Se não for categoria infantil, replica o nome nas respostas
-                  respostas: {
-                    ...respostas,
-                    ...(cat.value !== "infantil" && respostas.nome
-                      ? { "Nome completo": respostas.nome }
-                      : {}),
-                  },
-                });
-              }}
+              onClick={() => updateQuestionario({ categoria: cat.value })}
             >
               <div className="flex items-center gap-4">
-                <span className="text-3xl">{cat.icon}</span>
+                <div className="p-3 rounded-xl bg-white shadow-sm">
+                  <span className="text-2xl">{cat.icon}</span>
+                </div>
                 <div className="flex-1">
-                  <h3 className="font-semibold text-gray-800">{cat.label}</h3>
-                  <p className="text-sm text-gray-600">{cat.description}</p>
+                  <h3 className="font-bold text-lg text-gray-800">
+                    {cat.label}
+                  </h3>
+                  <p className="text-gray-600 text-sm">{cat.description}</p>
                 </div>
                 <div
-                  className={`w-4 h-4 rounded-full border-2 ${
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
                     categoria === cat.value
                       ? "bg-green-500 border-green-500"
                       : "border-gray-300"
                   }`}
-                />
+                >
+                  {categoria === cat.value && (
+                    <svg
+                      className="w-3 h-3 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                  )}
+                </div>
               </div>
             </div>
           ))}
         </div>
-
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-6">
           <Button
             onClick={handleBack}
             variant="secondary"
-            className="flex-1 py-3"
+            className="flex-1 py-4 border-gray-300 hover:border-gray-400"
           >
             Voltar
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 py-3"
+            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
             disabled={!categoria}
           >
             Continuar
@@ -467,341 +329,170 @@ const QuestionarioPage: React.FC = () => {
         </div>
       </div>
     );
-  } else if (step === 2 && categoria) {
-    const perguntas = perguntasPorCategoria[categoria];
-
+  } else if (step === 1 && categoria) {
+    const perguntas = perguntasPorCategoria[categoria] || [];
     conteudo = (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Questionário de Saúde
-          </h2>
-          <p className="text-gray-600">
-            Preencha as informações para personalizarmos seu plano
-          </p>
+          <p className="text-gray-600 text-lg">Conte-nos mais</p>
         </div>
-
         <div className="space-y-6">
-          {perguntas.map((perguntaObj, index) => (
-            <div key={index}>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                {perguntaObj.pergunta} *
+          {perguntas.map((p, idx) => (
+            <div
+              key={idx}
+              className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm"
+            >
+              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
+                {p.icon && <span className="text-lg">{p.icon}</span>}
+                {p.pergunta}
+                <span className="text-red-500 ml-1">*</span>
               </label>
-
-              {perguntaObj.tipo === "texto" && (
+              {p.tipo === "texto" && (
                 <input
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                    erros[perguntaObj.pergunta]
-                      ? "border-red-500"
-                      : "border-gray-300"
+                  className={`w-full px-4 py-3 border-2 rounded-xl ${
+                    erros[p.pergunta]
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200"
                   }`}
-                  placeholder={`Digite ${perguntaObj.pergunta.toLowerCase()}`}
-                  value={respostas[perguntaObj.pergunta] || ""}
+                  value={respostas[p.pergunta] || ""}
                   onChange={(e) =>
-                    handleInputChange(perguntaObj.pergunta, e.target.value)
+                    handleInputChange(p.pergunta, e.target.value)
                   }
+                  placeholder={`Digite ${p.pergunta.toLowerCase()}`}
                 />
               )}
-
-              {perguntaObj.tipo === "numero" && (
+              {p.tipo === "numero" && (
                 <input
                   type="number"
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                    erros[perguntaObj.pergunta]
-                      ? "border-red-500"
-                      : "border-gray-300"
+                  className={`w-full px-4 py-3 border-2 rounded-xl ${
+                    erros[p.pergunta]
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200"
                   }`}
-                  placeholder={`Digite ${perguntaObj.pergunta.toLowerCase()}`}
-                  value={respostas[perguntaObj.pergunta] || ""}
+                  value={respostas[p.pergunta] || ""}
                   onChange={(e) =>
-                    handleInputChange(perguntaObj.pergunta, e.target.value)
+                    handleInputChange(p.pergunta, e.target.value)
                   }
+                  placeholder={`Digite ${p.pergunta.toLowerCase()}`}
                 />
               )}
-
-              {perguntaObj.tipo === "select" && (
-                <>
+              {p.tipo === "select" && (
+                <div className="space-y-3">
                   <select
-                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                      erros[perguntaObj.pergunta]
-                        ? "border-red-500"
-                        : "border-gray-300"
+                    className={`w-full px-4 py-3 border-2 rounded-xl ${
+                      erros[p.pergunta]
+                        ? "border-red-500 bg-red-50"
+                        : "border-gray-200"
                     }`}
-                    value={respostas[perguntaObj.pergunta] || ""}
+                    value={respostas[p.pergunta] || ""}
                     onChange={(e) =>
-                      handleInputChange(perguntaObj.pergunta, e.target.value)
+                      handleInputChange(p.pergunta, e.target.value)
                     }
                   >
                     <option value="">Selecione uma opção</option>
-                    {perguntaObj.opcoes?.map((opcao, idx) => (
-                      <option key={idx} value={opcao}>
-                        {opcao}
+                    {p.opcoes?.map((o, i) => (
+                      <option key={i} value={o}>
+                        {o}
                       </option>
                     ))}
                   </select>
-                  {perguntaObj.expansivel &&
-                    (respostas[perguntaObj.pergunta] === "Sim - Outras" ||
-                      respostas[perguntaObj.pergunta] === "Outros") && (
+                  {p.expansivel &&
+                    (respostas[p.pergunta] === "Sim - Outras" ||
+                      respostas[p.pergunta] === "Outros") && (
                       <input
-                        className={`mt-2 w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                          erros[perguntaObj.pergunta]
-                            ? "border-red-500"
-                            : "border-gray-300"
-                        }`}
-                        placeholder={`${
-                          perguntaObj.placeholderExt
-                            ? perguntaObj.placeholderExt
-                            : ""
-                        }`}
-                        value={
-                          respostas[perguntaObj.pergunta + " - Detalhe"] || ""
+                        className="w-full px-4 py-3 border-2 rounded-xl"
+                        placeholder={
+                          p.placeholderExt || "Por favor, especifique"
                         }
+                        value={respostas[p.pergunta + " - Detalhe"] || ""}
                         onChange={(e) =>
                           handleInputChange(
-                            perguntaObj.pergunta + " - Detalhe",
+                            p.pergunta + " - Detalhe",
                             e.target.value
                           )
                         }
                       />
                     )}
-                </>
+                </div>
               )}
-
-              {perguntaObj.tipo === "textarea" && (
+              {p.tipo === "textarea" && (
                 <textarea
-                  rows={3}
-                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all ${
-                    erros[perguntaObj.pergunta]
-                      ? "border-red-500"
-                      : "border-gray-300"
+                  rows={4}
+                  className={`w-full px-4 py-3 border-2 rounded-xl resize-none ${
+                    erros[p.pergunta]
+                      ? "border-red-500 bg-red-50"
+                      : "border-gray-200"
                   }`}
-                  placeholder={`Descreva ${perguntaObj.pergunta.toLowerCase()}`}
-                  value={respostas[perguntaObj.pergunta] || ""}
+                  placeholder={`${p.pergunta.toLowerCase()}`}
+                  value={respostas[p.pergunta] || ""}
                   onChange={(e) =>
-                    handleInputChange(perguntaObj.pergunta, e.target.value)
+                    handleInputChange(p.pergunta, e.target.value)
                   }
                 />
               )}
-
-              {erros[perguntaObj.pergunta] && (
-                <p className="text-red-500 text-sm mt-1">
-                  {erros[perguntaObj.pergunta]}
+              {erros[p.pergunta] && (
+                <p className="text-red-500 text-sm mt-2">
+                  ⚠️ {erros[p.pergunta]}
                 </p>
               )}
             </div>
           ))}
         </div>
-
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-6">
           <Button
             onClick={handleBack}
             variant="secondary"
-            className="flex-1 py-3"
-          >
-            Voltar
-          </Button>
-          <Button onClick={handleNext} className="flex-1 py-3">
-            Continuar
-          </Button>
-        </div>
-      </div>
-    );
-  } else if (step === 3) {
-    conteudo = (
-      <div className="space-y-6">
-        <div className="text-center mb-6">
-          <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Escolha seu Plano
-          </h2>
-          <p className="text-gray-600">
-            Selecione a opção que melhor atende suas necessidades
-          </p>
-        </div>
-
-        <div className="grid gap-6">
-          {planos.map((plano, index) => (
-            <div
-              key={index}
-              className={`p-6 border-2 rounded-xl cursor-pointer transition-all duration-300 ${
-                planoSelecionado === index
-                  ? "border-green-500 bg-green-50 shadow-lg transform scale-105"
-                  : "border-gray-200 hover:border-green-300 hover:shadow-md"
-              } ${plano.popular ? "relative" : ""}`}
-              onClick={() => updateQuestionario({ planoSelecionado: index })}
-            >
-              {plano.popular && (
-                <div className="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-green-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-                  MAIS POPULAR
-                </div>
-              )}
-
-              <div className="text-center mb-4">
-                <h3 className="font-bold text-xl text-green-800">
-                  {plano.nome}
-                </h3>
-                <div className="text-3xl font-bold text-green-600 my-2">
-                  R$ {plano.preco}
-                  {plano.nome !== "Consulta Avulsa" && (
-                    <span className="text-lg font-normal">/mês</span>
-                  )}
-                </div>
-                <p className="text-gray-600">{plano.descricao}</p>
-              </div>
-
-              <ul className="space-y-2 mb-4">
-                {plano.beneficios.map((beneficio, idx) => (
-                  <li
-                    key={idx}
-                    className="flex items-center text-sm text-gray-700"
-                  >
-                    <svg
-                      className="w-4 h-4 text-green-500 mr-2 flex-shrink-0"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    {beneficio}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex gap-3 pt-4">
-          <Button
-            onClick={handleBack}
-            variant="secondary"
-            className="flex-1 py-3"
+            className="flex-1 py-4 border-gray-300 hover:border-gray-400"
           >
             Voltar
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 py-3"
-            disabled={planoSelecionado === null}
+            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
           >
             Continuar
           </Button>
         </div>
       </div>
     );
-  } else if (step === 4) {
-    const plano = planos[planoSelecionado!];
-
+  } else if (step === 2) {
+    // Resumo final
+    const perguntas = categoria ? perguntasPorCategoria[categoria] : [];
     conteudo = (
-      <div className="space-y-6">
+      <div className="space-y-8">
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <svg
-              className="w-8 h-8 text-green-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M5 13l4 4L19 7"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-green-800 mb-2">
-            Confirmação Final
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+            Tudo Pronto!
           </h2>
-          <p className="text-gray-600">
-            Revise suas informações antes de enviar
+          <p className="text-gray-600 text-lg">
+            Confira suas respostas antes de enviar
           </p>
         </div>
-
-        <div className="bg-gray-50 rounded-lg p-6 space-y-4">
-          <div>
-            <h3 className="font-semibold text-green-700 mb-2">
-              Dados Pessoais
-            </h3>
-            <p>
-              <strong>Nome:</strong> {respostas.nome}
-            </p>
-            <p>
-              <strong>E-mail:</strong> {respostas.email}
-            </p>
-            <p>
-              <strong>Telefone:</strong> {respostas.telefone}
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-green-700 mb-2">
-              Plano Escolhido
-            </h3>
-            <p>
-              <strong>{plano?.nome}:</strong> R$ {plano?.preco}
-            </p>
-          </div>
-
-          <div>
-            <h3 className="font-semibold text-green-700 mb-2">
-              Resumo do Questionário
-            </h3>
-            {categoria &&
-              perguntasPorCategoria[categoria]
-                .slice(0, 3)
-                .map((perguntaObj, index) => (
-                  <p key={index}>
-                    <strong>{perguntaObj.pergunta}:</strong>{" "}
-                    {respostas[perguntaObj.pergunta]}
-                  </p>
-                ))}
-          </div>
+        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 border border-gray-200">
+          {perguntas.map((p, idx) => (
+            <div key={idx} className="flex justify-between">
+              <span className="font-medium text-gray-700">{p.pergunta}:</span>
+              <span className="text-gray-900">
+                {respostas[p.pergunta] || "—"}
+              </span>
+            </div>
+          ))}
         </div>
-
-        <div className="flex gap-3 pt-4">
+        <div className="flex gap-3 pt-6">
           <Button
             onClick={handleBack}
             variant="secondary"
-            className="flex-1 py-3"
+            className="flex-1 py-4 border-gray-300 hover:border-gray-400"
+            disabled={isSubmitting}
           >
             Voltar
           </Button>
           <Button
             onClick={handleSubmit}
-            className="flex-1 py-3"
+            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
             disabled={isSubmitting}
           >
-            {isSubmitting ? (
-              <>
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Enviando...
-              </>
-            ) : (
-              "Confirmar e Enviar"
-            )}
+            {isSubmitting ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       </div>
@@ -809,40 +500,37 @@ const QuestionarioPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-green-50 to-white py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 py-8 px-4">
       <SEO
-        title={t('questionario.seo.title')}
-        description={t('questionario.seo.desc')}
+        title={t("questionario.seo.title")}
+        description={t("questionario.seo.desc")}
       />
       <div className="max-w-2xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-green-800 mb-2">Formulário</h1>
-          <p className="text-gray-600">
-            Preencha o formulário para começarmos seu acompanhamento
+          <p className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
+            Vamos criar juntos o plano perfeito para sua saúde
           </p>
         </div>
 
-        <Card className="w-full p-6 md:p-8">
-          <ProgressBar
-            value={step + 1}
-            max={etapas.length}
-            labels={etapas}
-            currentStep={step}
-          />
-
+        <Card className="w-full p-6 md:p-8 shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <div className="mb-8">
+            <ProgressBar
+              value={step + 1}
+              max={etapas.length}
+              labels={etapas}
+              currentStep={step}
+            />
+          </div>
           <div className="mt-8 animate-fade-in">{conteudo}</div>
         </Card>
 
-        {/* Botão para voltar ao início */}
         {!isSubmitting && (
-          <div className="text-center mt-6 text-xs">
+          <div className="text-center mt-8">
             <button
-              onClick={() => {
-                navigate("/");
-              }}
-              className="text-green-600 hover:text-green-800 font-medium"
+              onClick={() => navigate("/dashboard")}
+              className="text-green-600 hover:text-green-800 font-medium flex items-center justify-center gap-2 mx-auto transition-colors"
             >
-              ← Voltar para a página inicial
+              Voltar para o início
             </button>
           </div>
         )}

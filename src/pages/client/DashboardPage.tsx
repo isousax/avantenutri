@@ -5,6 +5,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import StatsCard from "../../components/StatsCard";
 import NotificationBell from "../../components/NotificationBell";
+import Progress from "../../components/ui/Progress";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
 import Perfil from "../../components/dashboard/Perfil";
@@ -20,7 +21,13 @@ import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { QuestionnaireBanner } from "../../components/dashboard/QuestionnaireBanner";
 import { useFirstLoginRedirect } from "../../hooks/useFirstLoginRedirect";
-import { MealIcon, WeightIcon, WaterIcon, CalendarIcon, BillingIcon } from "../../components/dashboard/icon";
+import {
+  MealIcon,
+  WeightIcon,
+  WaterIcon,
+  CalendarIcon,
+  BillingIcon,
+} from "../../components/dashboard/icon";
 import { LoadingState, SkeletonCard } from "../../components/ui/Loading";
 
 // Modern Diet Plan Card
@@ -44,16 +51,20 @@ const DietPlanCard: React.FC<{
   locale: string;
 }> = ({ diet, onView, onRevise, canEdit, locale }) => {
   const isCurrent = diet.status === "active";
-  
+
   // Detectar formato da dieta
-  const formatLabel = diet.format ? 
-    (diet.format === 'pdf' ? 'PDF' : 
-     diet.format === 'structured' ? 'Estruturado' : diet.format) : 
-    (() => {
-      if (/^\s*\[PDF\]/i.test(diet.description || '')) return 'PDF';
-      if (/^\s*\[(STR|STRUCT)\]/i.test(diet.description || '')) return 'Estruturado';
-      return null;
-    })();
+  const formatLabel = diet.format
+    ? diet.format === "pdf"
+      ? "PDF"
+      : diet.format === "structured"
+      ? "Estruturado"
+      : diet.format
+    : (() => {
+        if (/^\s*\[PDF\]/i.test(diet.description || "")) return "PDF";
+        if (/^\s*\[(STR|STRUCT)\]/i.test(diet.description || ""))
+          return "Estruturado";
+        return null;
+      })();
 
   return (
     <Card className="p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
@@ -219,20 +230,29 @@ const WeightSection: React.FC<{
   };
 
   // Só calcula IMC se tiver peso E altura válidos
-  const bmi = (latestWeight?.weight_kg && heightCm && heightCm > 50 && heightCm < 250) 
-    ? latestWeight.weight_kg / Math.pow(heightCm/100, 2) 
+  const bmi =
+    latestWeight?.weight_kg && heightCm && heightCm > 50 && heightCm < 250
+      ? latestWeight.weight_kg / Math.pow(heightCm / 100, 2)
+      : undefined;
+
+  const bmiClass = bmi
+    ? bmi < 18.5
+      ? "Baixo peso"
+      : bmi < 25
+      ? "Normal"
+      : bmi < 30
+      ? "Sobrepeso"
+      : bmi < 35
+      ? "Obesidade I"
+      : bmi < 40
+      ? "Obesidade II"
+      : "Obesidade III"
     : undefined;
-    
-  const bmiClass = bmi ? (
-    bmi < 18.5 ? 'Baixo peso' :
-    bmi < 25 ? 'Normal' :
-    bmi < 30 ? 'Sobrepeso' :
-    bmi < 35 ? 'Obesidade I' :
-    bmi < 40 ? 'Obesidade II' : 'Obesidade III'
-  ) : undefined;
 
   return (
-    <LoadingState isLoading={loading} error={error ? new Error(error) : null}>
+    <LoadingState isLoading={loading} 
+      error={error ? new Error(error) : null}
+      loadingComponent={<SkeletonCard lines={3} className="h-32" />}>
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -242,12 +262,22 @@ const WeightSection: React.FC<{
             <div>
               <h3 className="font-semibold text-gray-900">Peso Atual</h3>
               <p className="text-2xl font-bold text-gray-900">
-                {latestWeight?.weight_kg ? `${latestWeight.weight_kg.toFixed(1)} kg` : "--"}
+                {latestWeight?.weight_kg
+                  ? `${latestWeight.weight_kg.toFixed(1)} kg`
+                  : "--"}
               </p>
               {weightDiff != null && (
-                <p className={`text-sm ${weightDiff >= 0 ? "text-red-600" : "text-green-600"}`}>
-                  {weightDiff >= 0 ? "+" : ""}{weightDiff.toFixed(1)} kg
-                  {weightDiffPct != null && ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(1)}%)`}
+                <p
+                  className={`text-sm ${
+                    weightDiff >= 0 ? "text-red-600" : "text-green-600"
+                  }`}
+                >
+                  {weightDiff >= 0 ? "+" : ""}
+                  {weightDiff.toFixed(1)} kg
+                  {weightDiffPct != null &&
+                    ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(
+                      1
+                    )}%)`}
                 </p>
               )}
               {bmi && bmiClass && (
@@ -313,52 +343,6 @@ const WeightSection: React.FC<{
   );
 };
 
-const MealsSection: React.FC = () => {
-  const { progress: mealProgress, goals: mealGoals, loading, error } = useMealLogs(1);
-
-  const progressPercent = mealGoals?.calories && mealProgress?.calories 
-    ? Math.min((mealProgress.calories / mealGoals.calories) * 100, 100)
-    : 0;
-
-  return (
-    <LoadingState 
-      isLoading={loading} 
-      error={error ? new Error(error) : null}
-      loadingComponent={<SkeletonCard lines={3} className="h-32" />}
-    >
-      <StatsCard
-        title="Refeições"
-        value={mealProgress?.calories ? `${Math.round(mealProgress.calories)} kcal` : "0 kcal"}
-        description={mealGoals?.calories ? `Meta: ${Math.round(mealGoals.calories)} kcal` : "Sem meta definida"}
-        icon="🍽️"
-        trend={{ value: progressPercent, isPositive: progressPercent >= 50 }}
-      />
-    </LoadingState>
-  );
-};
-
-const WaterSection: React.FC = () => {
-  const { totalToday: waterToday, dailyGoalCups, loading, error } = useWaterLogs(1);
-
-  const progressPercent = dailyGoalCups ? Math.min((waterToday / dailyGoalCups) * 100, 100) : 0;
-
-  return (
-    <LoadingState 
-      isLoading={loading} 
-      error={error ? new Error(error) : null}
-      loadingComponent={<SkeletonCard lines={3} className="h-32" />}
-    >
-      <StatsCard
-        title="Hidratação"
-        value={`${waterToday} copos`}
-        description={dailyGoalCups ? `Meta: ${dailyGoalCups} copos` : "Sem meta"}
-        icon="💧"
-        trend={{ value: progressPercent, isPositive: progressPercent >= 50 }}
-      />
-    </LoadingState>
-  );
-};
-
 const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -412,11 +396,21 @@ const DashboardPage: React.FC = () => {
     error: dietError,
   } = useDietPlans();
   const { adherence } = useDietAdherence(7); // últimos 7 dias
-  
+
+  // Dynamic data for progress bars
+  const { progress: mealProgress, goals: mealGoals } = useMealLogs(1);
+  const { totalToday: waterToday, dailyGoalCups } = useWaterLogs(1);
+  const { latest: latestWeight, goal } = useWeightLogs(30);
+  const progressPercent = dailyGoalCups
+    ? Math.min((waterToday / dailyGoalCups) * 100, 100)
+    : 0;
+
   // Questionário para altura e IMC
   const { questionarioData } = useQuestionario();
-  const heightCmRaw = questionarioData?.respostas?.['Altura (cm)'];
-  const heightCm = heightCmRaw ? parseFloat(heightCmRaw.replace(',','.')) : undefined;
+  const heightCmRaw = questionarioData?.respostas?.["Altura (cm)"];
+  const heightCm = heightCmRaw
+    ? parseFloat(heightCmRaw.replace(",", "."))
+    : undefined;
 
   const canViewDiets = true; // Todos podem visualizar dietas
   const canEditDiets = false; // Pacientes não editam dietas, apenas admin
@@ -430,9 +424,11 @@ const DashboardPage: React.FC = () => {
   const [metaCarb, setMetaCarb] = useState("");
   const [metaFat, setMetaFat] = useState("");
   // Suporte a PDF
-  const [planFormat, setPlanFormat] = useState<'structured'|'pdf'>('structured');
-  const [pdfBase64, setPdfBase64] = useState<string>('');
-  const [pdfName, setPdfName] = useState<string>('');
+  const [planFormat, setPlanFormat] = useState<"structured" | "pdf">(
+    "structured"
+  );
+  const [pdfBase64, setPdfBase64] = useState<string>("");
+  const [pdfName, setPdfName] = useState<string>("");
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [includeData, setIncludeData] = useState(false);
@@ -459,13 +455,13 @@ const DashboardPage: React.FC = () => {
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     let data: any = undefined;
-    if (planFormat === 'pdf') {
+    if (planFormat === "pdf") {
       if (pdfBase64) {
         data = {
-          format: 'pdf',
+          format: "pdf",
           file: {
             name: pdfName,
-            mime: 'application/pdf',
+            mime: "application/pdf",
             base64: pdfBase64,
           },
           observacoes: creatingDesc || null,
@@ -482,21 +478,30 @@ const DashboardPage: React.FC = () => {
           },
           refeicoes: [],
           observacoes: creatingDesc || null,
-          format: 'structured'
+          format: "structured",
         };
       }
     }
     let finalDesc = creatingDesc;
-    if (planFormat === 'pdf' && finalDesc && !/^\s*\[PDF\]/i.test(finalDesc)) {
+    if (planFormat === "pdf" && finalDesc && !/^\s*\[PDF\]/i.test(finalDesc)) {
       finalDesc = `[PDF] ${finalDesc}`;
     }
-    const id = await create({ name: creatingName, description: finalDesc, data });
+    const id = await create({
+      name: creatingName,
+      description: finalDesc,
+      data,
+    });
     if (id) {
       setShowCreateModal(false);
-      setCreatingName(""); setCreatingDesc("");
-      setMetaKcal(""); setMetaProt(""); setMetaCarb(""); setMetaFat("");
-      setPlanFormat('structured');
-      setPdfBase64(''); setPdfName('');
+      setCreatingName("");
+      setCreatingDesc("");
+      setMetaKcal("");
+      setMetaProt("");
+      setMetaCarb("");
+      setMetaFat("");
+      setPlanFormat("structured");
+      setPdfBase64("");
+      setPdfName("");
     }
   };
 
@@ -527,10 +532,24 @@ const DashboardPage: React.FC = () => {
   };
 
   const { locale, t } = useI18n();
-  
+
   const quickActions = [
     {
-      icon: "📅",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+          />
+        </svg>
+      ),
       iconComponent: CalendarIcon,
       label: "Agendar Consulta",
       description: "Marque nova consulta",
@@ -538,7 +557,21 @@ const DashboardPage: React.FC = () => {
       color: "purple",
     },
     {
-      icon: "⚖️",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16l-3-3m3 3l3-3"
+          />
+        </svg>
+      ),
       iconComponent: WeightIcon,
       label: "Registrar Peso",
       description: "Atualize seu peso atual",
@@ -546,7 +579,21 @@ const DashboardPage: React.FC = () => {
       color: "green",
     },
     {
-      icon: "📋",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"
+          />
+        </svg>
+      ),
       iconComponent: MealIcon,
       label: "Registrar Refeição",
       description: "Adicione o que comeu hoje",
@@ -554,7 +601,21 @@ const DashboardPage: React.FC = () => {
       color: "blue",
     },
     {
-      icon: "💧",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z"
+          />
+        </svg>
+      ),
       iconComponent: WaterIcon,
       label: "Registrar Água",
       description: "Controle sua hidratação",
@@ -562,11 +623,25 @@ const DashboardPage: React.FC = () => {
       color: "cyan",
     },
     {
-      icon: "💳",
+      icon: (
+        <svg
+          className="w-6 h-6"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+          />
+        </svg>
+      ),
       iconComponent: BillingIcon,
-      label: "Billing / Plano",
+      label: "Extrato",
       description: "Histórico de pagamentos",
-      onClick: () => navigate('/billing/historico'),
+      onClick: () => navigate("/billing/historico"),
       color: "amber",
     },
   ];
@@ -744,7 +819,7 @@ const DashboardPage: React.FC = () => {
             <div className="space-y-6">
               {/* Questionnaire Banner */}
               <QuestionnaireBanner />
-              
+
               {/* Quick Actions */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 px-1">
@@ -793,11 +868,7 @@ const DashboardPage: React.FC = () => {
                                 : "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
                             }`}
                           >
-                            {action.iconComponent ? (
-                              <action.iconComponent className="w-6 h-6" />
-                            ) : (
-                              <span className="text-lg">{action.icon}</span>
-                            )}
+                            {action.icon}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">
@@ -892,19 +963,33 @@ const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Seção de Métricas com Loading */}
+              {/* Métricas Principais */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <MealsSection />
-                <WaterSection />
-                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
-                  <StatsCard
-                    title="Adesão à Dieta"
-                    value={adherence ? `${adherence.percentage}%` : "-"}
-                    description={adherence ? `${adherence.daysCovered}/${adherence.totalDays} dias com registros` : 'Registre suas refeições'}
-                    icon="📊"
-                    gradient="from-purple-300 to-indigo-600"
-                  />
-                </Card>
+                <WeightSection heightCm={heightCm} />
+                <StatsCard
+                  title="Hidratação"
+                  value={`${waterToday} copos`}
+                  description={
+                    dailyGoalCups ? `Meta: ${dailyGoalCups} copos` : "Sem meta"
+                  }
+                  icon="water"
+                  trend={{
+                    value: progressPercent,
+                    isPositive: progressPercent >= 50,
+                  }}
+                  gradient="to-blue-400 from-emerald-300"
+                />
+                <StatsCard
+                  title="Adesão à Dieta"
+                  value={adherence ? `${adherence.percentage}%` : "-"}
+                  description={
+                    adherence
+                      ? `${adherence.daysCovered}/${adherence.totalDays} dias com registros`
+                      : "Registre suas refeições"
+                  }
+                  icon="stats"
+                  gradient="from-purple-300 to-indigo-600"
+                />
               </div>
 
               {/* Progress and Diet Plans */}
@@ -915,7 +1000,38 @@ const DashboardPage: React.FC = () => {
                     Progresso dos Objetivos
                   </h3>
                   <div className="space-y-4">
-                    <WeightSection heightCm={heightCm} />
+                    <Progress
+                      current={latestWeight?.weight_kg || 0}
+                      target={goal || 70}
+                      label="Meta de Peso"
+                      unit="kg"
+                      size="sm"
+                      gradient="from-green-500 to-emerald-600"
+                    />
+                    <Progress
+                      current={mealProgress?.calories || 0}
+                      target={mealGoals?.calories || 2000}
+                      label="Meta de Calorias"
+                      unit="kcal"
+                      size="sm"
+                      gradient="from-amber-500 to-orange-600"
+                    />
+                    <Progress
+                      current={waterToday}
+                      target={dailyGoalCups || 8}
+                      label="Copos de Água"
+                      unit=""
+                      size="sm"
+                      gradient="from-blue-500 to-cyan-600"
+                    />
+                    <Progress
+                      current={adherence?.percentage || 0}
+                      target={100}
+                      label="Adesão à Dieta"
+                      unit="%"
+                      size="sm"
+                      gradient="from-purple-500 to-indigo-600"
+                    />
                   </div>
                 </Card>
 
@@ -934,18 +1050,16 @@ const DashboardPage: React.FC = () => {
                     </Button>
                   </div>
                   <div className="space-y-4">
-                    {plans
-                      .slice(0, 3)
-                      .map((p) => (
-                        <DietPlanCard
-                          key={p.id}
-                          diet={{ ...p, isCurrent: p.status === "active" }}
-                          onView={openDetail}
-                          onRevise={handleRevise}
-                          canEdit={canEditDiets}
-                          locale={locale}
-                        />
-                      ))}
+                    {plans.slice(0, 3).map((p) => (
+                      <DietPlanCard
+                        key={p.id}
+                        diet={{ ...p, isCurrent: p.status === "active" }}
+                        onView={openDetail}
+                        onRevise={handleRevise}
+                        canEdit={canEditDiets}
+                        locale={locale}
+                      />
+                    ))}
                     {plans.length === 0 && (
                       <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
                         <div className="text-4xl mb-3">🍽️</div>
@@ -995,13 +1109,13 @@ const DashboardPage: React.FC = () => {
           )}
 
           {activeTab === "dietas" && (
-            <div className="space-y-5">              
+            <div className="space-y-5">
               {dietError && (
                 <div className="text-sm text-red-600 p-3 bg-red-50 rounded-lg">
                   {dietError}
                 </div>
               )}
-              
+
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
                 {plans.map((diet) => (
                   <DietPlanCard
@@ -1015,7 +1129,8 @@ const DashboardPage: React.FC = () => {
                 ))}
                 {plans.length === 0 && (
                   <div className="col-span-full text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
-                    Nenhum plano de dieta ainda. Agende uma consulta para receber sua primeira dieta!
+                    Nenhum plano de dieta ainda. Agende uma consulta para
+                    receber sua primeira dieta!
                   </div>
                 )}
               </div>
@@ -1055,69 +1170,112 @@ const DashboardPage: React.FC = () => {
                     className="w-full border rounded-lg px-3 py-2 text-sm h-24 resize-none"
                   />
                 </div>
-                
+
                 <div className="flex items-center gap-4 text-xs">
                   <label className="flex items-center gap-1 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="planFormat" 
-                      value="structured" 
-                      checked={planFormat==='structured'} 
-                      onChange={()=> setPlanFormat('structured')} 
-                    /> Estruturado
+                    <input
+                      type="radio"
+                      name="planFormat"
+                      value="structured"
+                      checked={planFormat === "structured"}
+                      onChange={() => setPlanFormat("structured")}
+                    />{" "}
+                    Estruturado
                   </label>
                   <label className="flex items-center gap-1 cursor-pointer">
-                    <input 
-                      type="radio" 
-                      name="planFormat" 
-                      value="pdf" 
-                      checked={planFormat==='pdf'} 
-                      onChange={()=> setPlanFormat('pdf')} 
-                    /> PDF
+                    <input
+                      type="radio"
+                      name="planFormat"
+                      value="pdf"
+                      checked={planFormat === "pdf"}
+                      onChange={() => setPlanFormat("pdf")}
+                    />{" "}
+                    PDF
                   </label>
                 </div>
 
-                {planFormat === 'pdf' && (
+                {planFormat === "pdf" && (
                   <div className="space-y-2 text-sm">
-                    <label className="block text-sm font-medium mb-1">Arquivo PDF</label>
+                    <label className="block text-sm font-medium mb-1">
+                      Arquivo PDF
+                    </label>
                     <input
                       type="file"
                       accept="application/pdf"
-                      onChange={e=> {
+                      onChange={(e) => {
                         const f = e.target.files?.[0];
-                        if (!f) { setPdfBase64(''); setPdfName(''); return; }
-                        if (f.size > 5*1024*1024) { alert('Limite de 5MB'); return; }
+                        if (!f) {
+                          setPdfBase64("");
+                          setPdfName("");
+                          return;
+                        }
+                        if (f.size > 5 * 1024 * 1024) {
+                          alert("Limite de 5MB");
+                          return;
+                        }
                         setPdfName(f.name);
                         const reader = new FileReader();
                         reader.onload = () => {
                           const res = reader.result as string;
-                          const base64 = res.split(',')[1] || '';
+                          const base64 = res.split(",")[1] || "";
                           setPdfBase64(base64);
                         };
                         reader.readAsDataURL(f);
                       }}
                     />
-                    {pdfName && <p className="text-xs text-gray-600">Selecionado: {pdfName}</p>}
+                    {pdfName && (
+                      <p className="text-xs text-gray-600">
+                        Selecionado: {pdfName}
+                      </p>
+                    )}
                   </div>
                 )}
 
-                {planFormat === 'structured' && (
+                {planFormat === "structured" && (
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-xs font-medium mb-1">Kcal/dia</label>
-                      <input value={metaKcal} onChange={e=> setMetaKcal(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 2000" />
+                      <label className="block text-xs font-medium mb-1">
+                        Kcal/dia
+                      </label>
+                      <input
+                        value={metaKcal}
+                        onChange={(e) => setMetaKcal(e.target.value)}
+                        className="w-full border rounded px-2 py-1 text-sm"
+                        placeholder="Ex: 2000"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium mb-1">Proteína (g)</label>
-                      <input value={metaProt} onChange={e=> setMetaProt(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 120" />
+                      <label className="block text-xs font-medium mb-1">
+                        Proteína (g)
+                      </label>
+                      <input
+                        value={metaProt}
+                        onChange={(e) => setMetaProt(e.target.value)}
+                        className="w-full border rounded px-2 py-1 text-sm"
+                        placeholder="Ex: 120"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium mb-1">Carbo (g)</label>
-                      <input value={metaCarb} onChange={e=> setMetaCarb(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 180" />
+                      <label className="block text-xs font-medium mb-1">
+                        Carbo (g)
+                      </label>
+                      <input
+                        value={metaCarb}
+                        onChange={(e) => setMetaCarb(e.target.value)}
+                        className="w-full border rounded px-2 py-1 text-sm"
+                        placeholder="Ex: 180"
+                      />
                     </div>
                     <div>
-                      <label className="block text-xs font-medium mb-1">Gordura (g)</label>
-                      <input value={metaFat} onChange={e=> setMetaFat(e.target.value)} className="w-full border rounded px-2 py-1 text-sm" placeholder="Ex: 60" />
+                      <label className="block text-xs font-medium mb-1">
+                        Gordura (g)
+                      </label>
+                      <input
+                        value={metaFat}
+                        onChange={(e) => setMetaFat(e.target.value)}
+                        className="w-full border rounded px-2 py-1 text-sm"
+                        placeholder="Ex: 60"
+                      />
                     </div>
                   </div>
                 )}
@@ -1242,7 +1400,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
 }) => {
   const cached = detailJson;
   if (!cached) return <div className="text-sm text-gray-500">Sem dados.</div>;
-  
+
   return (
     <div className="space-y-4">
       <div>
@@ -1270,52 +1428,86 @@ const DetailContent: React.FC<DetailContentProps> = ({
                 </span>
               </div>
               {v.notes && <div className="text-gray-500 italic">{v.notes}</div>}
-              
+
               {/* Suporte a PDF */}
-              {includeData && v.data?.format === 'pdf' && (v.data?.file?.base64 || v.data?.file?.key) && (
-                <div className="mt-1">
-                  <button
-                    type="button"
-                    className="text-[11px] text-blue-600 underline"
-                    onClick={() => {
-                      // Prefer backend streaming quando key presente
-                      if (v.data.file?.key && cached?.id) {
-                        const url = `${location.origin}/diet/plans/${cached.id}/version/${v.id}/file`;
-                        fetch(url, { headers: { 'authorization': localStorage.getItem('access_token') ? `Bearer ${localStorage.getItem('access_token')}` : '' } })
-                          .then(async r => {
-                            if (!r.ok) throw new Error('HTTP '+r.status);
-                            const blob = await r.blob();
-                            const dlUrl = URL.createObjectURL(blob);
-                            const a = document.createElement('a');
-                            a.href = dlUrl;
-                            a.download = v.data.file.name || `plano_v${v.version_number}.pdf`;
-                            document.body.appendChild(a); a.click(); a.remove();
-                            setTimeout(()=> URL.revokeObjectURL(dlUrl), 2000);
+              {includeData &&
+                v.data?.format === "pdf" &&
+                (v.data?.file?.base64 || v.data?.file?.key) && (
+                  <div className="mt-1">
+                    <button
+                      type="button"
+                      className="text-[11px] text-blue-600 underline"
+                      onClick={() => {
+                        // Prefer backend streaming quando key presente
+                        if (v.data.file?.key && cached?.id) {
+                          const url = `${location.origin}/diet/plans/${cached.id}/version/${v.id}/file`;
+                          fetch(url, {
+                            headers: {
+                              authorization: localStorage.getItem(
+                                "access_token"
+                              )
+                                ? `Bearer ${localStorage.getItem(
+                                    "access_token"
+                                  )}`
+                                : "",
+                            },
                           })
-                          .catch(err => { console.error(err); alert('Falha ao baixar PDF'); });
-                        return;
-                      }
-                      // Fallback para base64
-                      if (v.data.file?.base64) {
-                        try {
-                          const base64 = v.data.file.base64 as string;
-                          const byteStr = atob(base64);
-                          const bytes = new Uint8Array(byteStr.length);
-                          for (let i=0;i<byteStr.length;i++) bytes[i] = byteStr.charCodeAt(i);
-                          const blob = new Blob([bytes], { type: 'application/pdf' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url;
-                          a.download = v.data.file.name || `plano_v${v.version_number}.pdf`;
-                          document.body.appendChild(a); a.click(); a.remove();
-                          setTimeout(()=> URL.revokeObjectURL(url), 2000);
-                        } catch (err) { console.error(err); alert('Falha ao gerar download do PDF'); }
-                      }
-                    }}
-                  >Baixar PDF</button>
-                </div>
-              )}
-              
+                            .then(async (r) => {
+                              if (!r.ok) throw new Error("HTTP " + r.status);
+                              const blob = await r.blob();
+                              const dlUrl = URL.createObjectURL(blob);
+                              const a = document.createElement("a");
+                              a.href = dlUrl;
+                              a.download =
+                                v.data.file.name ||
+                                `plano_v${v.version_number}.pdf`;
+                              document.body.appendChild(a);
+                              a.click();
+                              a.remove();
+                              setTimeout(
+                                () => URL.revokeObjectURL(dlUrl),
+                                2000
+                              );
+                            })
+                            .catch((err) => {
+                              console.error(err);
+                              alert("Falha ao baixar PDF");
+                            });
+                          return;
+                        }
+                        // Fallback para base64
+                        if (v.data.file?.base64) {
+                          try {
+                            const base64 = v.data.file.base64 as string;
+                            const byteStr = atob(base64);
+                            const bytes = new Uint8Array(byteStr.length);
+                            for (let i = 0; i < byteStr.length; i++)
+                              bytes[i] = byteStr.charCodeAt(i);
+                            const blob = new Blob([bytes], {
+                              type: "application/pdf",
+                            });
+                            const url = URL.createObjectURL(blob);
+                            const a = document.createElement("a");
+                            a.href = url;
+                            a.download =
+                              v.data.file.name ||
+                              `plano_v${v.version_number}.pdf`;
+                            document.body.appendChild(a);
+                            a.click();
+                            a.remove();
+                            setTimeout(() => URL.revokeObjectURL(url), 2000);
+                          } catch (err) {
+                            console.error(err);
+                            alert("Falha ao gerar download do PDF");
+                          }
+                        }
+                      }}
+                    >
+                      Baixar PDF
+                    </button>
+                  </div>
+                )}
+
               {includeData && v.data && (
                 <pre className="mt-1 bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px]">
                   {JSON.stringify(v.data, null, 2)}
