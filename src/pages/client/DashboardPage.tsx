@@ -5,22 +5,23 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import StatsCard from "../../components/StatsCard";
 import NotificationBell from "../../components/NotificationBell";
-import Progress from "../../components/ui/Progress";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
 import Perfil from "../../components/dashboard/Perfil";
 import Consultas from "../../components/dashboard/Consultas";
 import Suporte from "../../components/dashboard/Suporte";
 import { useDietPlans } from "../../hooks/useDietPlans";
-import { usePermissions } from "../../hooks/usePermissions";
-import { CAPABILITIES } from "../../types/capabilities";
-import CapabilitySection from "../../components/auth/CapabilitySection";
-import PermissionGate from "../../components/auth/PermissionGate";
 import { useWeightLogs } from "../../hooks/useWeightLogs";
+import { useMealLogs } from "../../hooks/useMealLogs";
+import { useWaterLogs } from "../../hooks/useWaterLogs";
+import { useDietAdherence } from "../../hooks/useDietAdherence";
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
+import { QuestionnaireBanner } from "../../components/dashboard/QuestionnaireBanner";
+import { useFirstLoginRedirect } from "../../hooks/useFirstLoginRedirect";
 import { MealIcon, WeightIcon, WaterIcon, CalendarIcon, BillingIcon } from "../../components/dashboard/icon";
+import { LoadingState, SkeletonCard } from "../../components/ui/Loading";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -253,19 +254,17 @@ const WeightGoal: React.FC<{
             </div>
           )}
 
-          {/* Informações de IMC */}
-          {bmi && (
+          {/* Informações de IMC - só mostra se BMI foi calculado */}
+          {bmi && bmiClass && (
             <div className="mt-3 p-3 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-blue-800">
                     IMC: {bmi.toFixed(1)}
                   </p>
-                  {bmiClass && (
-                    <p className="text-xs text-blue-600 mt-1">
-                      Classificação: {bmiClass}
-                    </p>
-                  )}
+                  <p className="text-xs text-blue-600 mt-1">
+                    Classificação: {bmiClass}
+                  </p>
                 </div>
                 <div className="text-blue-600 text-lg">⚖️</div>
               </div>
@@ -322,10 +321,184 @@ const WeightGoal: React.FC<{
   );
 };
 
+// Components com Loading States
+const WeightSection: React.FC<{
+  heightCm?: number;
+}> = ({ heightCm }) => {
+  const {
+    latest: latestWeight,
+    diff_kg: weightDiff,
+    diff_percent: weightDiffPct,
+    setGoal,
+    goal,
+    series,
+    loading,
+    error,
+  } = useWeightLogs(30);
+
+  const [editingGoal, setEditingGoal] = React.useState(false);
+  const [goalInput, setGoalInput] = React.useState<string>(
+    goal ? goal.toString() : ""
+  );
+
+  useEffect(() => {
+    setGoalInput(goal != null ? goal.toString() : "");
+  }, [goal]);
+
+  const saveGoal = async () => {
+    const v = parseFloat(goalInput.replace(",", "."));
+    if (!isFinite(v) || v <= 0) return;
+    await setGoal(v);
+    setEditingGoal(false);
+  };
+
+  // Só calcula IMC se tiver peso E altura válidos
+  const bmi = (latestWeight?.weight_kg && heightCm && heightCm > 50 && heightCm < 250) 
+    ? latestWeight.weight_kg / Math.pow(heightCm/100, 2) 
+    : undefined;
+    
+  const bmiClass = bmi ? (
+    bmi < 18.5 ? 'Baixo peso' :
+    bmi < 25 ? 'Normal' :
+    bmi < 30 ? 'Sobrepeso' :
+    bmi < 35 ? 'Obesidade I' :
+    bmi < 40 ? 'Obesidade II' : 'Obesidade III'
+  ) : undefined;
+
+  return (
+    <LoadingState isLoading={loading} error={error ? new Error(error) : null}>
+      <Card>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-100 rounded-lg">
+              <WeightIcon />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Peso Atual</h3>
+              <p className="text-2xl font-bold text-gray-900">
+                {latestWeight?.weight_kg ? `${latestWeight.weight_kg.toFixed(1)} kg` : "--"}
+              </p>
+              {weightDiff != null && (
+                <p className={`text-sm ${weightDiff >= 0 ? "text-red-600" : "text-green-600"}`}>
+                  {weightDiff >= 0 ? "+" : ""}{weightDiff.toFixed(1)} kg
+                  {weightDiffPct != null && ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(1)}%)`}
+                </p>
+              )}
+              {bmi && bmiClass && (
+                <p className="text-sm text-gray-600 mt-1">
+                  IMC: {bmi.toFixed(1)} - {bmiClass}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="text-right">
+            <p className="text-sm text-gray-600">Meta:</p>
+            {editingGoal ? (
+              <div className="flex items-center gap-2 mt-1">
+                <input
+                  type="text"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  placeholder="kg"
+                  className="w-16 px-2 py-1 text-sm border rounded"
+                />
+                <button
+                  onClick={saveGoal}
+                  className="text-green-500 hover:text-green-600 p-1"
+                >
+                  ✓
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingGoal(false);
+                    setGoalInput(goal != null ? goal.toString() : "");
+                  }}
+                  className="text-red-500 hover:text-red-600 p-1"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="font-medium">
+                  {goal != null ? `${goal.toFixed(1)} kg` : "Não definida"}
+                </span>
+                <button
+                  onClick={() => setEditingGoal(true)}
+                  className="text-blue-500 hover:text-blue-600 p-1"
+                >
+                  ✏️
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="mt-4">
+          <Sparkline
+            data={series.slice(-20)}
+            height={50}
+            gradient={["#10b981", "#059669"]}
+          />
+        </div>
+      </Card>
+    </LoadingState>
+  );
+};
+
+const MealsSection: React.FC = () => {
+  const { progress: mealProgress, goals: mealGoals, loading, error } = useMealLogs(1);
+
+  const progressPercent = mealGoals?.calories && mealProgress?.calories 
+    ? Math.min((mealProgress.calories / mealGoals.calories) * 100, 100)
+    : 0;
+
+  return (
+    <LoadingState 
+      isLoading={loading} 
+      error={error ? new Error(error) : null}
+      loadingComponent={<SkeletonCard lines={3} className="h-32" />}
+    >
+      <StatsCard
+        title="Refeições"
+        value={mealProgress?.calories ? `${Math.round(mealProgress.calories)} kcal` : "0 kcal"}
+        description={mealGoals?.calories ? `Meta: ${Math.round(mealGoals.calories)} kcal` : "Sem meta definida"}
+        icon="🍽️"
+        trend={{ value: progressPercent, isPositive: progressPercent >= 50 }}
+      />
+    </LoadingState>
+  );
+};
+
+const WaterSection: React.FC = () => {
+  const { totalToday: waterToday, dailyGoalCups, loading, error } = useWaterLogs(1);
+
+  const progressPercent = dailyGoalCups ? Math.min((waterToday / dailyGoalCups) * 100, 100) : 0;
+
+  return (
+    <LoadingState 
+      isLoading={loading} 
+      error={error ? new Error(error) : null}
+      loadingComponent={<SkeletonCard lines={3} className="h-32" />}
+    >
+      <StatsCard
+        title="Hidratação"
+        value={`${waterToday} copos`}
+        description={dailyGoalCups ? `Meta: ${dailyGoalCups} copos` : "Sem meta"}
+        icon="💧"
+        trend={{ value: progressPercent, isPositive: progressPercent >= 50 }}
+      />
+    </LoadingState>
+  );
+};
+
 const DashboardPage: React.FC = () => {
-  const { user = { full_name: "", email: "", photoUrl: "", display_name: ""}, logout } =
-    useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+
+  // First login redirect hook
+  useFirstLoginRedirect();
 
   const handleLogout = async () => {
     await logout();
@@ -337,7 +510,7 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   const [activeTab, setActiveTab] = useState<
-    "overview" | "dietas" | "perfil" | "suporte" | "consultas"
+    "overview" | "questionario" | "dietas" | "perfil" | "suporte" | "consultas"
   >("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -372,46 +545,14 @@ const DashboardPage: React.FC = () => {
     revising,
     error: dietError,
   } = useDietPlans();
-  const { can, usage } = usePermissions();
-  const {
-    latest: latestWeight,
-    diff_kg: weightDiff,
-    diff_percent: weightDiffPct,
-    setGoal,
-    goal,
-    series,
-  } = useWeightLogs(30);
+  const { adherence } = useDietAdherence(7); // últimos 7 dias
   
   // Questionário para altura e IMC
   const { questionarioData } = useQuestionario();
   const heightCmRaw = questionarioData?.respostas?.['Altura (cm)'];
   const heightCm = heightCmRaw ? parseFloat(heightCmRaw.replace(',','.')) : undefined;
-  const bmi = (latestWeight && heightCm && heightCm > 0) ? latestWeight.weight_kg / Math.pow(heightCm/100, 2) : undefined;
-  const bmiClass = bmi ? (
-    bmi < 18.5 ? 'Baixo peso' :
-    bmi < 25 ? 'Normal' :
-    bmi < 30 ? 'Sobrepeso' :
-    bmi < 35 ? 'Obesidade I' :
-    bmi < 40 ? 'Obesidade II' : 'Obesidade III'
-  ) : undefined;
 
-  const [editingGoal, setEditingGoal] = React.useState(false);
-  const [goalInput, setGoalInput] = React.useState<string>(
-    goal ? goal.toString() : ""
-  );
-
-  useEffect(() => {
-    setGoalInput(goal != null ? goal.toString() : "");
-  }, [goal]);
-
-  const saveGoal = async () => {
-    const v = parseFloat(goalInput.replace(",", "."));
-    if (!isFinite(v) || v <= 0) return;
-    await setGoal(v);
-    setEditingGoal(false);
-  };
-
-  const canViewDiets = can(CAPABILITIES.DIETA_VIEW);
+  const canViewDiets = true; // Todos podem visualizar dietas
   const canEditDiets = false; // Pacientes não editam dietas, apenas admin
 
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -616,7 +757,7 @@ const DashboardPage: React.FC = () => {
               />
               <div className="ml-4 min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900 text-base truncate">
-                  {user?.display_name}
+                  {user?.display_name || user?.full_name || "Usuário"}
                 </h3>
                 <p className="text-green-600 font-semibold text-sm truncate flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
@@ -630,6 +771,7 @@ const DashboardPage: React.FC = () => {
           <nav className="flex-1 p-4">
             {[
               { id: "overview", label: "Visão Geral", icon: "📊" },
+              { id: "questionario", label: "Questionário", icon: "📝" },
               { id: "dietas", label: "Minhas Dietas", icon: "🍽️" },
               { id: "consultas", label: "Consultas", icon: "📅" },
               { id: "perfil", label: "Meu Perfil", icon: "👤" },
@@ -638,7 +780,11 @@ const DashboardPage: React.FC = () => {
               <button
                 key={item.id}
                 onClick={() => {
-                  setActiveTab(item.id as any);
+                  if (item.id === "questionario") {
+                    navigate("/questionario");
+                  } else {
+                    setActiveTab(item.id as any);
+                  }
                   setSidebarOpen(false);
                 }}
                 className={`w-full flex items-center px-4 py-3.5 rounded-2xl mb-2 transition-all duration-300 ${
@@ -707,6 +853,7 @@ const DashboardPage: React.FC = () => {
                 <div className="min-w-0">
                   <h1 className="text-xl font-bold text-gray-900 truncate capitalize">
                     {activeTab === "overview" && "Visão Geral"}
+                    {activeTab === "questionario" && "Questionário"}
                     {activeTab === "dietas" && "Minhas Dietas"}
                     {activeTab === "consultas" && "Minhas Consultas"}
                     {activeTab === "perfil" && "Meu Perfil"}
@@ -729,6 +876,9 @@ const DashboardPage: React.FC = () => {
         <div className="p-5">
           {activeTab === "overview" && (
             <div className="space-y-6">
+              {/* Questionnaire Banner */}
+              <QuestionnaireBanner />
+              
               {/* Quick Actions */}
               <div className="mb-8">
                 <div className="flex items-center justify-between mb-4 px-1">
@@ -876,43 +1026,19 @@ const DashboardPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Stats */}
-              <div className="grid gap-5 md:grid-cols-3">
-                <WeightGoal
-                  latestWeight={latestWeight?.weight_kg}
-                  weightDiff={weightDiff}
-                  weightDiffPct={weightDiffPct}
-                  goal={goal}
-                  editingGoal={editingGoal}
-                  goalInput={goalInput}
-                  setEditingGoal={setEditingGoal}
-                  setGoalInput={setGoalInput}
-                  saveGoal={saveGoal}
-                  series={series}
-                  gradient="from-green-300 to-emerald-600"
-                  bmi={bmi}
-                  bmiClass={bmiClass}
-                />
-
-                <StatsCard
-                  title="Água Hoje"
-                  value={
-                    usage?.WATER_ML_DIA
-                      ? `${(usage.WATER_ML_DIA.used / 1000).toFixed(1)} L`
-                      : "-"
-                  }
-                  description={usage?.WATER_ML_DIA?.limit ? `Limite ${(usage.WATER_ML_DIA.limit/1000).toFixed(1)} L` : ''}
-                  icon="water"
-                  gradient="from-blue-300 to-cyan-600 "
-                />
-
-                <StatsCard
-                  title="Revisões (mês)"
-                  value={(usage?.DIETA_REVISOES_MES?.used ?? 0).toString()}
-                  description={usage?.DIETA_REVISOES_MES?.limit != null ? `Limite: ${usage.DIETA_REVISOES_MES.limit}` : ''}
-                  icon="stats"
-                  gradient="from-purple-300 to-indigo-600"
-                />
+              {/* Seção de Métricas com Loading */}
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                <MealsSection />
+                <WaterSection />
+                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                  <StatsCard
+                    title="Adesão à Dieta"
+                    value={adherence ? `${adherence.percentage}%` : "-"}
+                    description={adherence ? `${adherence.daysCovered}/${adherence.totalDays} dias com registros` : 'Registre suas refeições'}
+                    icon="📊"
+                    gradient="from-purple-300 to-indigo-600"
+                  />
+                </Card>
               </div>
 
               {/* Progress and Diet Plans */}
@@ -923,45 +1049,16 @@ const DashboardPage: React.FC = () => {
                     Progresso dos Objetivos
                   </h3>
                   <div className="space-y-4">
-                    <Progress
-                      current={72.5}
-                      target={70}
-                      label="Meta de Peso"
-                      unit="kg"
-                      size="sm"
-                      gradient="from-green-500 to-emerald-600"
-                    />
-                    <Progress
-                      current={1850}
-                      target={2000}
-                      label="Meta de Calorias"
-                      unit="kcal"
-                      size="sm"
-                      gradient="from-amber-500 to-orange-600"
-                    />
-                    <Progress
-                      current={7}
-                      target={8}
-                      label="Copos de Água"
-                      unit=""
-                      size="sm"
-                      gradient="from-blue-500 to-cyan-600"
-                    />
-                    <Progress
-                      current={85}
-                      target={100}
-                      label="Adesão à Dieta"
-                      unit="%"
-                      size="sm"
-                      gradient="from-purple-500 to-indigo-600"
-                    />
+                    <WeightSection heightCm={heightCm} />
                   </div>
                 </Card>
 
-                <CapabilitySection
-                  title="Dietas Recentes"
-                  anyOf={[CAPABILITIES.DIETA_VIEW]}
-                  toolbar={canViewDiets ? (
+                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                      <span>🍽️</span>
+                      Dietas Recentes
+                    </h3>
                     <Button
                       variant="secondary"
                       onClick={() => setActiveTab("dietas")}
@@ -969,40 +1066,30 @@ const DashboardPage: React.FC = () => {
                     >
                       Ver Todas
                     </Button>
-                  ) : null}
-                  loadingFallback={<div className="text-xs text-gray-400">Carregando permissões...</div>}
-                  reloadingFallback={<div className="text-xs text-gray-400">Atualizando...</div>}
-                  fallback={<div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
-                    <div className="text-4xl mb-3">🔒</div>
-                    <p className="text-gray-600 font-medium">
-                      Seu plano não permite visualizar dietas.
-                    </p>
-                  </div>}
-                >
+                  </div>
                   <div className="space-y-4">
-                    {canViewDiets &&
-                      plans
-                        .slice(0, 3)
-                        .map((p) => (
-                          <DietPlanCard
-                            key={p.id}
-                            diet={{ ...p, isCurrent: p.status === "active" }}
-                            onView={openDetail}
-                            onRevise={handleRevise}
-                            canEdit={canEditDiets}
-                            locale={locale}
-                          />
-                        ))}
-                    {!canViewDiets && (
+                    {plans
+                      .slice(0, 3)
+                      .map((p) => (
+                        <DietPlanCard
+                          key={p.id}
+                          diet={{ ...p, isCurrent: p.status === "active" }}
+                          onView={openDetail}
+                          onRevise={handleRevise}
+                          canEdit={canEditDiets}
+                          locale={locale}
+                        />
+                      ))}
+                    {plans.length === 0 && (
                       <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
-                        <div className="text-4xl mb-3">🔒</div>
+                        <div className="text-4xl mb-3">🍽️</div>
                         <p className="text-gray-600 font-medium">
-                          Seu plano não permite visualizar dietas.
+                          Nenhuma dieta ainda. Agende uma consulta!
                         </p>
                       </div>
                     )}
                   </div>
-                </CapabilitySection>
+                </Card>
               </div>
 
               {/* Upcoming Appointments */}
@@ -1049,53 +1136,23 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
               
-              <PermissionGate
-                anyOf={[CAPABILITIES.DIETA_VIEW]}
-                fallback={<div className="text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">Seu plano não inclui acesso a dietas.</div>}
-                loadingFallback={<div className="text-sm text-gray-400">Carregando permissões...</div>}
-                reloadingFallback={<div className="text-sm text-gray-400">Atualizando...</div>}
-              >
-                {usage?.DIETA_REVISOES_MES && (
-                  <Card className="p-3 bg-gray-50">
-                    <div className="text-xs text-gray-600 flex flex-wrap gap-3 justify-between">
-                      <div>
-                        <span className="font-semibold">Revisões usadas:</span>{" "}
-                        {usage.DIETA_REVISOES_MES.used}
-                      </div>
-                      {usage.DIETA_REVISOES_MES.limit != null && (
-                        <div>
-                          <span className="font-semibold">Limite:</span>{" "}
-                          {usage.DIETA_REVISOES_MES.limit}
-                        </div>
-                      )}
-                      {usage.DIETA_REVISOES_MES.limit != null && (
-                        <div>
-                          <span className="font-semibold">Restantes:</span>{" "}
-                          {usage.DIETA_REVISOES_MES.remaining}
-                        </div>
-                      )}
-                    </div>
-                  </Card>
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
+                {plans.map((diet) => (
+                  <DietPlanCard
+                    key={diet.id}
+                    diet={{ ...diet, isCurrent: diet.status === "active" }}
+                    onView={openDetail}
+                    onRevise={handleRevise}
+                    canEdit={canEditDiets}
+                    locale={locale}
+                  />
+                ))}
+                {plans.length === 0 && (
+                  <div className="col-span-full text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
+                    Nenhum plano de dieta ainda. Agende uma consulta para receber sua primeira dieta!
+                  </div>
                 )}
-                
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
-                  {plans.map((diet) => (
-                    <DietPlanCard
-                      key={diet.id}
-                      diet={{ ...diet, isCurrent: diet.status === "active" }}
-                      onView={openDetail}
-                      onRevise={handleRevise}
-                      canEdit={canEditDiets}
-                      locale={locale}
-                    />
-                  ))}
-                  {plans.length === 0 && (
-                    <div className="col-span-full text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
-                      Nenhum plano de dieta ainda.
-                    </div>
-                  )}
-                </div>
-              </PermissionGate>
+              </div>
             </div>
           )}
 

@@ -30,19 +30,19 @@ const AdminReportsPage: React.FC = () => {
   }, []);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SEO title="Admin | Relatórios" description="Painel de relatórios e tendências" />
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Relatórios</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Relatórios</h1>
           <p className="text-xs text-gray-500 mt-1">Visão agregada para suporte a decisões (placeholder inicial).</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {/* Botões futuros: export PDF, alterar range temporal */}
         </div>
       </div>
       {error && <div className="text-sm text-red-600">{error}</div>}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map(s => (
           <Card key={s.key} className="p-4 space-y-1">
             <div className="text-[11px] uppercase tracking-wide text-gray-400">{s.label}</div>

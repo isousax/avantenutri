@@ -39,6 +39,9 @@ import BlogPostPage from "./pages/blog/BlogPostPage.tsx";
 import BlogAdminListPage from "./pages/admin/blog/BlogAdminListPage";
 import BlogAdminEditPage from "./pages/admin/blog/BlogAdminEditPage";
 import PricingPage from "./pages/home/PricingPage.tsx";
+import BillingSuccessPage from "./pages/handle/billing/BillingSuccessPage";
+import BillingFailurePage from "./pages/handle/billing/BillingFailurePage";
+import BillingPendingPage from "./pages/handle/billing/BillingPendingPage";
 import { I18nProvider, useI18n } from './i18n';
 import { ToastProvider } from './components/ui/ToastProvider';
 import { useToast } from './components/ui/ToastProvider';
@@ -167,6 +170,10 @@ function App() {
               <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
               <Route path="/blog" element={<BlogPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
+              {/* Billing return pages */}
+              <Route path="/billing/success" element={<BillingSuccessPage />} />
+              <Route path="/billing/failure" element={<BillingFailurePage />} />
+              <Route path="/billing/pending" element={<BillingPendingPage />} />
               {/* Rotas protegidas (requer login) */}
               <Route
                 path="/dashboard"

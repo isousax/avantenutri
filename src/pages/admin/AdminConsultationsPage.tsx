@@ -7,6 +7,7 @@ import { API } from '../../config/api';
 import { useAuth } from '../../contexts';
 import { useI18n, formatDate as fmtDate } from '../../i18n';
 import { SEO } from '../../components/comum/SEO';
+import { AdminQuestionnaireModal } from '../../components/admin/AdminQuestionnaireModal';
 
 interface Consultation {
   id: string;
@@ -77,6 +78,11 @@ const AdminConsultationsPage: React.FC = () => {
   const [logSort, setLogSort] = useState<'created_at'|'action'|'weekday'>('created_at');
   const [logDir, setLogDir] = useState<'asc'|'desc'>('desc');
   const [editingId, setEditingId] = useState<string|null>(null);
+  
+  // Questionnaire modal states
+  const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string>('');
+  const [selectedUserName, setSelectedUserName] = useState<string>('');
   const [editDraft, setEditDraft] = useState<{ weekday:number; start_time:string; end_time:string; slot_duration_min:number; max_parallel:number }>({ weekday:1, start_time:'', end_time:'', slot_duration_min:40, max_parallel:1 });
 
   const loadConsultations = async () => {
@@ -142,6 +148,12 @@ const AdminConsultationsPage: React.FC = () => {
     if (r.ok) { void loadRules(); void loadLog(); } else setRuleError(t('admin.consultations.error.delete'));
   };
 
+  const handleViewQuestionnaire = (userId: string, userName?: string) => {
+    setSelectedUserId(userId);
+    setSelectedUserName(userName || userId);
+    setShowQuestionnaireModal(true);
+  };
+
   const loadLog = async () => {
     try {
       setLogLoading(true);
@@ -190,31 +202,31 @@ const AdminConsultationsPage: React.FC = () => {
     } finally { setLoadingSlots(false); }
   };
 
-  return <div className="p-4 space-y-6">
+  return <div className="p-3 sm:p-4 space-y-4 sm:space-y-6">
     <SEO title={t('admin.consultations.seo.title')} description={t('admin.consultations.seo.desc')} />
-    <div className="flex items-start justify-between flex-wrap gap-3">
+    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t('admin.consultations.heading')}</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{t('admin.consultations.heading')}</h1>
         <p className="text-xs text-gray-500 mt-1">{t('admin.consultations.subtitle')}</p>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button type="button" variant="secondary" onClick={()=> { void loadConsultations(); void loadRules(); void loadLog(); }} disabled={loading}>{t('admin.consultations.reload')}</Button>
       </div>
     </div>
-    <Card className="p-4 space-y-3">
-      <form onSubmit={submitFilters} className="flex flex-wrap gap-3" aria-label={t('admin.consultations.a11y.consultationsTable')}>
-        <select value={status} onChange={(e:ChangeEvent<HTMLSelectElement>)=>setStatus(e.target.value)} className="border px-2 py-1 rounded">
+    <Card className="p-3 sm:p-4 space-y-3">
+      <form onSubmit={submitFilters} className="grid grid-cols-1 sm:grid-cols-2 lg:flex lg:flex-wrap gap-2 sm:gap-3" aria-label={t('admin.consultations.a11y.consultationsTable')}>
+        <select value={status} onChange={(e:ChangeEvent<HTMLSelectElement>)=>setStatus(e.target.value)} className="border px-2 py-1 rounded text-sm">
           <option value="">{t('admin.consultations.table.col.status')}</option>
           <option value="scheduled">{t('admin.consultations.status.scheduled')}</option>
           <option value="canceled">{t('admin.consultations.status.canceled')}</option>
           <option value="completed">{t('admin.consultations.status.completed')}</option>
         </select>
-        <input value={userId} onChange={(e)=>setUserId(e.target.value)} placeholder="user_id" className="border px-2 py-1 rounded" />
-        <input type="date" value={from} onChange={(e)=>setFrom(e.target.value)} className="border px-2 py-1 rounded" />
-        <input type="date" value={to} onChange={(e)=>setTo(e.target.value)} className="border px-2 py-1 rounded" />
-        <Button type="submit">{t('admin.consultations.filter')}</Button>
-        {(status||userId||from||to) && <Button type="button" variant="secondary" onClick={()=>{ setStatus(''); setUserId(''); setFrom(''); setTo(''); setPage(1); void loadConsultations(); }}>{t('admin.consultations.clear')}</Button>}
-        <Button type="button" variant="secondary" onClick={exportCsv}>{t('admin.consultations.export.csv')}</Button>
+        <input value={userId} onChange={(e)=>setUserId(e.target.value)} placeholder="user_id" className="border px-2 py-1 rounded text-sm" />
+        <input type="date" value={from} onChange={(e)=>setFrom(e.target.value)} className="border px-2 py-1 rounded text-sm" />
+        <input type="date" value={to} onChange={(e)=>setTo(e.target.value)} className="border px-2 py-1 rounded text-sm" />
+        <Button type="submit" className="text-sm px-3 py-1">{t('admin.consultations.filter')}</Button>
+        {(status||userId||from||to) && <Button type="button" variant="secondary" onClick={()=>{ setStatus(''); setUserId(''); setFrom(''); setTo(''); setPage(1); void loadConsultations(); }} className="text-sm px-3 py-1">{t('admin.consultations.clear')}</Button>}
+        <Button type="button" variant="secondary" onClick={exportCsv} className="text-sm px-3 py-1">{t('admin.consultations.export.csv')}</Button>
         <span className="text-[10px] text-gray-400" title={t('admin.consultations.filter.autoApplied')}>⟳</span>
       </form>
       <div className="flex flex-wrap gap-2 text-[11px] items-center">
@@ -234,10 +246,11 @@ const AdminConsultationsPage: React.FC = () => {
               <th className="p-2">{t('admin.consultations.table.col.urgency')}</th>
               <th className="p-2">{t('admin.consultations.table.col.status')}</th>
               <th className="p-2">{t('admin.consultations.table.col.notes')}</th>
+              <th className="p-2">Ações</th>
             </tr>
           </thead>
           <tbody>
-            {loading && <tr><td colSpan={6} className="p-4"><Skeleton lines={3} /></td></tr>}
+            {loading && <tr><td colSpan={7} className="p-4"><Skeleton lines={3} /></td></tr>}
             {!loading && items.map(c => <tr key={c.id} className="border-b last:border-none hover:bg-gray-50">
               <td className="p-2">{fmtDate(c.scheduled_at, locale, { dateStyle: 'short', timeStyle: 'short'})}</td>
               <td className="p-2 font-mono text-xs">{c.user_id}</td>
@@ -251,8 +264,17 @@ const AdminConsultationsPage: React.FC = () => {
                 `}>{c.status==='scheduled'? t('admin.consultations.status.scheduled') : c.status==='canceled'? t('admin.consultations.status.canceled') : c.status==='completed'? t('admin.consultations.status.completed'): c.status}</span>
               </td>
               <td className="p-2 truncate max-w-xs" title={c.notes}>{c.notes||'-'}</td>
+              <td className="p-2">
+                <button
+                  onClick={() => handleViewQuestionnaire(c.user_id)}
+                  className="text-blue-600 hover:text-blue-800 text-xs px-2 py-1 bg-blue-50 hover:bg-blue-100 rounded transition-colors"
+                  title="Ver questionário do usuário"
+                >
+                  📋 Questionário
+                </button>
+              </td>
             </tr>)}
-            {!loading && !items.length && <tr><td colSpan={6} className="p-4">{t('admin.consultations.table.empty')}</td></tr>}
+            {!loading && !items.length && <tr><td colSpan={7} className="p-4">{t('admin.consultations.table.empty')}</td></tr>}
           </tbody>
         </table>
       </div>
@@ -480,6 +502,14 @@ const AdminConsultationsPage: React.FC = () => {
         </div>
       </div>)}
     </Card>
+
+    {/* Questionnaire Modal */}
+    <AdminQuestionnaireModal
+      isOpen={showQuestionnaireModal}
+      onClose={() => setShowQuestionnaireModal(false)}
+      userId={selectedUserId}
+      userName={selectedUserName}
+    />
   </div>;
 };
 

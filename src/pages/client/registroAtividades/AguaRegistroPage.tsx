@@ -4,8 +4,6 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
 import { useWaterLogs } from "../../../hooks/useWaterLogs";
-import { usePermissions } from "../../../hooks/usePermissions";
-import { CAPABILITIES } from "../../../types/capabilities";
 import { useI18n, formatNumber } from '../../../i18n';
 import { useToast } from '../../../components/ui/ToastProvider';
 
@@ -15,8 +13,6 @@ const AguaRegistroPage: React.FC = () => {
   useEffect(() => { document.title = t('water.log.title') + ' - Avante Nutri'; }, [t]);
   const navigate = useNavigate();
   const { logs, add, totalToday, avgPerDay, bestDay, summaryDays, dailyGoalCups, goalSource, cupSize, updateGoal, updateCupSize, limit } = useWaterLogs(7);
-  const { can } = usePermissions();
-  const canLog = can(CAPABILITIES.AGUA_LOG);
   const [metaDiaria, setMetaDiaria] = useState<number>(8);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState('8');
@@ -47,7 +43,6 @@ const AguaRegistroPage: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async () => {
-  if (!canLog) { push({ type:'error', message: t('water.plan.blocked')}); return; }
   if (pendingCops <= 0) { navigate('/dashboard'); return; }
     try {
       setIsSaving(true);
@@ -240,7 +235,7 @@ const AguaRegistroPage: React.FC = () => {
             </div>
 
             {/* Botão Salvar */}
-            <Button onClick={handleSubmit} className="w-full flex items-center justify-center" disabled={!canLog || isSaving}>
+            <Button onClick={handleSubmit} className="w-full flex items-center justify-center" disabled={isSaving}>
               {isSaving ? t('common.saving') : t('water.save')}
             </Button>
           {/* Estatísticas e Histórico */}

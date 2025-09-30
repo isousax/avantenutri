@@ -46,7 +46,6 @@ export function useDietPlans() {
   const [revising, setRevising] = useState<string | null>(null);
 
   const load = useCallback(async (opts: { archived?: boolean } = {}) => {
-    if (!can(CAPABILITIES.DIETA_VIEW)) { setPlans([]); return; }
     setLoading(true); setError(null);
     try {
       const qs = new URLSearchParams();

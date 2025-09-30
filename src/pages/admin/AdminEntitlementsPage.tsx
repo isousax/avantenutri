@@ -108,17 +108,17 @@ const AdminEntitlementsPage: React.FC = () => {
 
   const { t } = useI18n();
   return (
-    <div className="p-6 space-y-8">
+    <div className="p-3 sm:p-6 space-y-6 sm:space-y-8">
       <SEO title={t('admin.entitlements.seo.title')} description={t('admin.entitlements.seo.desc')} />
       <div>
-        <h1 className="text-2xl font-semibold mb-1">Entitlements / Capabilities (Admin)</h1>
+        <h1 className="text-xl sm:text-2xl font-semibold mb-1">Entitlements / Capabilities (Admin)</h1>
         <p className="text-sm text-gray-600 max-w-3xl leading-relaxed">
           Visão dupla: (1) Suas capabilities atuais / uso (2) Inspeção de um usuário específico. Esta página crescerá para
           incluir overrides, histórico e ajustes temporários. Caso o backend ainda não suporte entitlements de outro usuário
           via query parameter, a segunda seção retornará erro.
         </p>
       </div>
-      <Card className="p-4 space-y-4">
+      <Card className="p-3 sm:p-4 space-y-4">
         <h2 className="font-medium text-lg">Seus Entitlements</h2>
         {loading && (
           <div className="space-y-3">

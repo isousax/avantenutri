@@ -6,6 +6,7 @@ import { SEO } from '../components/comum/SEO';
 import Skeleton from '../components/ui/Skeleton';
 import { useToast } from '../components/ui/ToastProvider';
 import { useI18n } from '../i18n';
+import { API } from '../config/api';
 import type { TranslationKey } from '../types/i18n.d';
 
 interface BaseNavItem { path: string; labelKey: TranslationKey; icon?: React.ReactNode; requiresRole?: string; groupId?: string; }
@@ -83,7 +84,7 @@ const AdminLayout: React.FC = () => {
     try {
       // Usuários
       try {
-        const r = await authenticatedFetch('/api/auth/admin/users?page=1&pageSize=1');
+        const r = await authenticatedFetch(`${API.ADMIN_USERS}?page=1&pageSize=1`);
         if (r.ok) {
           const data = await r.json();
           if (typeof data.total === 'number') upd('users', { value: data.total }); else upd('users', { value: data.results?.length || 0 });
@@ -92,7 +93,7 @@ const AdminLayout: React.FC = () => {
       // Consultas futuras
       try {
         const from = new Date().toISOString();
-        const r = await authenticatedFetch(`/api/auth/admin/consultations?from=${encodeURIComponent(from)}&page=1&pageSize=1&status=scheduled`);
+        const r = await authenticatedFetch(`${API.ADMIN_CONSULTATIONS}?from=${encodeURIComponent(from)}&page=1&pageSize=1&status=scheduled`);
         if (r.ok) {
           const data = await r.json();
           upd('consultsUpcoming', { value: data.total ?? data.results?.length ?? 0 });
@@ -100,7 +101,7 @@ const AdminLayout: React.FC = () => {
       } catch { upd('consultsUpcoming', { value: 0 }); }
       // Posts publicados
       try {
-        const r = await authenticatedFetch('/api/auth/blog/posts?page=1&limit=1');
+        const r = await authenticatedFetch(`${API.BLOG_POSTS}?page=1&limit=1`);
         if (r.ok) {
           const data = await r.json();
           upd('posts', { value: data.total ?? data.results?.length ?? 0 });
@@ -108,7 +109,7 @@ const AdminLayout: React.FC = () => {
       } catch { upd('posts', { value: 0 }); }
       // Planos
       try {
-        const r = await authenticatedFetch('/api/auth/plans');
+        const r = await authenticatedFetch(API.PLANS);
         if (r.ok) {
           const data = await r.json();
           const count = (data.plans && Array.isArray(data.plans)) ? data.plans.filter((p: any)=> p.active !== false).length : 0;

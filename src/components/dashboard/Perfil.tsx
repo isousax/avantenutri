@@ -28,11 +28,11 @@ const Perfil: React.FC = () => {
 
   useEffect(() => {
     if (user) {
-      setDisplayName(user.display_name || "");
+      setDisplayName(user.display_name || user.full_name || "");
       setFullName(user.full_name || "");
       setPhone(user.phone || "");
       originalRef.current = {
-        display_name: user.display_name || "",
+        display_name: user.display_name || user.full_name || "",
         full_name: user.full_name || "",
         phone: user.phone || "",
       };
@@ -181,7 +181,7 @@ const Perfil: React.FC = () => {
         </div>
         <div className="flex-1 min-w-0">
           <h1 className="text-xl md:text-3xl font-bold text-gray-900 truncate">
-            {user?.display_name || "Usuário"}
+            {user?.display_name || user?.full_name || "Usuário"}
           </h1>
           <p className="text-gray-600 text-sm md:text-base truncate">
             {user?.email}

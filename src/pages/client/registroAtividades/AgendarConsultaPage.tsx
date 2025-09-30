@@ -7,44 +7,41 @@ import { useI18n, formatDate as fmtDate } from "../../../i18n";
 import { API } from "../../../config/api";
 import { useAuth } from "../../../contexts";
 import { useConsultations } from "../../../hooks/useConsultations";
-import { usePermissions } from "../../../hooks/usePermissions";
-import { CAPABILITIES } from "../../../types/capabilities";
 import { useToast } from "../../../components/ui/ToastProvider";
+import { useQuestionnaireStatus } from "../../../hooks/useQuestionnaireStatus";
+import { QuestionnaireConfirmModal } from "../../../components/dashboard/QuestionnaireConfirmModal";
 
 const AgendarConsultaPage: React.FC = () => {
   const { push } = useToast();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    tipoConsulta: "acompanhamento",
+    tipoConsulta: "avaliacao_completa",
     data: "",
     horario: "",
     urgencia: "normal",
   });
   const { authenticatedFetch } = useAuth();
   const { create, items, loading, error, list } = useConsultations();
-  const { can, loading: permsLoading, ready } = usePermissions();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { locale, t } = useI18n();
 
   const [etapa, setEtapa] = useState(1);
 
-  // Gating: if user cannot schedule consultations redirect to planos with intent marker
-  useEffect(()=> {
-    if (permsLoading) return; // wait
-    if (ready && !can(CAPABILITIES.CONSULTA_AGENDAR)) {
-      const intentUrl = `/planos?intent=consultation`;
-      navigate(intentUrl, { replace: true });
-    }
-  }, [permsLoading, ready, can, navigate]);
+  // Questionnaire modal state
+  const { data: questionnaireStatus, isLoading: isLoadingStatus } = useQuestionnaireStatus();
+  const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
+
+  // Simplified: everyone can schedule consultations
+  // Remove plan restrictions as per new business model
 
   const tiposConsulta = [
     {
-      value: "acompanhamento",
-      labelKey: 'consultations.schedule.type.acompanhamento.label',
-      descKey: 'consultations.schedule.type.acompanhamento.desc',
-      durationKey: 'consultations.schedule.type.acompanhamento.duration',
-      priceKey: 'consultations.schedule.type.acompanhamento.price'
+      value: "avaliacao_completa",
+      labelKey: 'consultations.schedule.type.avaliacao_completa.label',
+      descKey: 'consultations.schedule.type.avaliacao_completa.desc',
+      durationKey: 'consultations.schedule.type.avaliacao_completa.duration',
+      priceKey: 'consultations.schedule.type.avaliacao_completa.price'
     },
     {
       value: "reavaliacao",
@@ -83,6 +80,13 @@ const AgendarConsultaPage: React.FC = () => {
       setEtapa(2);
       return;
     }
+
+    // Check questionnaire status before proceeding
+    if (!questionnaireStatus?.is_complete) {
+      setShowQuestionnaireModal(true);
+      return;
+    }
+
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -107,6 +111,44 @@ const AgendarConsultaPage: React.FC = () => {
       if (raw.includes('slot_taken')) mapped = t('consultations.error.slotTaken');
       else if (raw.includes('blocked_slot')) mapped = t('consultations.error.blocked');
       else if (raw.includes('slot_not_available')) mapped = t('consultations.error.notAvailable');
+      else if (raw.includes('questionnaire_required')) mapped = 'É necessário completar o questionário antes de agendar uma consulta.';
+      const finalMsg = mapped || t('consultations.schedule.error');
+      setSubmitError(finalMsg);
+      push({ type: 'error', message: finalMsg });
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleQuestionnaireConfirm = async () => {
+    // Proceed with consultation booking after questionnaire confirmation
+    setShowQuestionnaireModal(false);
+    
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const { dataIso } = (() => {
+        const date = formData.data; // YYYY-MM-DD
+        const time = formData.horario; // HH:MM
+        const [h, m] = time.split(":").map(Number);
+        const dt = new Date(date + "T" + time + ":00Z");
+        // If user local timezone, adjust: assume date/time is local, convert to UTC
+        if (!isNaN(h!) && !isNaN(m!)) {
+          const local = new Date(date + "T" + time + ":00");
+          return { dataIso: local.toISOString() };
+        }
+        return { dataIso: dt.toISOString() };
+      })();
+      await create({ scheduledAt: dataIso, type: formData.tipoConsulta, urgency: formData.urgencia });
+      push({ type: 'success', message: t('consultations.status.scheduled') });
+      navigate("/dashboard");
+    } catch (e: any) {
+      const raw = (e?.message || '') as string;
+      let mapped: string | null = null;
+      if (raw.includes('slot_taken')) mapped = t('consultations.error.slotTaken');
+      else if (raw.includes('blocked_slot')) mapped = t('consultations.error.blocked');
+      else if (raw.includes('slot_not_available')) mapped = t('consultations.error.notAvailable');
+      else if (raw.includes('questionnaire_required')) mapped = 'É necessário completar o questionário antes de agendar uma consulta.';
       const finalMsg = mapped || t('consultations.schedule.error');
       setSubmitError(finalMsg);
       push({ type: 'error', message: finalMsg });
@@ -370,6 +412,14 @@ const AgendarConsultaPage: React.FC = () => {
           </div>
         </Card>
       </div>
+
+      {/* Questionnaire Confirmation Modal */}
+      <QuestionnaireConfirmModal
+        isOpen={showQuestionnaireModal}
+        onClose={() => setShowQuestionnaireModal(false)}
+        onConfirm={handleQuestionnaireConfirm}
+        hasQuestionnaire={questionnaireStatus?.has_data || false}
+      />
     </div>
   );
 };

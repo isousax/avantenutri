@@ -132,19 +132,19 @@ const AdminAuditPage: React.FC = () => {
 
   const { t } = useI18n();
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-3 sm:p-4 space-y-4">
       <SEO
         title={t("admin.audit.seo.title")}
         description={t("admin.audit.seo.desc")}
       />
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Auditoria</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Auditoria</h1>
           <p className="text-xs text-gray-500 mt-1">
             Logs de eventos de segurança e mudanças de acesso.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button
             type="button"
             variant="secondary"
@@ -153,12 +153,13 @@ const AdminAuditPage: React.FC = () => {
               void load();
             }}
             disabled={loading}
+            className="text-sm px-3 py-2"
           >
             Recarregar
           </Button>
         </div>
       </div>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2 overflow-x-auto">
         {(
           [
             ["password", "Trocas de Senha"],
@@ -172,7 +173,7 @@ const AdminAuditPage: React.FC = () => {
               setPage(1);
               setTab(code);
             }}
-            className={`px-3 py-1 rounded text-sm border ${
+            className={`px-3 py-1 rounded text-xs sm:text-sm border whitespace-nowrap ${
               tab === code
                 ? "bg-green-600 text-white border-green-600"
                 : "border-gray-300 hover:bg-gray-100"

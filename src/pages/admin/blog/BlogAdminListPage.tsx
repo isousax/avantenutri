@@ -23,36 +23,36 @@ const BlogAdminListPage: React.FC = () => {
 
   if(!canManage) return <div className='p-8 text-center text-gray-600'>Sem permissão.</div>;
 
-  return <div className='max-w-6xl mx-auto p-4 md:p-6'>
-    <div className='flex items-center justify-between flex-wrap gap-3 mb-6'>
+  return <div className='max-w-6xl mx-auto p-3 sm:p-4 md:p-6'>
+    <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 sm:mb-6'>
       <div>
-        <h1 className='text-2xl font-semibold tracking-tight'>Gerenciar Blog</h1>
+        <h1 className='text-xl sm:text-2xl font-semibold tracking-tight'>Gerenciar Blog</h1>
         <p className='text-xs text-gray-500 mt-1'>Artigos, status de publicação e métricas básicas.</p>
       </div>
-      <div className='flex gap-2'>
-        <Button variant='secondary' disabled={loading} onClick={()=> setPage(1)}>Recarregar</Button>
-        <Link to='/admin/blog/new'><Button>+ Novo Artigo</Button></Link>
+      <div className='flex flex-wrap gap-2'>
+        <Button variant='secondary' disabled={loading} onClick={()=> setPage(1)} className='text-sm px-3 py-2'>Recarregar</Button>
+        <Link to='/admin/blog/new'><Button className='text-sm px-3 py-2'>+ Novo Artigo</Button></Link>
       </div>
     </div>
     {error && <div className='text-red-600 text-sm mb-4'>{error}</div>}
     <div className='space-y-3'>
       {loading && Array.from({length:4}).map((_,i)=> <Card key={i} className='p-4'><Skeleton lines={2} /></Card>)}
       {!loading && !error && posts.length===0 && <Card className='p-8 text-center text-sm text-gray-500'>Nenhum post.</Card>}
-      {!loading && !error && posts.map(p=> <Card key={p.id} className='p-4 flex items-center justify-between gap-4'>
-        <div className='min-w-0'>
-          <div className='font-medium truncate'>{p.title}</div>
-          <div className='text-[11px] text-gray-500 flex flex-wrap gap-x-4 gap-y-1 mt-1'>
+      {!loading && !error && posts.map(p=> <Card key={p.id} className='p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4'>
+        <div className='min-w-0 flex-1'>
+          <div className='font-medium break-words'>{p.title}</div>
+          <div className='text-[11px] text-gray-500 flex flex-wrap gap-x-3 sm:gap-x-4 gap-y-1 mt-1'>
             <span>Status: <span className={p.status==='published'?'text-green-600':'text-amber-600'}>{p.status}</span></span>
             {p.published_at && <span>Publicado: {new Date(p.published_at).toLocaleDateString('pt-BR')}</span>}
             <span>{p.read_time_min} min</span>
             {typeof p.views === 'number' && <span>{p.views} views</span>}
             {p.category && <span>Categoria: {p.category}</span>}
-            <span className='text-gray-400'>/blog/{p.slug}</span>
+            <span className='text-gray-400 break-all'>/blog/{p.slug}</span>
           </div>
         </div>
-        <div className='flex gap-2 shrink-0'>
-          <Link to={`/blog/${p.slug}`} target='_blank'><Button variant='secondary'>Ver</Button></Link>
-          <Link to={`/admin/blog/edit/${p.id}`}><Button variant='secondary'>Editar</Button></Link>
+        <div className='flex flex-wrap gap-2 shrink-0'>
+          <Link to={`/blog/${p.slug}`} target='_blank'><Button variant='secondary' className='text-sm px-3 py-2'>Ver</Button></Link>
+          <Link to={`/admin/blog/edit/${p.id}`}><Button variant='secondary' className='text-sm px-3 py-2'>Editar</Button></Link>
         </div>
       </Card>)}
     </div>

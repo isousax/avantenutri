@@ -1,9 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import { SEO } from '../../components/comum/SEO';
 import { useAuth } from '../../contexts/useAuth';
-import { TransparentCheckoutForm } from '../../components/billing/TransparentCheckoutForm';
 import { useI18n } from '../../i18n';
-import { useToast } from '../../components/ui/ToastProvider';
 import { API } from '../../config/api';
 import { usePermissions } from '../../hooks/usePermissions';
 import { usePlanIntent } from '../../hooks/usePlanIntent';
@@ -11,22 +9,16 @@ import { usePlanIntent } from '../../hooks/usePlanIntent';
 
 interface Plan { id: string; name: string; price_cents: number; capabilities?: string[]; limits?: Record<string, number | null>; }
 
-// Configurações locais (poderiam migrar para config central depois)
-const SHOW_INLINE_STATUS_FOR_PAYMENT = false; // exibe/oculta mensagem inline para approved/pending
-
 export default function PricingPage() {
   const { getAccessToken } = useAuth();
   const { t, locale } = useI18n();
-  const { push } = useToast();
   const [plans, setPlans] = useState<Plan[]>([]);
   const [currentPlanId, setCurrentPlanId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
-  const [checkout, setCheckout] = useState<null | { payment_id: string; plan: Plan; public_key: string; amount_cents: number }>(null);
-  // Downgrade removido: manter estado legado desativado para evitar erros caso referências permaneçam
-  // Downgrade removed: clean states
+  // Removed checkout state - using direct redirect instead
   const { /* capabilities, limits */ } = usePermissions();
   const { intent, clearIntent } = usePlanIntent();
   const [dismissedIntent, setDismissedIntent] = useState(false);
@@ -48,11 +40,7 @@ export default function PricingPage() {
     clearIntent();
   }
   // Removed freeCapabilities/freeLimits (only used for downgrade comparisons previously)
-  // Estados relacionados a downgrade (legacy, agora sempre null)
-  // Removed legacy states (overLimitBlocking, confirmOverLimit)
-
   // Baselines dinamicamente ajustados após carregar planos; fallback inicial acima
-  // Legacy constants removed (FREE_CAPABILITIES, FREE_LIMITS)
   // Removed downgrade calculations (reducedLimits, lostCapabilities)
 
   const loadPlans = useCallback(async () => {
@@ -95,11 +83,11 @@ export default function PricingPage() {
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || t('billing.intent.error')); return; }
-      if (data?.payment_id && data?.plan && data?.public_key) {
-        setCheckout({ payment_id: data.payment_id, plan: data.plan, public_key: data.public_key, amount_cents: data.plan.price_cents });
-        setMessage(t('billing.intent.created.fillCard'));
+      if (data?.checkout_url) {
+        // Redirect to Mercado Pago Checkout Pro
+        window.location.href = data.checkout_url;
       } else {
-        setMessage(t('billing.intent.created.incomplete'));
+        setError(t('billing.intent.error'));
       }
     } catch (e:any) {
       setError(t('billing.intent.error'));
@@ -108,21 +96,7 @@ export default function PricingPage() {
     }
   }
 
-  function handlePaid(status: string) {
-    if (status === 'approved') {
-      if (SHOW_INLINE_STATUS_FOR_PAYMENT) setMessage(t('billing.checkout.status.approved')); else setMessage(null);
-      push({ type: 'success', message: t('billing.upgrade.success') });
-      try { sessionStorage.setItem('lastPaymentApprovedToast', String(Date.now())); } catch {}
-      window.dispatchEvent(new CustomEvent('entitlements:refresh'));
-    } else if (status === 'pending') {
-      if (SHOW_INLINE_STATUS_FOR_PAYMENT) setMessage(t('billing.checkout.status.pending')); else setMessage(null);
-      push({ type: 'info', message: t('billing.upgrade.waiting') });
-    } else {
-      setMessage(t('billing.checkout.status.generic', { status }));
-    }
-  }
-
-  // Removido: diálogo de downgrade e lógica associada
+  // Removido: handlePaid function - no longer needed for checkout pro
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
@@ -148,7 +122,6 @@ export default function PricingPage() {
               <span>{t('billing.manage.link')}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7"/></svg>
             </button>
-            {/* Downgrade action removed */}
           </div>
         </div>
       </div>
@@ -191,21 +164,6 @@ export default function PricingPage() {
           );
         })}
       </div>
-
-  {/* Downgrade modal removed */}
-
-      {checkout && (
-        <div className="mt-10 border rounded-lg p-6 bg-white shadow-sm">
-          <h2 className="text-xl font-semibold mb-4">{t('billing.checkout.plan.title', { plan: checkout.plan.name })}</h2>
-          <TransparentCheckoutForm
-            publicKey={checkout.public_key}
-            paymentId={checkout.payment_id}
-            amountCents={checkout.amount_cents}
-            getAccessToken={getAccessToken}
-            onPaid={handlePaid}
-          />
-        </div>
-      )}
     </div>
   );
 }

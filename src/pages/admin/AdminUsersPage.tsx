@@ -170,31 +170,29 @@ const AdminUsersPage: React.FC = () => {
     return Array.from(cur).filter(c => !next.has(c)).sort();
   }, [currentPlanObj, newPlanObj]);
 
-  // Downgrade concept removido
-
   const { locale, t } = useI18n();
   return (
-    <div className="p-4 space-y-4">
+    <div className="p-3 sm:p-4 space-y-4">
   <SEO title={t('admin.users.seo.title')} description={t('admin.users.seo.desc')} />
-  <div className="flex items-start justify-between flex-wrap gap-3">
+  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
     <div>
-      <h1 className="text-2xl font-semibold tracking-tight">{t('admin.users.title')}</h1>
+      <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{t('admin.users.title')}</h1>
       <p className="text-xs text-gray-500 mt-0.5">Gerencie contas, planos e roles.</p>
     </div>
-    <div className="flex gap-2">
-      <Button type="button" variant="secondary" onClick={()=> void load()} disabled={loading}>
+    <div className="flex flex-wrap gap-2">
+      <Button type="button" variant="secondary" onClick={()=> void load()} disabled={loading} className="text-sm px-3 py-2">
         {loading ? '...' : 'Recarregar'}
       </Button>
     </div>
   </div>
-      <form onSubmit={onSearch} className="flex flex-wrap gap-2 items-center">
+      <form onSubmit={onSearch} className="flex flex-col sm:flex-row flex-wrap gap-2 items-stretch sm:items-center">
         <input
           value={search}
           onChange={(e: ChangeEvent<HTMLInputElement>) =>
             setSearch(e.target.value)
           }
           placeholder={t('common.search') || 'Buscar email'}
-          className="border px-3 py-2 rounded w-64"
+          className="border px-3 py-2 rounded w-full sm:w-64 text-sm"
         />
         <input
           value={userIdFilter}
@@ -203,7 +201,7 @@ const AdminUsersPage: React.FC = () => {
             setUserIdFilter(e.target.value)
           }
           placeholder={t('admin.user.filter.userId') || 'Filtrar por user_id'}
-          className="border px-3 py-2 rounded w-56"
+          className="border px-3 py-2 rounded w-full sm:w-56 text-sm"
         />
         <datalist id="user-id-options">
           {users.map((u) => (
@@ -212,7 +210,7 @@ const AdminUsersPage: React.FC = () => {
             </option>
           ))}
         </datalist>
-  <Button type="submit">{t('common.search') || 'Buscar'}</Button>
+  <Button type="submit" className="text-sm px-4 py-2">{t('common.search') || 'Buscar'}</Button>
         {(search || userIdFilter) && (
           <Button
             type="button"
@@ -223,6 +221,7 @@ const AdminUsersPage: React.FC = () => {
               setPage(1);
               void load();
             }}
+            className="text-sm px-4 py-2"
           >
             {t('common.clear') || 'Limpar'}
           </Button>

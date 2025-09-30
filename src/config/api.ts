@@ -27,6 +27,7 @@ export const API = {
   adminUserRole: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/role`,
   adminUserPlan: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/plan`,
   adminUserForceLogout: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/force-logout`,
+  adminUserQuestionnaire: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/questionnaire`,
   // Overrides (admin)
   ADMIN_OVERRIDES: `${API_AUTH_BASE}/admin/overrides`,
   ADMIN_OVERRIDES_LOGS: `${API_AUTH_BASE}/admin/overrides/logs`,
@@ -56,13 +57,25 @@ export const API = {
   CONSULTATION_AVAILABLE_SLOTS: `${API_AUTH_BASE}/consultations/available`,
   // Questionnaire
   QUESTIONNAIRE: `${API_AUTH_BASE}/questionnaire`, // GET / POST upsert
+  QUESTIONNAIRE_STATUS: `${API_AUTH_BASE}/questionnaire/status`, // GET quick status check
   // Plans & Billing
   PLANS: `${API_AUTH_BASE}/plans`, // GET active plans
   BILLING_INTENT: `${API_AUTH_BASE}/billing/intent`, // POST create payment intent
-  BILLING_PAY: `${API_AUTH_BASE}/billing/pay`, // POST execute payment
+  BILLING_PAY: `${API_AUTH_BASE}/billing/pay`, // POST process payment
+  BILLING_STATUS: `${API_AUTH_BASE}/billing/status`, // GET payment status
   BILLING_PAYMENTS: `${API_AUTH_BASE}/billing/payments`, // GET list user payments
-  BILLING_PLAN_CHANGES: `${API_AUTH_BASE}/billing/plan-changes`, // GET plan change history
-  BILLING_DOWNGRADE: `${API_AUTH_BASE}/billing/downgrade`, // POST schedule immediate downgrade
+  // Admin
+  ADMIN_PAYMENTS: `${API_AUTH_BASE}/admin/payments`, // GET list all payments (admin only)
+  ADMIN_QUESTIONNAIRE_ANALYTICS: `${API_AUTH_BASE}/admin/questionnaire/analytics`, // GET analytics
+  ADMIN_NOTIFICATIONS: `${API_AUTH_BASE}/admin/notifications`, // POST send notification
+  // Notifications
+  NOTIFICATIONS: `${API_AUTH_BASE}/notifications`, // GET list user notifications
+  notificationRead: (id: string) => `${API_AUTH_BASE}/notifications/${id}/read`, // POST mark as read
+  // Blog
+  BLOG_POSTS: `${API_AUTH_BASE}/blog/posts`, // GET list posts
+  BLOG_CATEGORIES: `${API_AUTH_BASE}/blog/categories`, // GET categories
+  blogPost: (slug: string) => `${API_AUTH_BASE}/blog/posts/${slug}`, // GET single post
+  blogPostRelated: (slug: string) => `${API_AUTH_BASE}/blog/posts/${slug}/related`, // GET related posts
 } as const;
 
 export type ApiRoutes = typeof API;

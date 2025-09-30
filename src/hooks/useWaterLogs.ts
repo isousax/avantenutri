@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API } from '../config/api';
 import { useAuth } from '../contexts';
-import { usePermissions } from './usePermissions';
-import { CAPABILITIES } from '../types/capabilities';
 
 export interface WaterLog {
   id: string;
@@ -18,7 +16,6 @@ interface GoalResponse { ok?: boolean; daily_cups?: number; cup_ml?: number; sou
 
 export function useWaterLogs(initialDays = 7) {
   const { authenticatedFetch } = useAuth();
-  const { can } = usePermissions();
   const [logs, setLogs] = useState<WaterLog[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +26,6 @@ export function useWaterLogs(initialDays = 7) {
   const [cupSize, setCupSize] = useState<number>(250);
 
   const load = useCallback(async (days = initialDays) => {
-    if (!can(CAPABILITIES.AGUA_LOG)) { setLogs([]); return; }
     setLoading(true); setError(null);
     try {
       const end = new Date();
@@ -79,7 +75,7 @@ export function useWaterLogs(initialDays = 7) {
       if (cups != null) setDailyGoalCups(cups);
     } catch (e:any) { setError(e.message || 'Erro'); }
     finally { setLoading(false); }
-  }, [authenticatedFetch, can, initialDays]);
+  }, [authenticatedFetch, initialDays]);
 
   const add = useCallback(async (amount_ml: number) => {
     setError(null);

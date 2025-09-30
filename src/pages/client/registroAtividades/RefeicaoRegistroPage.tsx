@@ -5,8 +5,6 @@ import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
 import { useMealLogs } from '../../../hooks/useMealLogs';
 import MiniSparkline from '../../../components/ui/MiniSparkline';
-import { usePermissions } from '../../../hooks/usePermissions';
-import { CAPABILITIES } from '../../../types/capabilities';
 import { useI18n, formatNumber, formatDate } from '../../../i18n';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 
@@ -40,8 +38,6 @@ const RefeicaoRegistroPage: React.FC = () => {
   const startEdit = (log: any) => { setEditingId(log.id); setEditDesc(log.description||''); setEditCal(log.calories?.toString()||''); setEditProtein(log.protein_g?.toString()||''); setEditCarbs(log.carbs_g?.toString()||''); setEditFat(log.fat_g?.toString()||''); };
   const saveEdit = async ()=> { if(!editingId) return; await patch(editingId,{ description: editDesc, calories: editCal?Number(editCal):undefined, protein_g: editProtein?Number(editProtein):undefined, carbs_g: editCarbs?Number(editCarbs):undefined, fat_g: editFat?Number(editFat):undefined }); setEditingId(null); };
   const [pendingDelete, setPendingDelete] = useState<string|null>(null);
-  const { can } = usePermissions();
-  const canLog = can(CAPABILITIES.REFEICAO_LOG);
   const [meal_type, setMealType] = useState('lunch');
   const [description, setDescription] = useState('');
   const [calories, setCalories] = useState('');
@@ -53,7 +49,6 @@ const RefeicaoRegistroPage: React.FC = () => {
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!canLog) return;
     setError(null); setSaving(true);
     try {
       const body: any = { meal_type };
@@ -84,9 +79,7 @@ const RefeicaoRegistroPage: React.FC = () => {
               <option value="en">EN</option>
             </select>
           </div>
-          {!canLog && <p className="text-sm text-red-600">{t('common.noPermission.meal')}</p>}
-          {canLog && (
-            <form onSubmit={submit} className="grid md:grid-cols-2 gap-4">
+          <form onSubmit={submit} className="grid md:grid-cols-2 gap-4">
               <div className="md:col-span-2">
                 <label className="block text-sm font-medium mb-1">{t('meal.form.type')}</label>
                 <select value={meal_type} onChange={e=> setMealType(e.target.value)} className="w-full border rounded px-3 py-2">
@@ -120,7 +113,6 @@ const RefeicaoRegistroPage: React.FC = () => {
                 <Button disabled={saving}>{saving? t('common.saving') : t('meal.form.save')}</Button>
               </div>
             </form>
-          )}
         </Card>
         <Card className="p-6">
           <div className="flex items-start justify-between mb-4">

@@ -519,10 +519,9 @@ const AdminPage: React.FC = () => {
           if (!ignore) { setUsers([]); }
           return;
         }
-        const base = import.meta.env.VITE_API_AUTH_BASE || "https://login-service.avantenutri.workers.dev";
         const params = new URLSearchParams({ page: String(usersPage), pageSize: String(pageSize) });
         if (searchTerm) params.set("q", searchTerm);
-        const r = await fetch(`${base}/admin/users?${params.toString()}`, { headers: { authorization: `Bearer ${access}` } });
+        const r = await fetch(`${API.ADMIN_USERS}?${params.toString()}`, { headers: { authorization: `Bearer ${access}` } });
         if (!r.ok) throw new Error("fail");
         const data = await r.json();
         if (ignore) return;
@@ -547,10 +546,9 @@ const AdminPage: React.FC = () => {
       try {
         const access = await getAccessToken();
         if (!access) { if (!ignore) { setConsultations([]); } return; }
-        const base = import.meta.env.VITE_API_AUTH_BASE || "https://login-service.avantenutri.workers.dev";
         const params = new URLSearchParams({ page: "1", pageSize: "50" });
         if (consultFilters.status) params.set("status", consultFilters.status);
-        const r = await fetch(`${base}/admin/consultations?${params.toString()}`, { headers: { authorization: `Bearer ${access}` } });
+        const r = await fetch(`${API.ADMIN_CONSULTATIONS}?${params.toString()}`, { headers: { authorization: `Bearer ${access}` } });
         if (!r.ok) throw new Error("fail");
         const data = await r.json();
         if (ignore) return;
@@ -586,21 +584,21 @@ const AdminPage: React.FC = () => {
         <SEO title={t("admin.dashboard.seo.title")} description={t("admin.dashboard.seo.desc")} />
         <div className="max-w-7xl mx-auto w-full">
           {/* Header */}
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
             <div>
-              <h2 className="text-2xl font-bold text-green-700">{t("admin.dashboard.title")}</h2>
+              <h2 className="text-xl sm:text-2xl font-bold text-green-700">{t("admin.dashboard.title")}</h2>
               <p className="text-gray-600 text-sm">Bem-vinda, Dra. Cawanne</p>
             </div>
-            <div className="flex gap-3 items-center text-sm">
-              <Link to="/admin/usuarios" className="text-green-700 hover:underline">{t("admin.users.title")}</Link>
-              <Link to="/admin/audit" className="text-green-700 hover:underline">Auditoria</Link>
-              <Link to="/admin/entitlements" className="text-green-700 hover:underline">Entitlements</Link>
-              <Button variant="secondary" onClick={logout}>Sair</Button>
+            <div className="flex flex-wrap gap-2 sm:gap-3 items-center text-sm">
+              <Link to="/admin/usuarios" className="text-green-700 hover:underline px-2 py-1">{t("admin.users.title")}</Link>
+              <Link to="/admin/audit" className="text-green-700 hover:underline px-2 py-1">Auditoria</Link>
+              <Link to="/admin/entitlements" className="text-green-700 hover:underline px-2 py-1">Entitlements</Link>
+              <Button variant="secondary" onClick={logout} className="px-3 py-1">Sair</Button>
             </div>
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card className="bg-white p-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -649,20 +647,20 @@ const AdminPage: React.FC = () => {
           {/* --- PACIENTES --- */}
           {tab === "pacientes" && (
             <Card className="p-0 overflow-hidden">
-              <div className="p-4 border-b flex flex-col md:flex-row gap-4 md:items-center">
+              <div className="p-3 sm:p-4 border-b flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
                 <div className="flex-1 relative">
                   <input
                     type="text"
                     placeholder="Buscar por nome ou email..."
-                    className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent"
+                    className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
-                  <svg className="absolute right-3 top-2.5 h-5 w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+                  <svg className="absolute right-3 top-2.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
                 </div>
-                <div className="flex gap-2">
-                  <Button variant="secondary" className="text-sm">Exportar</Button>
-                  <Button className="text-sm">Novo Paciente</Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button variant="secondary" className="text-xs sm:text-sm px-3 py-2">Exportar</Button>
+                  <Button className="text-xs sm:text-sm px-3 py-2">Novo Paciente</Button>
                 </div>
               </div>
 
@@ -737,17 +735,17 @@ const AdminPage: React.FC = () => {
           {/* --- CONSULTAS --- */}
           {tab === "consultas" && (
             <Card className="p-0 overflow-hidden">
-              <div className="p-4 border-b flex flex-col md:flex-row gap-4 md:items-center">
-                <div className="flex gap-2 items-center text-sm">
-                  <label className="text-gray-600">Status:</label>
-                  <select onChange={(e) => setConsultFilters({ status: e.target.value || undefined })} value={consultFilters.status || ""} className="border rounded px-2 py-1 text-sm focus:ring-green-500 focus:border-green-500">
+              <div className="p-3 sm:p-4 border-b flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
+                <div className="flex flex-wrap gap-2 items-center text-sm">
+                  <label className="text-gray-600 whitespace-nowrap">Status:</label>
+                  <select onChange={(e) => setConsultFilters({ status: e.target.value || undefined })} value={consultFilters.status || ""} className="border rounded px-2 py-1 text-sm focus:ring-green-500 focus:border-green-500 min-w-0">
                     <option value="">Todos</option>
                     <option value="scheduled">Programadas</option>
                     <option value="completed">Concluídas</option>
                     <option value="canceled">Canceladas</option>
                   </select>
                 </div>
-                <div className="flex gap-2 ml-auto">
+                <div className="flex flex-wrap gap-2 sm:ml-auto">
                   <Button variant="secondary" className="text-sm">Exportar</Button>
                   <Button className="text-sm">Criar Consulta</Button>
                 </div>

@@ -43,28 +43,28 @@ const AdminPlansPage: React.FC = () => {
   const sorted = useMemo(() => plans.slice().sort((a, b) => (a.display_order ?? 0) - (b.display_order ?? 0)), [plans]);
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <SEO title={t('admin.plans.seo.title')} description={t('admin.plans.seo.desc')} />
-      <div className="flex items-start justify-between flex-wrap gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Planos</h1>
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">Planos</h1>
           <p className="text-xs text-gray-500 mt-1">Gerencie catálogo de planos, capabilities e limites.</p>
         </div>
-        <div className="flex gap-2">
-          <Button type="button" variant="secondary" disabled={loading} onClick={() => load()}>Recarregar</Button>
-          <Button type="button" disabled className="opacity-60 cursor-not-allowed">+ Novo (futuro)</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" disabled={loading} onClick={() => load()} className="text-sm px-3 py-2">Recarregar</Button>
+          <Button type="button" disabled className="opacity-60 cursor-not-allowed text-sm px-3 py-2">+ Novo (futuro)</Button>
         </div>
       </div>
       {error && <div className="text-red-600 text-sm">{error}</div>}
       {loading && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} className="p-4"><Skeleton lines={4} /></Card>
           ))}
         </div>
       )}
       {!loading && (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {sorted.map(p => {
             const isExpanded = expanded === p.id;
             return (

@@ -81,6 +81,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   );
   const [sessionVerified, setSessionVerified] = useState<boolean | null>(null);
   const verifyIntervalRef = useRef<number | null>(null);
+  // Controle de estado para evitar chamadas múltiplas
+  const verificationInProgressRef = useRef<boolean>(false);
+  const refreshInProgressRef = useRef<Promise<boolean> | null>(null);
 
   const saveUserToStorage = (userData: User, rememberMe: boolean) => {
     const payload = {
@@ -292,7 +295,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 email: (p.email ?? "") as string,
                 role: normalizeRole(p.role),
                 full_name: (p.full_name ?? p.name ?? "") as string,
-                display_name: (p.display_name ?? "") as string,
+                display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
               };
               setUser(derived);
               saveUserToStorage(derived, rememberMe);
@@ -493,7 +496,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: (payload.email ?? "") as string,
           role: normalizeRole(payload.role),
           full_name: (payload.full_name ?? payload.name ?? "") as string,
-          display_name: (payload.display_name ?? "") as string,
+          display_name: (payload.display_name ?? payload.full_name ?? payload.name ?? "") as string,
         };
         setUser(derived);
         // detecta rememberMe pela existência no sessionStorage (espelho) – se não existir assume rememberMe=true
@@ -550,7 +553,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   full_name: (me.full_name ||
                     me.name ||
                     derived.full_name) as string,
-                  display_name: (me.display_name ?? "") as string,
+                  display_name: (me.display_name ?? me.full_name ?? me.name ?? derived.display_name ?? "") as string,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
@@ -695,25 +698,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Função interna para verificar sessão via /me (não exposta diretamente)
   const runSessionVerification = async (force = false) => {
     try {
+      // Evita múltiplas verificações simultâneas
+      if (verificationInProgressRef.current && !force) {
+        return sessionVerified ?? false;
+      }
+      
       const access = localStorage.getItem(STORAGE_ACCESS_KEY);
       if (!access) {
         setSessionVerified(false);
         setSessionLastVerified(Date.now());
         return false;
       }
-      // throttle: se não for force e última verificação < 60s, pula
+      
+      // throttle: se não for force e última verificação < 2 minutos, pula
       if (
         !force &&
         sessionLastVerified &&
-        Date.now() - sessionLastVerified < 60000
+        Date.now() - sessionLastVerified < 120000 // 2 minutos ao invés de 1
       ) {
         return sessionVerified ?? false;
       }
+      
+      verificationInProgressRef.current = true;
+      
       const r = await fetch(API.ME, {
         method: "GET",
         headers: { Authorization: `Bearer ${access}` },
       });
+      
       setSessionLastVerified(Date.now());
+      
       if (!r.ok) {
         try {
           if (r.status === 401) {
@@ -725,10 +739,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               }
             })();
             if (payload && payload.error === "Token outdated") {
-              const refreshed = await contextValue.refreshSession?.();
-              if (refreshed) {
-                return await runSessionVerification(true);
-              }
+              // Agenda refresh para depois da verificação atual terminar
+              setTimeout(async () => {
+                const refreshed = await contextValue.refreshSession?.();
+                if (refreshed) {
+                  // Reagenda uma nova verificação para um pouco depois do refresh
+                  setTimeout(() => {
+                    void runSessionVerification(true);
+                  }, 1000);
+                }
+              }, 100);
+              
+              verificationInProgressRef.current = false;
+              return false;
             }
           }
         } catch (err) {
@@ -736,10 +759,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         if (r.status === 401 || r.status === 403) {
           setSessionVerified(false);
+          verificationInProgressRef.current = false;
           await contextLogout();
           return false;
         }
         setSessionVerified(false);
+        verificationInProgressRef.current = false;
         return false;
       }
       const data = await (async () => {
@@ -759,7 +784,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             data.name ||
             user?.full_name ||
             "") as string,
-          display_name: (data.display_name ?? "") as string,
+          display_name: (data.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
         };
         const changed = JSON.stringify(updated) !== JSON.stringify(user);
         if (changed) {
@@ -769,29 +794,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
       }
       setSessionVerified(true);
+      verificationInProgressRef.current = false;
       return true;
     } catch (err) {
       console.warn("[AuthProvider] runSessionVerification error", err);
       setSessionVerified(false);
       setSessionLastVerified(Date.now());
+      verificationInProgressRef.current = false;
       return false;
     }
   };
 
-  // Intervalo periódico a cada 10 minutos somente se usuário autenticado
+  // Intervalo periódico a cada 15 minutos somente se usuário autenticado
   useEffect(() => {
     if (user) {
-      // Verifica imediatamente (não force para respeitar throttle se acabou de verificar)
-      void runSessionVerification(false);
+      // Verifica imediatamente apenas se não verificou recentemente
+      if (!sessionLastVerified || Date.now() - sessionLastVerified > 120000) {
+        void runSessionVerification(false);
+      }
       if (verifyIntervalRef.current) {
         clearInterval(verifyIntervalRef.current);
       }
       verifyIntervalRef.current = window.setInterval(() => {
         void runSessionVerification(false);
-      }, 10 * 60 * 1000) as unknown as number; // 10 min
+      }, 15 * 60 * 1000) as unknown as number; // 15 min ao invés de 10
       const onFocus = () => {
         if (document.visibilityState === "visible") {
-          void runSessionVerification(false);
+          // Só verifica no focus se faz mais de 5 minutos desde a última verificação
+          if (!sessionLastVerified || Date.now() - sessionLastVerified > 300000) {
+            void runSessionVerification(false);
+          }
         }
       };
       window.addEventListener("focus", onFocus);
@@ -809,6 +841,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       setSessionVerified(null);
       setSessionLastVerified(null);
+      verificationInProgressRef.current = false;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
@@ -819,20 +852,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     sessionVerified,
     forceVerify: async () => runSessionVerification(true),
     getAccessToken: async () => {
-      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      const access = localStorage.getItem(STORAGE_ACCESS_KEY) ||
+        sessionStorage.getItem(STORAGE_ACCESS_KEY);
       if (access) {
         try {
           const p = decodeJwt(access);
-          if (p?.exp && Date.now() < Number(p.exp) * 1000 - 60000) {
+          if (p?.exp && Date.now() < Number(p.exp) * 1000 - 120000) { // 2 minutos
             return access;
           }
         } catch {
           console.warn("Erro na serealização do json");
         }
       }
+      // Se já há refresh em progresso, aguarda
+      if (refreshInProgressRef.current) {
+        await refreshInProgressRef.current;
+        return localStorage.getItem(STORAGE_ACCESS_KEY) ||
+          sessionStorage.getItem(STORAGE_ACCESS_KEY);
+      }
       const refreshed = await contextValue.refreshSession();
       if (!refreshed) return null;
-      return localStorage.getItem(STORAGE_ACCESS_KEY);
+      return localStorage.getItem(STORAGE_ACCESS_KEY) ||
+        sessionStorage.getItem(STORAGE_ACCESS_KEY);
     },
     login: async (
       email: string,
@@ -879,7 +920,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 email: (p.email ?? email) as string,
                 role: normalizeRole(p.role),
                 full_name: (p.full_name ?? p.name ?? "") as string,
-                display_name: (p.display_name ?? "") as string,
+                display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
               };
             }
           } else {
@@ -895,7 +936,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               email: returnedUser.email ?? email,
               role: returnedUser.role,
               full_name: returnedUser.full_name ?? "",
-              display_name: returnedUser.display_name ?? "",
+              display_name: returnedUser.display_name ?? returnedUser.full_name ?? "",
             };
           }
 
@@ -908,7 +949,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // Validação adicional opcional com /api/auth/me (se upstream suportar) – não bloqueante
           if (access) {
             try {
-              const meResp = await fetch("/api/auth/me", {
+              const meResp = await fetch(API.ME, {
                 method: "GET",
                 headers: { Authorization: `Bearer ${access}` },
               });
@@ -1005,85 +1046,110 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     },
     refreshSession: async () => {
       try {
-        const refresh =
-          localStorage.getItem(STORAGE_REFRESH_KEY) ||
-          sessionStorage.getItem(STORAGE_REFRESH_KEY);
-        if (!refresh) return false;
-        // Tenta lock cross-tab
-        if (!(await acquireRefreshLock())) {
-          // Outra aba já está atualizando – aguarda resultado
-          const ok = await waitForOtherTabRefresh();
-          return ok;
+        // Se já há um refresh em progresso, aguarda ele terminar
+        if (refreshInProgressRef.current) {
+          return await refreshInProgressRef.current;
         }
-        // Se líder, usa fluxo de retry existente
-        if (isLeaderRef.current) {
-          const res = await doRefreshWithRetry(
-            refresh,
-            !sessionStorage.getItem(STORAGE_ACCESS_KEY)
-          );
-          releaseRefreshLock();
-          return res;
-        }
-        const r = await fetch(API.REFRESH, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ refresh_token: refresh }),
-        });
-        if (!r.ok) {
-          // Caso 401 pode ser corrida: outra aba rotacionou e nosso refresh antigo ficou inválido.
-          if (r.status === 401) {
-            // Tenta reidratar rapidamente para ver se já existe novo access token
-            await new Promise((res) => setTimeout(res, 300));
-            const maybeAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
-            if (maybeAccess) {
-              try {
-                const p = decodeJwt(maybeAccess);
-                if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) {
-                  releaseRefreshLock();
-                  return true; // outro tab já renovou
-                }
-              } catch {
-                console.warn("Erro ao reidratar refresh");
-              }
+        
+        const refreshPromise = (async () => {
+          try {
+            const refresh =
+              localStorage.getItem(STORAGE_REFRESH_KEY) ||
+              sessionStorage.getItem(STORAGE_REFRESH_KEY);
+            if (!refresh) return false;
+            // Tenta lock cross-tab
+            if (!(await acquireRefreshLock())) {
+              // Outra aba já está atualizando – aguarda resultado
+              const ok = await waitForOtherTabRefresh();
+              return ok;
             }
-          }
-          releaseRefreshLock();
-          return false;
-        }
-        const data = await r.json();
-        const newAccess = data?.access_token;
-        const newRefresh = data?.refresh_token ?? refresh;
-        let expiresAt = data?.expires_at ?? null;
-        if (!expiresAt && newAccess) {
-          const p = decodeJwt(newAccess);
-          if (p?.exp) expiresAt = new Date(Number(p.exp) * 1000).toISOString();
-        }
-        if (newAccess) {
-          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
-          persistTokens(
-            newAccess,
-            newRefresh,
-            expiresAt ?? undefined,
-            rememberFlag
-          );
-          const p = decodeJwt(newAccess);
-          if (p) {
-            setUser({
-              id: (p.sub ?? p.user_id ?? p.id) as string,
-              email: (p.email ?? "") as string,
-              role: normalizeRole(p.role),
-              full_name: (p.full_name ?? p.name ?? "") as string,
-              display_name: (p.display_name ?? "") as string,
+            // Se líder, usa fluxo de retry existente
+            if (isLeaderRef.current) {
+              const res = await doRefreshWithRetry(
+                refresh,
+                !sessionStorage.getItem(STORAGE_ACCESS_KEY)
+              );
+              releaseRefreshLock();
+              return res;
+            }
+            const r = await fetch(API.REFRESH, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ refresh_token: refresh }),
             });
+            if (!r.ok) {
+              // Caso 401 pode ser corrida: outra aba rotacionou e nosso refresh antigo ficou inválido.
+              if (r.status === 401) {
+                // Tenta reidratar rapidamente para ver se já existe novo access token
+                await new Promise((res) => setTimeout(res, 300));
+                const maybeAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+                if (maybeAccess) {
+                  try {
+                    const p = decodeJwt(maybeAccess);
+                    if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) {
+                      releaseRefreshLock();
+                      return true; // outro tab já renovou
+                    }
+                  } catch {
+                    console.warn("Erro ao reidratar refresh");
+                  }
+                }
+              }
+              releaseRefreshLock();
+              return false;
+            }
+            const data = await r.json();
+            const newAccess = data?.access_token;
+            const newRefresh = data?.refresh_token ?? refresh;
+            let expiresAt = data?.expires_at ?? null;
+            if (!expiresAt && newAccess) {
+              const p = decodeJwt(newAccess);
+              if (p?.exp) expiresAt = new Date(Number(p.exp) * 1000).toISOString();
+            }
+            if (newAccess) {
+              const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
+              persistTokens(
+                newAccess,
+                newRefresh,
+                expiresAt ?? undefined,
+                rememberFlag
+              );
+              const p = decodeJwt(newAccess);
+              if (p) {
+                setUser({
+                  id: (p.sub ?? p.user_id ?? p.id) as string,
+                  email: (p.email ?? "") as string,
+                  role: normalizeRole(p.role),
+                  full_name: (p.full_name ?? p.name ?? "") as string,
+                  display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
+                });
+              }
+              releaseRefreshLock();
+              
+              // Agenda uma verificação de sessão para um pouco depois
+              setTimeout(() => {
+                void runSessionVerification(true);
+              }, 1500);
+              
+              return true;
+            }
+            releaseRefreshLock();
+            return false;
+          } catch (err) {
+            console.warn("[AuthProvider] refreshSession failed", err);
+            releaseRefreshLock();
+            return false;
           }
-          releaseRefreshLock();
-          return true;
-        }
-        releaseRefreshLock();
-        return false;
+        })();
+        
+        refreshInProgressRef.current = refreshPromise;
+        const result = await refreshPromise;
+        refreshInProgressRef.current = null;
+        
+        return result;
       } catch (err) {
-        console.warn("[AuthProvider] refreshSession failed", err);
-        releaseRefreshLock();
+        console.warn("[AuthProvider] refreshSession outer failed", err);
+        refreshInProgressRef.current = null;
         return false;
       }
     },
@@ -1132,7 +1198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       try {
         const access = localStorage.getItem(STORAGE_ACCESS_KEY);
         if (!access) return false;
-        const r = await fetch("/api/auth/me", {
+        const r = await fetch(API.ME, {
           method: "GET",
           headers: { Authorization: `Bearer ${access}` },
         });
@@ -1177,7 +1243,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               data.name ||
               user?.full_name ||
               "") as string,
-            display_name: (data.display_name ?? "") as string,
+            display_name: (data.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
           };
           setUser(updated);
           const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);

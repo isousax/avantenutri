@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { API } from '../config/api';
 import { useAuth } from '../contexts';
-import { usePermissions } from './usePermissions';
-import { CAPABILITIES } from '../types/capabilities';
 
 export interface MealLog { id: string; log_datetime: string; log_date: string; meal_type: string; description?: string|null; calories?: number|null; protein_g?: number|null; carbs_g?: number|null; fat_g?: number|null; created_at: string; updated_at: string; }
 interface ListResponse { ok?: boolean; results?: MealLog[]; range?: { from: string; to: string }; error?: string; }
@@ -13,7 +11,6 @@ interface SummaryResponse { ok?: boolean; range?: { from: string; to: string }; 
 
 export function useMealLogs(defaultDays = 7) {
   const { authenticatedFetch } = useAuth();
-  const { can } = usePermissions();
   const [logs, setLogs] = useState<MealLog[]>([]);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +18,6 @@ export function useMealLogs(defaultDays = 7) {
   const [range, setRange] = useState<{ from: string; to: string } | null>(null);
 
   const load = useCallback(async (days = defaultDays) => {
-    if (!can(CAPABILITIES.REFEICAO_LOG)) { setLogs([]); setSummary(null); return; }
     setLoading(true); setError(null);
     try {
       const end = new Date();
@@ -39,16 +35,15 @@ export function useMealLogs(defaultDays = 7) {
       if (sr.ok) setSummary(sdata); else setSummary(null);
     } catch (e:any) { setError(e.message || 'Erro'); }
     finally { setLoading(false); }
-  }, [authenticatedFetch, can, defaultDays]);
+  }, [authenticatedFetch, defaultDays]);
 
   const create = useCallback(async (input: { meal_type: string; description?: string; calories?: number; protein_g?: number; carbs_g?: number; fat_g?: number; datetime?: string; }) => {
-    if (!can(CAPABILITIES.REFEICAO_LOG)) throw new Error('Sem permissão');
     const r = await authenticatedFetch(API.MEAL_LOGS, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input) });
     const data = await r.json().catch(()=>({}));
     if (!r.ok) throw new Error(data.error || 'Erro ao registrar');
     await load();
     return true;
-  }, [authenticatedFetch, can, load]);
+  }, [authenticatedFetch, load]);
 
   useEffect(()=> { void load(defaultDays); }, [load, defaultDays]);
 

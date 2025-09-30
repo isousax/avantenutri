@@ -16,16 +16,16 @@ const PesoRegistroPage: React.FC = () => {
   const navigate = useNavigate();
   const canLog = can(CAPABILITIES.PESO_LOG);
   const [weight, setWeight] = useState<string>('');
-  const [note, setNote] = useState<string>('');
-  const [dateInput, setDateInput] = useState<string>(() => {
-    const d = new Date();
-    const pad = (n:number)=> String(n).padStart(2,'0');
-    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(()=> { if (latest && !weight) setWeight(latest.weight_kg.toString()); }, [latest, weight]);
+  // Fix: Only set weight from latest when weight is empty AND we haven't typed anything yet
+  const [hasUserInput, setHasUserInput] = useState(false);
+  useEffect(() => { 
+    if (latest && !weight && !hasUserInput) {
+      setWeight(latest.weight_kg.toString()); 
+    }
+  }, [latest, weight, hasUserInput]);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(goal!=null?goal.toString():'');
   useEffect(()=> { setGoalInput(goal!=null?goal.toString():''); }, [goal]);
@@ -39,11 +39,12 @@ const PesoRegistroPage: React.FC = () => {
     e.preventDefault();
     if (!canLog) return;
     const w = parseFloat(weight.replace(',','.'));
-  if (!isFinite(w) || w <= 0) { setError(t('weight.invalid')); return; }
+    if (!isFinite(w) || w <= 0) { setError(t('weight.invalid')); return; }
     setError(null); setSaving(true);
     try {
-  await upsert(w, note || undefined, dateInput);
-  } catch (e:any) { setError(e.message || t('common.error')); }
+      // Register weight for today without note or specific date
+      await upsert(w);
+    } catch (e:any) { setError(e.message || t('common.error')); }
     finally { setSaving(false); }
   };
 
@@ -62,16 +63,17 @@ const PesoRegistroPage: React.FC = () => {
                 <form onSubmit={submit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('weight.form.weight')}</label>
-                    <input value={weight} onChange={e=> setWeight(e.target.value)} type="text" inputMode="decimal" placeholder="Ex: 72.4" className="w-full border rounded px-3 py-2 text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
-                    <input type="date" value={dateInput} onChange={e=> setDateInput(e.target.value)} className="w-full border rounded px-3 py-2 text-slate-800" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">{t('weight.form.note')}</label>
-                    <textarea value={note} onChange={e=> setNote(e.target.value)} maxLength={300} className="w-full border rounded px-3 py-2 text-sm h-24" placeholder="Jejum, pós treino, etc" />
-                    <div className="text-xs text-slate-500 text-right">{note.length}/300</div>
+                    <input 
+                      value={weight} 
+                      onChange={e => {
+                        setWeight(e.target.value);
+                        setHasUserInput(true);
+                      }} 
+                      type="text" 
+                      inputMode="decimal" 
+                      placeholder="Ex: 72.4" 
+                      className="w-full border rounded px-3 py-2 text-slate-800" 
+                    />
                   </div>
                   <div className="border-t pt-4">
                     <div className="flex items-center justify-between mb-2">

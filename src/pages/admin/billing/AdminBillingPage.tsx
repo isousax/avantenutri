@@ -9,11 +9,33 @@ import { SEO } from '../../../components/comum/SEO';
 import Skeleton from '../../../components/ui/Skeleton';
 import { useToast } from '../../../components/ui/ToastProvider';
 
-interface PaymentRow { id: string; plan_id: string; amount_cents: number; status: string; created_at: string; processed_at?: string; gateway_id?: string; }
-interface PlanChangeRow { id: string; previous_plan_id: string|null; new_plan_id: string; created_at: string; trigger: string; payment_id?: string|null; }
-
-interface ListPaymentsResp { payments: PaymentRow[] }
-interface ListPlanChangesResp { changes: PlanChangeRow[] }
+interface PaymentRow { 
+  id: string; 
+  user_id?: string;
+  user_email?: string;
+  first_name?: string;
+  last_name?: string;
+  plan_id: string; 
+  amount_cents: number; 
+  status: string; 
+  status_detail?: string;
+  payment_method?: string;
+  installments?: number;
+  external_id?: string;
+  preference_id?: string;
+  created_at: string; 
+  processed_at?: string; 
+  updated_at?: string;
+}
+interface ListPaymentsResp { 
+  payments: PaymentRow[];
+  pagination?: {
+    total: number;
+    limit: number;
+    offset: number;
+    has_more: boolean;
+  };
+}
 
 // Placeholder Webhook item (mock until backend endpoint exists)
 interface WebhookDelivery { id: string; event: string; status: string; received_at: string; latency_ms?: number; attempts?: number; }
@@ -22,9 +44,8 @@ const AdminBillingPage: React.FC = () => {
   const { authenticatedFetch } = useAuth();
   const { push } = useToast();
   const { locale, t } = useI18n();
-  const [view, setView] = useState<'payments' | 'planChanges' | 'webhooks' | 'summary'>('summary');
+    const [view, setView] = useState<'payments'|'webhooks'|'summary'>('payments');
   const [payments, setPayments] = useState<PaymentRow[]>([]);
-  const [changes, setChanges] = useState<PlanChangeRow[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookDelivery[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,26 +58,21 @@ const AdminBillingPage: React.FC = () => {
   const [payStart, setPayStart] = useState<string>('');
   const [payEnd, setPayEnd] = useState<string>('');
   const [payTotal, setPayTotal] = useState<number | null>(null);
-  const [chgPage, setChgPage] = useState(1);
-  const [chgHasMore, setChgHasMore] = useState(false);
-  const [chgTotal, setChgTotal] = useState<number | null>(null);
   const PAGE_SIZE = 20; // constante local
   const [searchParams, setSearchParams] = useSearchParams();
   const initializedRef = useRef(false);
   const [exportingPayments, setExportingPayments] = useState(false);
-  const [exportingChanges, setExportingChanges] = useState(false);
 
   // Ler querystring inicial
   useEffect(() => {
     if (initializedRef.current) return;
     const qView = searchParams.get('view');
-    if (qView === 'payments' || qView === 'planChanges' || qView === 'webhooks' || qView === 'summary') setView(qView);
+    if (qView === 'payments' || qView === 'webhooks' || qView === 'summary') setView(qView);
     const qStatus = searchParams.get('status'); if (qStatus) setPayStatus(qStatus);
     const qPlan = searchParams.get('plan'); if (qPlan) { setPayPlan(qPlan); setPayPlanInput(qPlan); }
     const qPage = Number(searchParams.get('page')||'1'); if (qPage>1) setPayPage(qPage);
     const qs = searchParams.get('start'); if (qs) setPayStart(qs);
     const qe = searchParams.get('end'); if (qe) setPayEnd(qe);
-    const qcPage = Number(searchParams.get('cpage')||'1'); if (qcPage>1) setChgPage(qcPage);
     initializedRef.current = true;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -71,9 +87,8 @@ const AdminBillingPage: React.FC = () => {
     if (payPage>1) params.page = String(payPage);
     if (payStart) params.start = payStart;
     if (payEnd) params.end = payEnd;
-    if (chgPage>1) params.cpage = String(chgPage);
     setSearchParams(params, { replace:true });
-  }, [view, payStatus, payPlan, payPage, payStart, payEnd, chgPage, setSearchParams]);
+  }, [view, payStatus, payPlan, payPage, payStart, payEnd, setSearchParams]);
 
   // Debounce campo plan_id
   useEffect(() => {
@@ -87,41 +102,36 @@ const AdminBillingPage: React.FC = () => {
   const loadPayments = useCallback(async () => {
     try {
       setLoading(true); setError(null);
-      const qs: Record<string,string> = { page: String(payPage), pageSize: String(PAGE_SIZE) };
-      if (payStatus) qs.status = payStatus; if (payPlan) qs.plan_id = payPlan; if (payStart) qs.start = payStart; if (payEnd) qs.end = payEnd;
-      const url = API.BILLING_PAYMENTS + '?' + new URLSearchParams(qs).toString();
+      const qs: Record<string,string> = { 
+        limit: String(PAGE_SIZE),
+        offset: String((payPage - 1) * PAGE_SIZE)
+      };
+      if (payStatus) qs.status = payStatus; 
+      if (payPlan) qs.user_id = payPlan; // Reutilizando campo para filtrar por user_id
+      const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
       const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
       if(!r.ok) throw new Error('HTTP '+r.status);
       const data: ListPaymentsResp = await r.json();
-  setPayments(data.payments || []);
-      const len = (data.payments || []).length;
-      setPayHasMore(len === PAGE_SIZE); // heurística: se veio cheio supõe haver mais
-      let total: number | null = null;
-      const headerTotal = r.headers.get('X-Total-Count');
-      if (headerTotal) { const n = Number(headerTotal); if (!isNaN(n)) total = n; }
-      if ((data as any).total != null && typeof (data as any).total === 'number') total = (data as any).total;
-      setPayTotal(total);
-  } catch(e:any){ setError(e.message || 'Erro'); push({ type:'error', message: t('admin.billing.toast.loadPaymentsError') }); } finally { setLoading(false); }
-  }, [authenticatedFetch, payStatus, payPlan, payPage, payStart, payEnd]);
+      setPayments(data.payments || []);
+      
+      // Usar dados de paginação do backend
+      if (data.pagination) {
+        setPayHasMore(data.pagination.has_more);
+        setPayTotal(data.pagination.total);
+      } else {
+        const len = (data.payments || []).length;
+        setPayHasMore(len === PAGE_SIZE);
+        setPayTotal(null);
+      }
+    } catch(e:any){ 
+      setError(e.message || 'Erro'); 
+      push({ type:'error', message: t('admin.billing.toast.loadPaymentsError') }); 
+    } finally { 
+      setLoading(false); 
+    }
+  }, [authenticatedFetch, payStatus, payPlan, payPage]);
 
-  const loadChanges = useCallback( async () => {
-    try {
-      setLoading(true); setError(null);
-      const qs: Record<string,string> = { page: String(chgPage), pageSize: String(PAGE_SIZE) };
-      const url = API.BILLING_PLAN_CHANGES + '?' + new URLSearchParams(qs).toString();
-      const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
-      if(!r.ok) throw new Error('HTTP '+r.status);
-      const data: ListPlanChangesResp = await r.json();
-  setChanges(data.changes || []);
-      const len = (data.changes || []).length;
-      setChgHasMore(len === PAGE_SIZE);
-      let total: number | null = null;
-      const headerTotal = r.headers.get('X-Total-Count');
-      if (headerTotal) { const n = Number(headerTotal); if (!isNaN(n)) total = n; }
-      if ((data as any).total != null && typeof (data as any).total === 'number') total = (data as any).total;
-      setChgTotal(total);
-  } catch(e:any){ setError(e.message || 'Erro'); push({ type:'error', message: t('admin.billing.toast.loadChangesError') }); } finally { setLoading(false); }
-  }, [authenticatedFetch, chgPage]);
+
 
   const loadWebhooks = useCallback( async () => {
     // Mock temporário — substituir quando endpoint real existir
@@ -140,7 +150,6 @@ const AdminBillingPage: React.FC = () => {
   useEffect(()=> {
     if (view === 'payments') loadPayments();
   }, [view, loadPayments]);
-  useEffect(()=> { if (view === 'planChanges') loadChanges(); }, [view, loadChanges]);
   useEffect(()=> { if (view === 'webhooks') loadWebhooks(); }, [view, loadWebhooks]);
 
   const currencyFmt = useCallback((cents: number) => new Intl.NumberFormat(locale==='pt'?'pt-BR':'en-US', { style:'currency', currency:'BRL' }).format(cents/100), [locale]);
@@ -174,24 +183,42 @@ const AdminBillingPage: React.FC = () => {
     setExportingPayments(true);
     try {
       const all: PaymentRow[] = [];
-      const pageSize = 200; // maior para reduzir chamadas
+      const limit = 200; // maior para reduzir chamadas
+      let offset = 0;
       for (let page=1; page<=50; page++){ // hard cap safety
-        const qs: Record<string,string> = { page: String(page), pageSize: String(pageSize) };
-        if (payStatus) qs.status = payStatus; if (payPlan) qs.plan_id = payPlan; if (payStart) qs.start = payStart; if (payEnd) qs.end = payEnd;
-        const url = API.BILLING_PAYMENTS + '?' + new URLSearchParams(qs).toString();
+        const qs: Record<string,string> = { 
+          limit: String(limit),
+          offset: String(offset)
+        };
+        if (payStatus) qs.status = payStatus; 
+        if (payPlan) qs.user_id = payPlan; // Reutilizando campo para filtrar por user_id
+        const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
         const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
         if(!r.ok) throw new Error('HTTP '+r.status);
         const data: ListPaymentsResp = await r.json();
         const batch = data.payments || [];
         all.push(...batch);
-        if (batch.length < pageSize) break; // último page
+        
+        // Usar dados de paginação do backend se disponível
+        if (data.pagination && !data.pagination.has_more) break;
+        else if (batch.length < limit) break; // fallback: último page
+        
+        offset += limit;
       }
       const csv = toCSV(all.map(p => ({
         id: p.id,
+        user_id: p.user_id || '',
+        user_email: p.user_email || '',
+        user_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
         plan_id: p.plan_id,
         amount_cents: p.amount_cents,
         amount_brl: (p.amount_cents/100).toFixed(2),
         status: p.status,
+        status_detail: p.status_detail || '',
+        payment_method: p.payment_method || '',
+        installments: p.installments || '',
+        external_id: p.external_id || '',
+        preference_id: p.preference_id || '',
         created_at: p.created_at,
         processed_at: p.processed_at || ''
       })));
@@ -208,42 +235,7 @@ const AdminBillingPage: React.FC = () => {
     } catch(e:any){ setError(e.message || 'Erro export'); push({ type:'error', message: t('admin.billing.toast.export.payments.error') }); } finally { setExportingPayments(false); }
   }
 
-  async function exportChangesCSV(){
-    if (exportingChanges) return;
-    setExportingChanges(true);
-    try {
-      const all: PlanChangeRow[] = [];
-      const pageSize = 200;
-      for (let page=1; page<=50; page++){
-        const qs: Record<string,string> = { page: String(page), pageSize: String(pageSize) };
-        const url = API.BILLING_PLAN_CHANGES + '?' + new URLSearchParams(qs).toString();
-        const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data: ListPlanChangesResp = await r.json();
-        const batch = data.changes || [];
-        all.push(...batch);
-        if (batch.length < pageSize) break;
-      }
-      const csv = toCSV(all.map(c => ({
-        id: c.id,
-        previous_plan_id: c.previous_plan_id || '',
-        new_plan_id: c.new_plan_id,
-        trigger: c.trigger,
-        payment_id: c.payment_id || '',
-        created_at: c.created_at
-      })));
-      const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
-      const urlObj = URL.createObjectURL(blob);
-      const ts = new Date().toISOString().slice(0,10).replace(/-/g,'');
-      const a = document.createElement('a');
-      a.href = urlObj;
-      a.download = `billing-planChanges-${ts}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(()=> { URL.revokeObjectURL(urlObj); a.remove(); }, 0);
-      push({ type:'success', message: t('admin.billing.toast.export.changes.success').replace('{count}', String(all.length)) });
-    } catch(e:any){ setError(e.message || 'Erro export'); push({ type:'error', message: t('admin.billing.toast.export.changes.error') }); } finally { setExportingChanges(false); }
-  }
+
 
   return (
     <div className="p-6 space-y-6">
@@ -253,7 +245,6 @@ const AdminBillingPage: React.FC = () => {
         <div className="flex gap-2 flex-wrap">
           <Button type="button" variant={view==='summary'?'primary':'secondary'} onClick={()=> setView('summary')}>{t('admin.billing.view.summary')}</Button>
           <Button type="button" variant={view==='payments'?'primary':'secondary'} onClick={()=> setView('payments')}>{t('admin.billing.view.payments')}</Button>
-          <Button type="button" variant={view==='planChanges'?'primary':'secondary'} onClick={()=> setView('planChanges')}>{t('admin.billing.view.planChanges')}</Button>
           <Button type="button" variant={view==='webhooks'?'primary':'secondary'} onClick={()=> setView('webhooks')}>{t('admin.billing.view.webhooks')}</Button>
         </div>
       </div>
@@ -291,8 +282,8 @@ const AdminBillingPage: React.FC = () => {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.plan')}</label>
-              <input value={payPlanInput} onChange={e=> { setPayPlanInput(e.target.value); }} placeholder={t('admin.billing.filters.plan.placeholder')} className="border rounded px-2 py-1 text-sm" />
+              <label className="block text-[11px] font-medium mb-1">User ID</label>
+              <input value={payPlanInput} onChange={e=> { setPayPlanInput(e.target.value); }} placeholder="Filtrar por User ID" className="border rounded px-2 py-1 text-sm" />
             </div>
             <div>
               <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.start')}</label>
@@ -311,24 +302,41 @@ const AdminBillingPage: React.FC = () => {
             <thead>
               <tr className="bg-gray-100 text-left">
                 <th className="p-2">{t('admin.billing.table.payments.id')}</th>
+                <th className="p-2">Usuário</th>
                 <th className="p-2">{t('admin.billing.table.payments.plan')}</th>
                 <th className="p-2">{t('admin.billing.table.payments.amount')}</th>
                 <th className="p-2">{t('admin.billing.table.payments.status')}</th>
+                <th className="p-2">Método</th>
+                <th className="p-2">MP ID</th>
                 <th className="p-2">{t('admin.billing.table.payments.created')}</th>
                 <th className="p-2">{t('admin.billing.table.payments.processed')}</th>
               </tr>
             </thead>
             <tbody>
-              {loading && <tr><td colSpan={6} className="p-4"><Skeleton lines={3} /></td></tr>}
-              {!loading && payments.length===0 && <tr><td colSpan={6} className="p-4 text-sm text-gray-500">{t('admin.billing.table.payments.empty')}</td></tr>}
+              {loading && <tr><td colSpan={9} className="p-4"><Skeleton lines={3} /></td></tr>}
+              {!loading && payments.length===0 && <tr><td colSpan={9} className="p-4 text-sm text-gray-500">{t('admin.billing.table.payments.empty')}</td></tr>}
               {!loading && payments.map(p => (
                 <tr key={p.id} className="border-b last:border-none hover:bg-gray-50">
                   <td className="p-2 font-mono text-xs select-all">{p.id}</td>
-                  <td className="p-2 font-mono text-xs">{p.plan_id}</td>
-                  <td className="p-2">{currencyFmt(p.amount_cents)}</td>
                   <td className="p-2 text-xs">
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${p.status==='approved'?'bg-green-100 text-green-700': p.status==='pending'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700'}`}>{p.status}</span>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{p.first_name} {p.last_name}</span>
+                      <span className="text-gray-500 text-[10px]">{p.user_email}</span>
+                      <span className="text-gray-400 text-[9px] font-mono">{p.user_id}</span>
+                    </div>
                   </td>
+                  <td className="p-2 font-mono text-xs">{p.plan_id}</td>
+                  <td className="p-2">{currencyFmt(p.amount_cents)}
+                    {p.installments && p.installments > 1 && <span className="text-xs text-gray-500 ml-1">({p.installments}x)</span>}
+                  </td>
+                  <td className="p-2 text-xs">
+                    <div className="flex flex-col gap-1">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${p.status==='approved'?'bg-green-100 text-green-700': p.status==='pending'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700'}`}>{p.status}</span>
+                      {p.status_detail && <span className="text-[9px] text-gray-500">{p.status_detail}</span>}
+                    </div>
+                  </td>
+                  <td className="p-2 text-xs">{p.payment_method || '—'}</td>
+                  <td className="p-2 font-mono text-xs select-all">{p.external_id || '—'}</td>
                   <td className="p-2 text-xs">{new Date(p.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</td>
                   <td className="p-2 text-xs">{p.processed_at ? new Date(p.processed_at).toLocaleString(locale==='pt'?'pt-BR':'en-US') : '—'}</td>
                 </tr>
@@ -375,79 +383,7 @@ const AdminBillingPage: React.FC = () => {
         </>
       )}
 
-      {view==='planChanges' && (
-        <>
-        <Card className="p-0 overflow-x-auto hidden md:block">
-          <div className="p-3 flex flex-wrap gap-3 items-end border-b bg-white">
-            <div className="ml-auto flex gap-2">
-              <Button type="button" variant="secondary" disabled={loading} onClick={()=> { setChgPage(1); loadChanges(); }}>{t('admin.billing.filters.reload')}</Button>
-              <Button type="button" variant="secondary" disabled={loading && !exportingChanges} onClick={exportChangesCSV}>{exportingChanges ? t('admin.billing.export.changes.inProgress') : t('admin.billing.export.changes')}</Button>
-            </div>
-          </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="p-2">{t('admin.billing.table.changes.id')}</th>
-                <th className="p-2">{t('admin.billing.table.changes.from')}</th>
-                <th className="p-2">{t('admin.billing.table.changes.to')}</th>
-                <th className="p-2">{t('admin.billing.table.changes.trigger')}</th>
-                <th className="p-2">{t('admin.billing.table.changes.payment')}</th>
-                <th className="p-2">{t('admin.billing.table.changes.created')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && <tr><td colSpan={6} className="p-4"><Skeleton lines={3} /></td></tr>}
-              {!loading && changes.length===0 && <tr><td colSpan={6} className="p-4 text-sm text-gray-500">{t('admin.billing.table.changes.empty')}</td></tr>}
-              {!loading && changes.map(c => (
-                <tr key={c.id} className="border-b last:border-none hover:bg-gray-50">
-                  <td className="p-2 font-mono text-xs select-all">{c.id}</td>
-                  <td className="p-2 font-mono text-xs">{c.previous_plan_id || '—'}</td>
-                  <td className="p-2 font-mono text-xs">{c.new_plan_id}</td>
-                  <td className="p-2 text-xs">{c.trigger}</td>
-                  <td className="p-2 text-xs">{c.payment_id || '—'}</td>
-                  <td className="p-2 text-xs">{new Date(c.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          <div className="flex items-center justify-between p-3 border-t bg-white text-xs">
-            <div className="flex gap-2">
-              <Button variant="secondary" type="button" disabled={loading || chgPage===1} onClick={()=> setChgPage(p=> Math.max(1, p-1))}>{t('admin.billing.pagination.previous')}</Button>
-              <Button variant="secondary" type="button" disabled={loading || !chgHasMore} onClick={()=> setChgPage(p=> p+1)}>{t('admin.billing.pagination.next')}</Button>
-            </div>
-            <div className="flex items-center gap-4">
-              <span>{t('admin.billing.pagination.page')} {chgPage}{!loading && changes.length < PAGE_SIZE && !chgHasMore ? ' '+t('admin.billing.pagination.final') : ''}</span>
-              <span>{t('admin.billing.pagination.total')}: {chgTotal == null ? '?' : chgTotal}</span>
-            </div>
-          </div>
-        </Card>
-        {/* Mobile list plan changes */}
-        <div className="space-y-3 md:hidden">
-          {loading && <Card className="p-4"><Skeleton lines={3} /></Card>}
-          {!loading && changes.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.billing.table.changes.empty')}</Card>}
-          {!loading && changes.map(c => (
-            <Card key={c.id} className="p-4 space-y-1">
-              <div className="flex justify-between items-start gap-2">
-                <span className="font-mono text-[11px] select-all">#{c.id}</span>
-                <span className="text-[10px] text-gray-500">{c.trigger}</span>
-              </div>
-              <div className="text-sm font-medium">{c.previous_plan_id || '—'} → {c.new_plan_id}</div>
-              <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
-                {c.payment_id && <span>pay: {c.payment_id}</span>}
-                <span>{new Date(c.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
-              </div>
-            </Card>
-          ))}
-          {!loading && (
-            <div className="flex justify-between items-center pt-2">
-              <Button variant="secondary" type="button" disabled={loading || chgPage===1} onClick={()=> setChgPage(p=> Math.max(1,p-1))}>{t('admin.billing.pagination.previous')}</Button>
-              <span className="text-xs">{t('admin.billing.pagination.page')} {chgPage}</span>
-              <Button variant="secondary" type="button" disabled={loading || !chgHasMore} onClick={()=> setChgPage(p=> p+1)}>{t('admin.billing.pagination.next')}</Button>
-            </div>
-          )}
-        </div>
-        </>
-      )}
+
 
       {view==='webhooks' && (
         <>
