@@ -2,168 +2,111 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useAuth } from "../contexts";
 import { API } from "../config/api";
 
-// -------- GLOBAL STORE (singleton) --------
-interface EntitlementsResponse { capabilities: string[]; limits: Record<string, number | null>; hash?: string | null; version?: number | null; usage?: Record<string, any>; }
-interface GlobalPermissionsState {
+interface EntitlementsResponse {
   capabilities: string[];
   limits: Record<string, number | null>;
-  usage: Record<string, any>;
-  loading: boolean;
-  loaded: boolean; // já tivemos uma resposta (mesmo erro)
-  error: string | null;
-  etag: string | null;
-  hash: string | null;
-  attempt: number;
+  hash?: string | null;
+  version?: number | null;
+  usage?: Record<string, any>;
 }
-
-const state: GlobalPermissionsState = {
-  capabilities: [],
-  limits: {},
-  usage: {},
-  loading: false,
-  loaded: false,
-  error: null,
-  etag: null,
-  hash: null,
-  attempt: 0,
-};
-
-const subscribers = new Set<() => void>();
-let fetchInFlight: Promise<void> | null = null;
-let retryTimer: number | null = null;
-const SS_KEY = 'perm:v1'; // sessionStorage key (versão simples para invalidação futura)
-const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutos
-
-function notify() { subscribers.forEach(fn => { try { fn(); } catch {} }); }
 
 export function usePermissions() {
   const { authenticatedFetch } = useAuth();
-  const [, forceRender] = useState(0);
-  const authFetchRef = useRef(authenticatedFetch);
-  authFetchRef.current = authenticatedFetch; // sempre atualizado sem recriar funções
+  const [capabilities, setCapabilities] = useState<string[]>([]);
+  const [limits, setLimits] = useState<Record<string, number | null>>({});
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [usage, setUsage] = useState<Record<string, any>>({});
+  // Usar refs para valores que não precisam disparar re-render nem recriar callbacks
+  const etagRef = useRef<string | null>(null);
+  const capsHashRef = useRef<string | null>(null);
+  const retryTimerRef = useRef<number | null>(null);
+  const attemptRef = useRef(0);
+  const [attempt, setAttempt] = useState(0); // ainda exposto para debug/UI
 
-  // Hidratar de sessionStorage (apenas uma vez por sessão)
-  useEffect(() => {
-    if (!state.loaded) {
-      try {
-        const raw = sessionStorage.getItem(SS_KEY);
-        if (raw) {
-          const parsed = JSON.parse(raw);
-          const ts: number | undefined = parsed?.ts;
-          const expired = !ts || (Date.now() - ts) > CACHE_TTL_MS;
-          if (!expired && parsed && Array.isArray(parsed.capabilities)) {
-            state.capabilities = parsed.capabilities;
-            state.limits = parsed.limits || {};
-            state.usage = parsed.usage || {};
-            state.hash = parsed.hash || null;
-            state.etag = parsed.etag || null;
-            state.loaded = true; // marcamos como carregado via cache
-            notify();
-          } else if (expired) {
-            sessionStorage.removeItem(SS_KEY);
-          }
-        }
-      } catch {}
+  // Evita loop: loadMounted garante que só chamamos auto-load uma vez
+  const initialLoadDoneRef = useRef(false);
+
+  const load = useCallback(async (force = false, forcedAttempt?: number) => {
+    // Cancelar retry pendente
+    if (retryTimerRef.current) {
+      clearTimeout(retryTimerRef.current);
+      retryTimerRef.current = null;
     }
-  }, []);
-
-  const load = useCallback(async (force = false) => {
-    if (retryTimer) { clearTimeout(retryTimer); retryTimer = null; }
-    if (state.loading && fetchInFlight) return fetchInFlight;
-    if (!force && state.loaded && !state.error) return fetchInFlight; // já temos dados válidos
-    state.loading = true; state.error = null; notify();
-    const doFetch = async () => {
-      try {
-        const headers: Record<string,string> = {};
-        if (state.etag && !force) headers['If-None-Match'] = state.etag;
-        const r = await authFetchRef.current(API.ENTITLEMENTS, { method: 'GET', autoLogout: true, headers });
-        if (r.status === 304) {
-          state.loading = false; state.loaded = true; notify(); return;
-        }
-        if (!r.ok) throw new Error('Falha ao carregar entitlements');
-        const newEtag = r.headers.get('ETag'); if (newEtag) state.etag = newEtag;
-        const data: EntitlementsResponse = await r.json();
-        const newCaps = data.capabilities || [];
-        const newHash = newCaps.slice().sort().join('|');
-        if (state.hash && state.hash !== newHash) {
-          window.dispatchEvent(new CustomEvent('entitlements:changed', { detail: { previous: state.hash, current: newHash } }));
-        }
-        state.hash = newHash;
-        state.capabilities = newCaps;
-        state.limits = data.limits || {};
-        state.usage = data.usage || {};
-        state.attempt = 0;
-        state.error = null;
-        // Persistir
-        try { sessionStorage.setItem(SS_KEY, JSON.stringify({
-          capabilities: state.capabilities,
-          limits: state.limits,
-            usage: state.usage,
-            hash: state.hash,
-            etag: state.etag,
-          ts: Date.now()
-        })); } catch {}
-      } catch (e:any) {
-        state.error = e.message || 'Erro';
-        const next = state.attempt + 1;
-        state.attempt = next;
-        if (next <= 6) {
-          const base = 500; const max = 30000; const exp = Math.min(max, base * Math.pow(2, next));
-          const delay = Math.floor(Math.random() * exp);
-            retryTimer = window.setTimeout(() => { load(false); }, delay);
-        }
-      } finally {
-        state.loading = false; state.loaded = true; notify();
+    const currentAttempt = forcedAttempt ?? 0;
+    if (currentAttempt === 0) {
+      attemptRef.current = 0;
+      setAttempt(0);
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const headers: Record<string,string> = {};
+      if (etagRef.current && !force) headers['If-None-Match'] = etagRef.current;
+      const r = await authenticatedFetch(API.ENTITLEMENTS, { method: 'GET', autoLogout: true, headers });
+      if (r.status === 304) { setLoading(false); return; }
+      if (!r.ok) throw new Error('Falha ao carregar entitlements');
+      const newEtag = r.headers.get('ETag'); if (newEtag) etagRef.current = newEtag;
+      const data: EntitlementsResponse = await r.json();
+      const newCaps = data.capabilities || [];
+      const newHash = newCaps.slice().sort().join('|');
+      if (capsHashRef.current && capsHashRef.current !== newHash) {
+        window.dispatchEvent(new CustomEvent('entitlements:changed', { detail: { previous: capsHashRef.current, current: newHash } }));
       }
-    };
-    fetchInFlight = doFetch();
-    return fetchInFlight;
-  }, []);
+      capsHashRef.current = newHash;
+      setCapabilities(newCaps);
+      setLimits(data.limits || {});
+      setUsage(data.usage || {});
+      attemptRef.current = 0;
+      setAttempt(0);
+    } catch (e:any) {
+      setError(e.message || 'Erro');
+      const next = currentAttempt + 1;
+      attemptRef.current = next;
+      setAttempt(next);
+      if (next <= 6) { // até ~32s
+        // Exponential backoff com jitter
+        const base = 500;
+        const max = 30000;
+        const exp = Math.min(max, base * Math.pow(2, next));
+        const delay = Math.floor(Math.random() * exp);
+        retryTimerRef.current = window.setTimeout(() => load(false, next), delay);
+      }
+    } finally { setLoading(false); }
+  }, [authenticatedFetch]);
 
-  // Assinar mudanças
+  // Carrega apenas uma vez no mount (evita loop devido a mudanças de estado internas)
   useEffect(() => {
-    const sub = () => forceRender(x => x + 1);
-    subscribers.add(sub);
-    // primeira vez: dispara load se necessário
-    if (!state.loaded && !state.loading) load(false);
-    return () => { subscribers.delete(sub); };
+    if (!initialLoadDoneRef.current) {
+      initialLoadDoneRef.current = true;
+      load();
+    }
   }, [load]);
 
-  // Eventos externos
   useEffect(() => {
-    const refreshHandler = () => load(true);
+    const handler = () => load(true);
     const invalidateHandler = () => load(true);
-    window.addEventListener('entitlements:refresh', refreshHandler as any);
+    window.addEventListener('entitlements:refresh', handler as any);
     window.addEventListener('entitlements:invalidate', invalidateHandler as any);
     return () => {
-      window.removeEventListener('entitlements:refresh', refreshHandler as any);
+      window.removeEventListener('entitlements:refresh', handler as any);
       window.removeEventListener('entitlements:invalidate', invalidateHandler as any);
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
     };
   }, [load]);
 
-  const can = useCallback((code: string) => {
-    if (!state.loaded) return false; // enquanto não carregou, tratamos como "indeterminado"; PermissionGate pode usar loading
-    return state.capabilities.includes(code);
-  }, []);
-  const any = useCallback((codes: string[]) => {
-    if (!state.loaded) return false;
-    return codes.some(c => state.capabilities.includes(c));
-  }, []);
-  const all = useCallback((codes: string[]) => {
-    if (!state.loaded) return false;
-    return codes.every(c => state.capabilities.includes(c));
-  }, []);
+  const can = useCallback(
+    (code: string) => capabilities.includes(code),
+    [capabilities]
+  );
+  const any = useCallback(
+    (codes: string[]) => codes.some((c) => capabilities.includes(c)),
+    [capabilities]
+  );
+  const all = useCallback(
+    (codes: string[]) => codes.every((c) => capabilities.includes(c)),
+    [capabilities]
+  );
 
-  return {
-    capabilities: state.capabilities,
-    limits: state.limits,
-    usage: state.usage,
-    loading: state.loading && !state.loaded,
-    reloading: state.loading && state.loaded,
-    ready: state.loaded && !state.loading,
-    error: state.error,
-    can, any, all,
-    reload: () => load(true),
-    attempt: state.attempt,
-  };
+  return { capabilities, limits, usage, loading, error, can, any, all, reload: () => load(true), attempt };
 }

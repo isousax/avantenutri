@@ -1,8 +1,7 @@
 export type User = {
   id: string;
   full_name: string;
-  /** Optional short display name (apelido) shown in UI */
-  display_name?: string;
+  display_name: string;
   email: string;
   role: "patient" | "admin";
   photoUrl?: string;
@@ -34,10 +33,4 @@ export interface AuthContextType {
   forceVerify: () => Promise<boolean>;
   /** Returns a fresh access token if available (refreshing if needed). */
   getAccessToken: () => Promise<string | null>;
-  /** Atualiza parcialmente o perfil do usuário autenticado (ex: display_name, full_name, phone) sem forçar logout. */
-  updateProfile?: (payload: {
-    display_name?: string;
-    full_name?: string;
-    phone?: string | null;
-  }) => Promise<{ ok: true; updated: Partial<User> } | { ok: false; error: string }>;
 }

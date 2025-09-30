@@ -170,7 +170,13 @@ const AdminUsersPage: React.FC = () => {
     return Array.from(cur).filter(c => !next.has(c)).sort();
   }, [currentPlanObj, newPlanObj]);
 
-  // Downgrade concept removido
+  const isDowngrade = useMemo(()=> {
+    if(!currentPlanObj || !newPlanObj) return false;
+    // Heurística: menos capabilities => downgrade
+    const curCount = currentPlanObj.capabilities?.length || 0;
+    const nextCount = newPlanObj.capabilities?.length || 0;
+    return nextCount < curCount || removedCapabilities.length > 0;
+  }, [currentPlanObj, newPlanObj, removedCapabilities]);
 
   const { locale, t } = useI18n();
   return (
@@ -229,8 +235,7 @@ const AdminUsersPage: React.FC = () => {
         )}
       </form>
       {error && <div className="text-red-600 text-sm">{error}</div>}
-      {/* Desktop table */}
-      <Card className="p-0 overflow-x-auto hidden md:block">
+      <Card className="p-0 overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-gray-100 text-left">
@@ -400,117 +405,6 @@ const AdminUsersPage: React.FC = () => {
           </tbody>
         </table>
       </Card>
-      {/* Mobile list */}
-      <div className="space-y-3 md:hidden">
-        {loading && (
-          <Card className="p-4"><Skeleton lines={3} /></Card>
-        )}
-        {!loading && users.map(u => (
-          <Card key={u.id} className="p-4 space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0">
-                <div className="font-medium text-sm break-all">{u.email}</div>
-                <div className="text-[11px] text-gray-500 mt-0.5 flex flex-wrap gap-2">
-                  <span>{t('admin.userPlan.column.plan')}: {u.plan_id || '-'}</span>
-                  <span>{t('admin.user.emailVerified')}: {u.email_confirmed ? (t('common.yes')||'Sim') : (t('common.no')||'Não')}</span>
-                </div>
-              </div>
-              <div className="text-[10px] text-gray-400 font-mono select-all">{u.id.slice(0,8)}</div>
-            </div>
-            <div className="flex flex-col gap-2">
-              <label className="text-[11px] font-medium">{t('admin.user.role')}</label>
-              <select
-                disabled={changing === u.id || u.id === user?.id}
-                value={u.role}
-                onChange={(e) => applyRole(u.id, e.target.value)}
-                className="border px-2 py-1 rounded text-sm"
-              >
-                {roles.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </div>
-            <div className="grid grid-cols-2 gap-2 text-[11px] text-gray-600">
-              <div>
-                <span className="block text-gray-400">{t('admin.user.createdAt')}</span>
-                {fmtDate(u.created_at, locale, { dateStyle:'short'})}
-              </div>
-              <div>
-                <span className="block text-gray-400">{t('admin.user.lastLogin')}</span>
-                {u.last_login_at ? fmtDate(u.last_login_at, locale, { dateStyle:'short'}) : '-'}
-              </div>
-            </div>
-            <div className="flex flex-wrap gap-3 pt-1">
-              <button
-                disabled={changing === u.id}
-                onClick={async () => {
-                  try {
-                    setChanging(u.id);
-                    const r = await authenticatedFetch(API.adminUserForceLogout(u.id), { method: 'POST' });
-                    if(!r.ok) throw new Error('Falha ao forçar logout');
-                    push({ type:'success', message:'Logout forçado' });
-                  } catch(err){
-                    const msg = err instanceof Error ? err.message : 'Erro ao forçar logout';
-                    setError(msg); push({ type:'error', message: msg });
-                  } finally { setChanging(null); }
-                }}
-                className="text-[11px] text-red-600 hover:underline disabled:opacity-50"
-              >{t('admin.user.forceLogout')}</button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (planEditUser === u.id) { setPlanEditUser(null); }
-                  else { setPlanEditUser(u.id); setSelectedPlan(''); void ensurePlans(); }
-                }}
-                className="text-[11px] text-blue-600 hover:underline"
-              >{planEditUser === u.id ? (t('common.cancel')||'Cancelar') : (t('admin.userPlan.change')||'Alterar Plano')}</button>
-            </div>
-            {planEditUser === u.id && (
-              <div className="mt-1 p-2 border rounded bg-white shadow-sm space-y-2">
-                {loadingPlans && <Skeleton lines={2} />}
-                {!loadingPlans && (
-                  <>
-                    <select
-                      value={selectedPlan}
-                      onChange={e=> setSelectedPlan(e.target.value)}
-                      className="border px-2 py-1 rounded text-[12px] w-full"
-                    >
-                      <option value="">-- {t('common.select') || 'selecione'} --</option>
-                      {plans.map(p => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
-                    </select>
-                    {selectedPlan && currentPlanObj && newPlanObj && (
-                      <div className="text-[10px] space-y-1 bg-slate-50 border rounded p-1">
-                        <div><strong>{t('common.current')}:</strong> {currentPlanObj.name}</div>
-                        <div><strong>{t('common.new')}:</strong> {newPlanObj.name}</div>
-                        {removedCapabilities.length>0 && (
-                          <div className="text-rose-600">
-                            <div className="font-semibold">{t('admin.userPlan.change.capabilities.lost.title', { count: removedCapabilities.length })}</div>
-                            <ul className="list-disc ml-4">
-                              {removedCapabilities.map(c => <li key={c}>{c}</li>)}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        disabled={!selectedPlan || planChanging}
-                        onClick={() => { setPendingUserId(u.id); setConfirmOpen(true); }}
-                        className="flex-1 text-[11px] bg-green-600 text-white rounded px-2 py-1 disabled:opacity-50"
-                      >{t('common.apply')}</button>
-                      <button
-                        type="button"
-                        disabled={planChanging}
-                        onClick={() => { setPlanEditUser(null); setSelectedPlan(''); }}
-                        className="text-[11px] px-2 py-1 rounded border"
-                      >{t('common.close')}</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
-          </Card>
-        ))}
-        {!loading && users.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.users.empty')}</Card>}
-      </div>
       <div className="flex gap-2 items-center">
         <Button
           type="button"
@@ -531,21 +425,24 @@ const AdminUsersPage: React.FC = () => {
       </div>
       <ConfirmDialog
         open={confirmOpen}
-        title={t('admin.userPlan.change.title')}
+  title={isDowngrade ? t('admin.userPlan.change.title.downgrade') : t('admin.userPlan.change.title')}
         description={(() => {
           if (!pendingUserId || !newPlanObj) return '';
-          const target = users.find(u => u.id === pendingUserId);
-          const curName = currentPlanObj?.name || target?.plan_id || t('common.current') || 'atual';
-          const nextName = newPlanObj.name;
-          let base = t('admin.userPlan.change.desc', { current: curName, next: nextName });
-          if (removedCapabilities.length) {
-            base += `\n${t('admin.userPlan.change.capabilities.lost.title', { count: removedCapabilities.length })}:\n- ${removedCapabilities.join('\n- ')}`;
-          }
-          return base;
+            const target = users.find(u => u.id === pendingUserId);
+            const curName = currentPlanObj?.name || target?.plan_id || t('common.current') || 'atual';
+            const nextName = newPlanObj.name;
+            let base = isDowngrade ? t('admin.userPlan.change.desc.downgrade', { current: curName, next: nextName }) : t('admin.userPlan.change.desc', { current: curName, next: nextName });
+            if (isDowngrade) {
+              // extra line already in desc.downgrade
+              if (removedCapabilities.length) {
+                base += `\n${t('admin.userPlan.change.capabilities.lost.title', { count: removedCapabilities.length })}:\n- ${removedCapabilities.join('\n- ')}`;
+              }
+            }
+            return base;
         })()}
-        confirmLabel={planChanging ? '...' : t('admin.userPlan.change.confirm')}
-        cancelLabel={t('admin.userPlan.change.cancel')}
-        danger={false}
+  confirmLabel={planChanging ? '...' : t('admin.userPlan.change.confirm')}
+  cancelLabel={t('admin.userPlan.change.cancel')}
+        danger={isDowngrade}
         onConfirm={() => {
           if (!pendingUserId) return;
           void submitPlanChange(pendingUserId);

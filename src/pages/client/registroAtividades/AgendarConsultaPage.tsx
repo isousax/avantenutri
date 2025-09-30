@@ -7,8 +7,6 @@ import { useI18n, formatDate as fmtDate } from "../../../i18n";
 import { API } from "../../../config/api";
 import { useAuth } from "../../../contexts";
 import { useConsultations } from "../../../hooks/useConsultations";
-import { usePermissions } from "../../../hooks/usePermissions";
-import { CAPABILITIES } from "../../../types/capabilities";
 import { useToast } from "../../../components/ui/ToastProvider";
 
 const AgendarConsultaPage: React.FC = () => {
@@ -22,21 +20,11 @@ const AgendarConsultaPage: React.FC = () => {
   });
   const { authenticatedFetch } = useAuth();
   const { create, items, loading, error, list } = useConsultations();
-  const { can, loading: permsLoading, ready } = usePermissions();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const { locale, t } = useI18n();
 
   const [etapa, setEtapa] = useState(1);
-
-  // Gating: if user cannot schedule consultations redirect to planos with intent marker
-  useEffect(()=> {
-    if (permsLoading) return; // wait
-    if (ready && !can(CAPABILITIES.CONSULTA_AGENDAR)) {
-      const intentUrl = `/planos?intent=consultation`;
-      navigate(intentUrl, { replace: true });
-    }
-  }, [permsLoading, ready, can, navigate]);
 
   const tiposConsulta = [
     {
@@ -287,7 +275,6 @@ const AgendarConsultaPage: React.FC = () => {
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-green-800 mb-2">{t('consultations.schedule')}</h1>
           <p className="text-gray-600">Avante Nutri</p>
-          <button type="button" onClick={()=> navigate(-1)} className="mt-3 text-sm text-green-700 hover:underline">{t('common.back')}</button>
         </div>
         {/* Progress */}
         <div className="flex mb-8">

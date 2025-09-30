@@ -15,7 +15,6 @@ export interface DietPlanSummary {
   current_version_id?: string | null;
   created_at: string;
   updated_at: string;
-  format?: string | null; // extraído da versão atual (pdf | structured)
 }
 
 export interface DietPlanVersion {

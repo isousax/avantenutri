@@ -278,8 +278,7 @@ const AdminBillingPage: React.FC = () => {
       )}
 
       {view==='payments' && (
-        <>
-        <Card className="p-0 overflow-x-auto hidden md:block">
+        <Card className="p-0 overflow-x-auto">
           <div className="p-3 flex flex-wrap gap-3 items-end border-b bg-white">
             <div>
               <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.status')}</label>
@@ -346,38 +345,10 @@ const AdminBillingPage: React.FC = () => {
             </div>
           </div>
         </Card>
-        {/* Mobile list payments */}
-        <div className="space-y-3 md:hidden">
-          {loading && <Card className="p-4"><Skeleton lines={3} /></Card>}
-          {!loading && payments.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.billing.table.payments.empty')}</Card>}
-          {!loading && payments.map(p => (
-            <Card key={p.id} className="p-4 space-y-2">
-              <div className="flex justify-between items-start gap-2">
-                <span className="font-mono text-[11px] select-all break-all max-w-[160px]">{p.id}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${p.status==='approved'?'bg-green-100 text-green-700': p.status==='pending'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700'}`}>{p.status}</span>
-              </div>
-              <div className="text-sm font-medium">{currencyFmt(p.amount_cents)}</div>
-              <div className="flex flex-wrap gap-2 text-[11px] text-gray-600">
-                <span>plan: {p.plan_id}</span>
-                <span>{new Date(p.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
-                {p.processed_at && <span>{t('admin.billing.table.payments.processed')}: {new Date(p.processed_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>}
-              </div>
-            </Card>
-          ))}
-          {!loading && (
-            <div className="flex justify-between items-center pt-2">
-              <Button variant="secondary" type="button" disabled={loading || payPage===1} onClick={()=> setPayPage(p=> Math.max(1,p-1))}>{t('admin.billing.pagination.previous')}</Button>
-              <span className="text-xs">{t('admin.billing.pagination.page')} {payPage}</span>
-              <Button variant="secondary" type="button" disabled={loading || !payHasMore} onClick={()=> setPayPage(p=> p+1)}>{t('admin.billing.pagination.next')}</Button>
-            </div>
-          )}
-        </div>
-        </>
       )}
 
       {view==='planChanges' && (
-        <>
-        <Card className="p-0 overflow-x-auto hidden md:block">
+        <Card className="p-0 overflow-x-auto">
           <div className="p-3 flex flex-wrap gap-3 items-end border-b bg-white">
             <div className="ml-auto flex gap-2">
               <Button type="button" variant="secondary" disabled={loading} onClick={()=> { setChgPage(1); loadChanges(); }}>{t('admin.billing.filters.reload')}</Button>
@@ -421,37 +392,10 @@ const AdminBillingPage: React.FC = () => {
             </div>
           </div>
         </Card>
-        {/* Mobile list plan changes */}
-        <div className="space-y-3 md:hidden">
-          {loading && <Card className="p-4"><Skeleton lines={3} /></Card>}
-          {!loading && changes.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.billing.table.changes.empty')}</Card>}
-          {!loading && changes.map(c => (
-            <Card key={c.id} className="p-4 space-y-1">
-              <div className="flex justify-between items-start gap-2">
-                <span className="font-mono text-[11px] select-all">#{c.id}</span>
-                <span className="text-[10px] text-gray-500">{c.trigger}</span>
-              </div>
-              <div className="text-sm font-medium">{c.previous_plan_id || '—'} → {c.new_plan_id}</div>
-              <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
-                {c.payment_id && <span>pay: {c.payment_id}</span>}
-                <span>{new Date(c.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
-              </div>
-            </Card>
-          ))}
-          {!loading && (
-            <div className="flex justify-between items-center pt-2">
-              <Button variant="secondary" type="button" disabled={loading || chgPage===1} onClick={()=> setChgPage(p=> Math.max(1,p-1))}>{t('admin.billing.pagination.previous')}</Button>
-              <span className="text-xs">{t('admin.billing.pagination.page')} {chgPage}</span>
-              <Button variant="secondary" type="button" disabled={loading || !chgHasMore} onClick={()=> setChgPage(p=> p+1)}>{t('admin.billing.pagination.next')}</Button>
-            </div>
-          )}
-        </div>
-        </>
       )}
 
       {view==='webhooks' && (
-        <>
-        <Card className="p-0 overflow-x-auto hidden md:block">
+        <Card className="p-0 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="bg-gray-100 text-left">
@@ -480,25 +424,6 @@ const AdminBillingPage: React.FC = () => {
           </table>
           <div className="p-3 border-t text-[11px] text-gray-500">{t('admin.billing.webhooks.mockNote')}</div>
         </Card>
-        <div className="space-y-3 md:hidden">
-          {loading && <Card className="p-4"><Skeleton lines={3} /></Card>}
-          {!loading && webhooks.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.billing.table.webhooks.empty')}</Card>}
-          {!loading && webhooks.map(w => (
-            <Card key={w.id} className="p-4 space-y-1">
-              <div className="flex justify-between gap-2">
-                <span className="font-mono text-[11px] select-all break-all max-w-[140px]">{w.id}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${w.status==='processed'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{w.status}</span>
-              </div>
-              <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
-                <span>{w.event}</span>
-                <span>{new Date(w.received_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
-                {w.latency_ms!=null && <span>{w.latency_ms}ms</span>}
-                {w.attempts!=null && <span>{w.attempts}x</span>}
-              </div>
-            </Card>
-          ))}
-        </div>
-        </>
       )}
       <p className="text-[11px] text-gray-500">{t('admin.billing.nextSteps.note')}</p>
     </div>
