@@ -29,7 +29,7 @@ const AgendarConsultaPage: React.FC = () => {
   const [etapa, setEtapa] = useState(1);
 
   // Questionnaire modal state
-  const { data: questionnaireStatus, isLoading: isLoadingStatus } = useQuestionnaireStatus();
+  const { data: questionnaireStatus } = useQuestionnaireStatus();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
 
   // Simplified: everyone can schedule consultations
