@@ -134,7 +134,8 @@ const AdminEntitlementsPage: React.FC = () => {
             <div className="text-sm">Limits:</div>
             {sortedOwnLimits.length > 0 ? (
               <>
-                <table className="w-full text-[11px] border">
+                {/* Desktop table */}
+                <table className="hidden md:table w-full text-[11px] border">
                   <thead><tr className="bg-slate-100"><th className="text-left p-1">Limite</th><th className="text-left p-1">Uso</th></tr></thead>
                   <tbody>
                     {sortedOwnLimits.map(([k,v]) => {
@@ -148,6 +149,21 @@ const AdminEntitlementsPage: React.FC = () => {
                     })}
                   </tbody>
                 </table>
+                {/* Mobile list */}
+                <div className="md:hidden divide-y rounded border bg-white overflow-hidden">
+                  {sortedOwnLimits.map(([k,v]) => {
+                    const u = (usage && typeof usage[k] === 'number') ? usage[k] : null;
+                    return (
+                      <div key={k} className="p-3 text-xs space-y-1">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="font-mono text-[11px] font-medium truncate max-w-[60%]" title={k}>{k}</span>
+                          <span className="text-[10px] text-gray-500">{v==null?'∞':v}</span>
+                        </div>
+                        <UsageBar value={u} limit={v} />
+                      </div>
+                    );
+                  })}
+                </div>
                 <div className="pt-4 mt-4 border-t space-y-2">
                   <div className="flex items-center justify-between">
                     <h4 className="font-medium text-xs">Overrides (mock)</h4>
@@ -295,21 +311,40 @@ const AdminEntitlementsPage: React.FC = () => {
                 <div>
                   <h4 className="font-medium text-xs mb-1">Limits</h4>
                   {sortedSelLimits.length > 0 ? (
-                    <table className="w-full text-[11px] border">
-                      <thead><tr className="bg-slate-100"><th className="text-left p-1">Limite</th><th className="text-left p-1">Uso</th></tr></thead>
-                      <tbody>
+                    <>
+                      {/* Desktop table */}
+                      <table className="hidden md:table w-full text-[11px] border">
+                        <thead><tr className="bg-slate-100"><th className="text-left p-1">Limite</th><th className="text-left p-1">Uso</th></tr></thead>
+                        <tbody>
+                          {sortedSelLimits.map(([k,v]) => {
+                            const u = (selUsage && typeof selUsage[k] === 'number') ? selUsage[k] : null;
+                            const near = (typeof v === 'number' && typeof u === 'number' && v>0) ? (u / v) >= 0.8 : false;
+                            return (
+                              <tr key={k} className={`odd:bg-slate-50 ${near ? 'bg-amber-50' : ''} align-top`}>
+                                <td className="p-1 font-mono w-40">{k}{' '}<span className="text-[10px] text-gray-500">{v==null?'∞':v}</span></td>
+                                <td className="p-1"><UsageBar value={u} limit={v} /></td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                      {/* Mobile list */}
+                      <div className="md:hidden divide-y rounded border bg-white overflow-hidden">
                         {sortedSelLimits.map(([k,v]) => {
                           const u = (selUsage && typeof selUsage[k] === 'number') ? selUsage[k] : null;
                           const near = (typeof v === 'number' && typeof u === 'number' && v>0) ? (u / v) >= 0.8 : false;
                           return (
-                            <tr key={k} className={`odd:bg-slate-50 ${near ? 'bg-amber-50' : ''} align-top`}>
-                              <td className="p-1 font-mono w-40">{k}{' '}<span className="text-[10px] text-gray-500">{v==null?'∞':v}</span></td>
-                              <td className="p-1"><UsageBar value={u} limit={v} /></td>
-                            </tr>
+                            <div key={k} className={`p-3 text-xs space-y-1 ${near ? 'bg-amber-50/40' : ''}`}> 
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="font-mono text-[11px] font-medium truncate max-w-[60%]" title={k}>{k}</span>
+                                <span className="text-[10px] text-gray-500">{v==null?'∞':v}</span>
+                              </div>
+                              <UsageBar value={u} limit={v} />
+                            </div>
                           );
                         })}
-                      </tbody>
-                    </table>
+                      </div>
+                    </>
                   ) : <p className="text-[11px] text-gray-500">Nenhum limite.</p>}
                 </div>
                 <OverridesSection userId={selectedUser.id} />

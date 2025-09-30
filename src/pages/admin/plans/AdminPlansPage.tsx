@@ -103,19 +103,29 @@ const AdminPlansPage: React.FC = () => {
                     <div>
                       <h3 className="font-medium text-sm mb-1">Limits</h3>
                       {p.limits && Object.keys(p.limits).length > 0 ? (
-                        <table className="w-full text-[11px]">
-                          <thead>
-                            <tr className="text-slate-600 border-b"><th className="text-left py-1">Limite</th><th className="text-left py-1">Valor</th></tr>
-                          </thead>
-                          <tbody>
-                            {Object.entries(p.limits).map(([k, v]) => (
-                              <tr key={k} className="odd:bg-slate-50">
-                                <td className="pr-2 font-mono">{k}</td>
-                                <td>{v == null ? '∞' : v}</td>
-                              </tr>
+                        <>
+                          <table className="hidden md:table w-full text-[11px]">
+                            <thead>
+                              <tr className="text-slate-600 border-b"><th className="text-left py-1">Limite</th><th className="text-left py-1">Valor</th></tr>
+                            </thead>
+                            <tbody>
+                              {Object.entries(p.limits).map(([k, v]) => (
+                                <tr key={k} className="odd:bg-slate-50">
+                                  <td className="pr-2 font-mono">{k}</td>
+                                  <td>{v == null ? '∞' : v}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                          <div className="md:hidden divide-y rounded border bg-white overflow-hidden">
+                            {Object.entries(p.limits).map(([k,v]) => (
+                              <div key={k} className="p-2 text-xs flex items-center justify-between gap-2">
+                                <span className="font-mono truncate max-w-[55%]" title={k}>{k}</span>
+                                <span className="text-[11px] text-gray-600">{v==null?'∞':v}</span>
+                              </div>
                             ))}
-                          </tbody>
-                        </table>
+                          </div>
+                        </>
                       ) : <p className="text-xs text-slate-500">Nenhum limite.</p>}
                     </div>
                   </div>
@@ -125,7 +135,7 @@ const AdminPlansPage: React.FC = () => {
           })}
         </div>
       )}
-      <p className="text-[11px] text-gray-500">Futuro: edição, criação, ordenação drag-and-drop, versionamento de plano, simulação de downgrade/upgrade, clonagem. (Quando houver métricas por plano, podemos reutilizar UsageBar para mostrar consumo médio/percentis).</p>
+  <p className="text-[11px] text-gray-500">Futuro: edição, criação, ordenação drag-and-drop, versionamento de plano, simulação de upgrade, clonagem. (Quando houver métricas por plano, podemos reutilizar UsageBar para mostrar consumo médio/percentis).</p>
     </div>
   );
 };

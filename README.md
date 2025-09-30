@@ -66,4 +66,26 @@ export default defineConfig([
     },
   },
 ])
+
+## Fluxo de Assinatura e Agendamento (Produto)
+
+Fluxo simplificado (sem downgrade):
+
+1. Usuário cria conta.
+2. Acessa área de consultas (lista vazia se nenhuma marcada).
+3. Ao tentar agendar sem capability CONSULTA_AGENDAR é redirecionado para `/planos?intent=consultation`.
+4. Página de planos mostra banner contextual explicando o motivo.
+5. Usuário seleciona plano e conclui pagamento (TransparentCheckoutForm).
+6. Após status approved disparamos `entitlements:refresh` e o usuário pode voltar para agendar.
+
+Detalhes técnicos:
+- Hook `usePlanIntent` centraliza parsing/limpeza de `?intent`.
+- Banner é persistido (sessionStorage) quando dispensado para não reaparecer.
+- Conceito de downgrade e código legado removidos.
+- Entitlements cacheados com TTL 10min + ETag evitando loops de fetch.
+
+Próximos incrementos sugeridos:
+- Outros intents (ex: `diet`, `reports`).
+- Métricas de conversão por origem do redirecionamento.
+- Testes de integração para fluxo de upgrade + refresh de entitlements.
 ```

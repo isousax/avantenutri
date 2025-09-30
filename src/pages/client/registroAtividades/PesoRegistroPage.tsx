@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
@@ -12,9 +13,15 @@ const PesoRegistroPage: React.FC = () => {
   const { latest, upsert, logs, diff_kg, diff_percent, series, goal, setGoal, patch } = useWeightLogs(90);
   const { t, locale } = useI18n();
   const { can } = usePermissions();
+  const navigate = useNavigate();
   const canLog = can(CAPABILITIES.PESO_LOG);
   const [weight, setWeight] = useState<string>('');
   const [note, setNote] = useState<string>('');
+  const [dateInput, setDateInput] = useState<string>(() => {
+    const d = new Date();
+    const pad = (n:number)=> String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,7 +42,7 @@ const PesoRegistroPage: React.FC = () => {
   if (!isFinite(w) || w <= 0) { setError(t('weight.invalid')); return; }
     setError(null); setSaving(true);
     try {
-      await upsert(w, note || undefined);
+  await upsert(w, note || undefined, dateInput);
   } catch (e:any) { setError(e.message || t('common.error')); }
     finally { setSaving(false); }
   };
@@ -45,13 +52,21 @@ const PesoRegistroPage: React.FC = () => {
           <SEO title={t('weight.log.seo.title')} description={t('weight.log.seo.desc')} />
           <div className="max-w-3xl mx-auto space-y-6">
             <Card className="p-6">
-              <h1 className="text-2xl font-bold mb-4 text-slate-800">{t('weight.log.title')}</h1>
+              <div className="flex items-center justify-between mb-4">
+                <h1 className="text-2xl font-bold text-slate-800">{t('weight.log.title')}</h1>
+                <button type="button" onClick={()=> navigate(-1)} className="text-sm text-blue-600 hover:underline">{t('common.back')}</button>
+              </div>
+              <h1 className="sr-only">{t('weight.log.title')}</h1>
               {!canLog && <p className="text-sm text-red-600">{t('common.noPermission.weight')}</p>}
               {canLog && (
                 <form onSubmit={submit} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('weight.form.weight')}</label>
                     <input value={weight} onChange={e=> setWeight(e.target.value)} type="text" inputMode="decimal" placeholder="Ex: 72.4" className="w-full border rounded px-3 py-2 text-slate-800" />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 mb-1">Data</label>
+                    <input type="date" value={dateInput} onChange={e=> setDateInput(e.target.value)} className="w-full border rounded px-3 py-2 text-slate-800" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">{t('weight.form.note')}</label>

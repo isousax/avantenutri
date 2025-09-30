@@ -90,9 +90,10 @@ const AguaRegistroPage: React.FC = () => {
   <SEO title={t('water.log.seo.title')} description={t('water.log.seo.desc')} />
       <div className="max-w-4xl mx-auto">
         {/* Cabeçalho */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-blue-800 mb-2">{t('water.log.heading')}</h1>
+        <div className="mb-8 flex flex-col items-center gap-2">
+          <h1 className="text-3xl font-bold text-blue-800">{t('water.log.heading')}</h1>
           <p className="text-gray-600">{t('water.log.subheading')}</p>
+          <button type="button" onClick={()=> navigate(-1)} className="text-sm text-blue-600 hover:underline">{t('common.back')}</button>
         </div>
 
         <div className="grid gap-6 lg:grid-cols-2">

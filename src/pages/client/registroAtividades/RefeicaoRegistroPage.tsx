@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
@@ -12,6 +13,7 @@ import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 const mealTypes = ['breakfast','lunch','dinner','snack','other'] as const;
 
 const RefeicaoRegistroPage: React.FC = () => {
+  const navigate = useNavigate();
   const { create, logs, stats, days, goals, setGoals, progress, patch, remove } = useMealLogs(7);
   const { t, locale, setLocale } = useI18n();
   const [editingGoals, setEditingGoals] = useState(false);
@@ -73,7 +75,10 @@ const RefeicaoRegistroPage: React.FC = () => {
       <div className="max-w-5xl mx-auto space-y-6">
         <Card className="p-6">
           <div className="flex items-start justify-between">
-            <h1 className="text-2xl font-bold mb-4 text-slate-800">{t('meal.log.title')}</h1>
+            <div className="flex flex-col gap-1">
+              <h1 className="text-2xl font-bold text-slate-800">{t('meal.log.title')}</h1>
+              <button type="button" onClick={()=> navigate(-1)} className="text-xs text-blue-600 hover:underline self-start">{t('common.back')}</button>
+            </div>
             <select value={locale} onChange={e=> setLocale(e.target.value as any)} className="text-xs border rounded px-1 py-0.5 h-6">
               <option value="pt">PT</option>
               <option value="en">EN</option>

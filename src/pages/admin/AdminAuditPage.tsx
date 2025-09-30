@@ -196,7 +196,8 @@ const AdminAuditPage: React.FC = () => {
         >CSV</button>
       </form>
       {error && <div className="text-red-600 text-sm">{error}</div>}
-      <Card className="p-0 overflow-x-auto">
+      {/* Desktop table */}
+      <Card className="p-0 overflow-x-auto hidden md:block">
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-gray-100 text-left">
@@ -306,6 +307,38 @@ const AdminAuditPage: React.FC = () => {
           </tbody>
         </table>
       </Card>
+      {/* Mobile list */}
+      <div className="space-y-3 md:hidden">
+        {loading && <Card className="p-4"><Skeleton lines={4} /></Card>}
+        {!loading && rows.length===0 && <Card className="p-4 text-center text-xs text-gray-500">Sem registros</Card>}
+        {!loading && rows.map((r,i) => (
+          <Card key={i} className="p-4 space-y-1">
+            {tab==='password' && 'ip' in r && 'changed_at' in r && (
+              <>
+                <div className="flex justify-between text-sm font-medium"><span>{(r as any).user_id}</span><span className="text-[10px] text-gray-500">PW</span></div>
+                <div className="text-[11px] text-gray-600 break-all">IP: {(r as any).ip}</div>
+                <div className="text-[11px] text-gray-600">{(r as any).changed_at}</div>
+              </>
+            )}
+            {tab==='revoked' && 'jti' in r && (
+              <>
+                <div className="flex justify-between text-sm font-medium"><span>{(r as any).user_id}</span><span className="text-[10px] text-gray-500">REV</span></div>
+                <div className="text-[11px] font-mono break-all">{(r as any).jti}</div>
+                <div className="text-[11px] text-gray-600">{(r as any).reason}</div>
+                <div className="text-[10px] text-gray-500 flex flex-wrap gap-2"><span>rev: {(r as any).revoked_at}</span><span>exp: {(r as any).expires_at}</span></div>
+              </>
+            )}
+            {tab==='role' && 'old_role' in r && (
+              <>
+                <div className="flex justify-between text-sm font-medium"><span>{(r as any).user_id}</span><span className="text-[10px] text-gray-500">ROLE</span></div>
+                <div className="text-[11px] text-gray-600">{(r as any).old_role} → {(r as any).new_role}</div>
+                <div className="text-[11px] text-gray-600">{(r as any).reason}</div>
+                <div className="text-[10px] text-gray-500">{(r as any).changed_at}</div>
+              </>
+            )}
+          </Card>
+        ))}
+      </div>
       <div className="flex gap-2 items-center">
         <Button
           type="button"
