@@ -1,3 +1,4 @@
+
 import React, { useEffect, useMemo, useState } from "react";
 import Skeleton from "../../components/ui/Skeleton";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
@@ -8,6 +9,7 @@ import { useAuth } from "../../contexts";
 import { RoleRoute } from "../../components/RoleRoute";
 import { SEO } from "../../components/comum/SEO";
 import { API } from "../../config/api";
+import AdminNotificationSender from "../../components/admin/AdminNotificationSender";
 
 /* --- Types --- */
 interface AdminUser {
@@ -496,7 +498,7 @@ const DietManagement: React.FC = () => {
    --------------------------- */
 const AdminPage: React.FC = () => {
   const { logout, getAccessToken } = useAuth();
-  const [tab, setTab] = useState<"pacientes" | "consultas" | "relatorios" | "dietas">("pacientes");
+  const [tab, setTab] = useState<"pacientes" | "consultas" | "relatorios" | "dietas" | "notificacoes">("pacientes");
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -635,6 +637,12 @@ const AdminPage: React.FC = () => {
               onClick={() => setTab("dietas")}
             >
               Dietas
+            </button>
+            <button
+              className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "notificacoes" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+              onClick={() => setTab("notificacoes")}
+            >
+              Notificações
             </button>
             <button
               className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "relatorios" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
@@ -801,6 +809,13 @@ const AdminPage: React.FC = () => {
           {tab === "dietas" && (
             <div>
               <DietManagement />
+            </div>
+          )}
+
+          {/* --- NOTIFICAÇÕES --- */}
+          {tab === "notificacoes" && (
+            <div className="space-y-6">
+              <AdminNotificationSender />
             </div>
           )}
 

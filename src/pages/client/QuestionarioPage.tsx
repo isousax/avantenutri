@@ -6,9 +6,33 @@ import ProgressBar from "../../components/ui/ProgressBar";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { SEO } from "../../components/comum/SEO";
 import { useI18n } from "../../i18n";
+import { useSaveQuestionnaire } from "../../hooks/useQuestionnaire";
+
+// Tipos
+type CategoriaType = 'infantil' | 'gestante' | 'adulto' | 'esportiva';
+
+interface Pergunta {
+  pergunta: string;
+  tipo: 'texto' | 'numero' | 'select' | 'textarea';
+  icon: string;
+  expansivel?: boolean;
+  placeholderExt?: string;
+  opcoes?: string[];
+  required?: boolean;
+}
+
+interface Categoria {
+  label: string;
+  value: CategoriaType;
+  icon: string;
+  description: string;
+  color: string;
+  borderColor: string;
+  activeColor: string;
+}
 
 // Categorias
-const categorias = [
+const categorias: Categoria[] = [
   {
     label: "Nutrição Infantil",
     value: "infantil",
@@ -48,7 +72,7 @@ const categorias = [
 ];
 
 // Perguntas por categoria
-const perguntasPorCategoria = {
+const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   infantil: [
     { pergunta: "Nome da criança", tipo: "texto", icon: "👧" },
     { pergunta: "Idade", tipo: "numero", icon: "🎂" },
@@ -158,6 +182,7 @@ const perguntasPorCategoria = {
       pergunta: "Descreva sua rotina alimentar atual",
       tipo: "textarea",
       icon: "📝",
+      required: false
     },
   ],
   esportiva: [
@@ -201,7 +226,7 @@ const QuestionarioPage: React.FC = () => {
   const { questionarioData, updateQuestionario } = useQuestionario();
   const { step, categoria, respostas } = questionarioData;
   const [erros, setErros] = useState<Record<string, string>>({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const saveQuestionnaire = useSaveQuestionnaire();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -213,7 +238,8 @@ const QuestionarioPage: React.FC = () => {
     if (etapa === 0 && !categoria) return false;
 
     if (etapa === 1 && categoria) {
-      perguntasPorCategoria[categoria].forEach((perguntaObj) => {
+      const perguntas = perguntasPorCategoria[categoria as CategoriaType];
+      perguntas.forEach((perguntaObj: Pergunta) => {
         if (!respostas[perguntaObj.pergunta]?.trim()) {
           novosErros[perguntaObj.pergunta] = "Campo obrigatório";
         }
@@ -240,17 +266,28 @@ const QuestionarioPage: React.FC = () => {
   };
 
   const handleSubmit = async () => {
-    if (!validarEtapa(step)) return;
+    if (!validarEtapa(step) || !categoria) return;
 
-    setIsSubmitting(true);
     try {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      console.log("Dados enviados:", { categoria, respostas });
+      await saveQuestionnaire.mutateAsync({
+        categoria,
+        respostas
+      });
+      
+      // Limpar dados locais após salvar com sucesso
       updateQuestionario({ step: etapas.length - 1 });
+      
+      // Exibir sucesso
+      console.log("Questionário salvo com sucesso!");
+      
+      // Opcional: redirecionar para dashboard após alguns segundos
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 3000);
+      
     } catch (error) {
-      console.error("Erro ao enviar:", error);
-    } finally {
-      setIsSubmitting(false);
+      console.error("Erro ao salvar questionário:", error);
+      // Aqui você poderia mostrar uma mensagem de erro para o usuário
     }
   };
 
@@ -274,7 +311,7 @@ const QuestionarioPage: React.FC = () => {
                   ? `${cat.activeColor} shadow-lg scale-105`
                   : `${cat.borderColor} ${cat.color} hover:shadow-md`
               }`}
-              onClick={() => updateQuestionario({ categoria: cat.value })}
+              onClick={() => updateQuestionario({ categoria: cat.value as CategoriaType })}
             >
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-white shadow-sm">
@@ -330,14 +367,14 @@ const QuestionarioPage: React.FC = () => {
       </div>
     );
   } else if (step === 1 && categoria) {
-    const perguntas = perguntasPorCategoria[categoria] || [];
+    const perguntas = perguntasPorCategoria[categoria as CategoriaType] || [];
     conteudo = (
       <div className="space-y-8">
         <div className="text-center mb-6">
           <p className="text-gray-600 text-lg">Conte-nos mais</p>
         </div>
         <div className="space-y-6">
-          {perguntas.map((p, idx) => (
+          {perguntas.map((p: Pergunta, idx: number) => (
             <div
               key={idx}
               className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm"
@@ -390,7 +427,7 @@ const QuestionarioPage: React.FC = () => {
                     }
                   >
                     <option value="">Selecione uma opção</option>
-                    {p.opcoes?.map((o, i) => (
+                    {p.opcoes?.map((o: string, i: number) => (
                       <option key={i} value={o}>
                         {o}
                       </option>
@@ -457,7 +494,7 @@ const QuestionarioPage: React.FC = () => {
     );
   } else if (step === 2) {
     // Resumo final
-    const perguntas = categoria ? perguntasPorCategoria[categoria] : [];
+    const perguntas = categoria ? perguntasPorCategoria[categoria as CategoriaType] : [];
     conteudo = (
       <div className="space-y-8">
         <div className="text-center mb-6">
@@ -469,7 +506,7 @@ const QuestionarioPage: React.FC = () => {
           </p>
         </div>
         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 border border-gray-200">
-          {perguntas.map((p, idx) => (
+          {perguntas.map((p: Pergunta, idx: number) => (
             <div key={idx} className="flex justify-between">
               <span className="font-medium text-gray-700">{p.pergunta}:</span>
               <span className="text-gray-900">
@@ -483,16 +520,16 @@ const QuestionarioPage: React.FC = () => {
             onClick={handleBack}
             variant="secondary"
             className="flex-1 py-4 border-gray-300 hover:border-gray-400"
-            disabled={isSubmitting}
+            disabled={saveQuestionnaire.isPending}
           >
             Voltar
           </Button>
           <Button
             onClick={handleSubmit}
             className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
-            disabled={isSubmitting}
+            disabled={saveQuestionnaire.isPending}
           >
-            {isSubmitting ? "Salvando..." : "Salvar"}
+            {saveQuestionnaire.isPending ? "Salvando..." : "Salvar"}
           </Button>
         </div>
       </div>
@@ -524,7 +561,7 @@ const QuestionarioPage: React.FC = () => {
           <div className="mt-8 animate-fade-in">{conteudo}</div>
         </Card>
 
-        {!isSubmitting && (
+        {!saveQuestionnaire.isPending && (
           <div className="text-center mt-8">
             <button
               onClick={() => navigate("/dashboard")}
