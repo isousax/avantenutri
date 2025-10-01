@@ -15,7 +15,6 @@ import {
   Download,
   Eye,
   Calendar,
-  DollarSign,
   Hash
 } from 'lucide-react';
 import Card from '../../components/ui/Card';
@@ -199,7 +198,6 @@ export default function BillingHistoryPage(){
                   onClick={load}
                   variant="secondary"
                   className="mt-3 flex items-center gap-2"
-                  size="sm"
                 >
                   <RefreshCw size={14} />
                   Tentar novamente
@@ -373,7 +371,7 @@ export default function BillingHistoryPage(){
               <p className="text-gray-600 text-sm mb-3">
                 Em caso de problemas com pagamentos, entre em contato com nosso suporte.
               </p>
-              <Button variant="secondary" size="sm">
+              <Button variant="secondary">
                 Entrar em contato
               </Button>
             </div>
