@@ -1,6 +1,9 @@
 {
   "rewrites": [
-    { "source": "/sitemap.xml", "destination": "https://login-service.avantenutri.workers.dev/sitemap.xml" },
+    {
+      "source": "/sitemap.xml",
+      "destination": "https://login-service.avantenutri.workers.dev/sitemap.xml"
+    },
     { "source": "/(.*)", "destination": "/" }
   ],
   "headers": [
@@ -13,7 +16,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "frame-ancestors 'none';"
+          "value": "default-src 'self'; script-src 'self' https://sdk.mercadopago.com https://connect.facebook.net https://avantenutri.vercel.app https://avantenutri.com.br; connect-src 'self' https://login-service.avantenutri.workers.dev https://api.avantenutri.com.br https://avantenutri.vercel.app https://avantenutri.com.br; frame-ancestors 'none';"
         }
       ]
     }
