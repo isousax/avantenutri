@@ -20,19 +20,24 @@ export interface QuestionnaireResponse {
 // Hook para buscar questionário do usuário
 export const useGetQuestionnaire = () => {
   const authenticatedFetch = useAuthenticatedFetch();
-
   return useQuery({
     queryKey: ['questionnaire'],
     queryFn: async (): Promise<QuestionnaireResponse | null> => {
       try {
-        const response = await authenticatedFetch(API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', ''));
-        return response;
-      } catch (error) {
-        // Se não existe questionário, retorna null
-        return null;
+        // authenticatedFetch já retorna JSON; garantir formato esperado
+        const data = await authenticatedFetch(
+          API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'login-service.avantenutri.workers.dev', '')
+        );
+        // Backend deve retornar objeto ou erro 404 (capturado e tratado)
+        if (!data) return null;
+        return data as QuestionnaireResponse;
+      } catch (e: any) {
+        // Se 404 ou não encontrado, tratamos como inexistente
+        if (e?.message?.includes('404')) return null;
+        throw e; // outros erros sobem para permitir UI mostrar problema
       }
     },
-    retry: false,
+    retry: 1,
   });
 };
 
@@ -42,24 +47,26 @@ export const useSaveQuestionnaire = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: QuestionnaireData): Promise<QuestionnaireResponse> => {
-      const endpoint = API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
-      const response = await authenticatedFetch(endpoint, {
+    mutationFn: async (input: QuestionnaireData): Promise<QuestionnaireResponse> => {
+      const endpoint = API.QUESTIONNAIRE.replace(
+        import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br',
+        ''
+      );
+      // authenticatedFetch já lança em caso de !ok
+      const data = await authenticatedFetch(endpoint, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category: data.categoria, // Backend espera 'category'
-          data: data.respostas,
-          is_complete: true
+          category: input.categoria,
+          data: input.respostas,
+          is_complete: true,
         }),
       });
-      return response;
+      return data as QuestionnaireResponse;
     },
-    onSuccess: () => {
-      // Invalidar cache do questionário e status
-      queryClient.invalidateQueries({ queryKey: ['questionnaire'] });
+    onSuccess: (data) => {
+      // Atualiza cache imediatamente para evitar segundo loading
+      queryClient.setQueryData(['questionnaire'], data);
       queryClient.invalidateQueries({ queryKey: ['questionnaire-status'] });
       queryClient.invalidateQueries({ queryKey: ['user-progress'] });
     },
@@ -72,19 +79,24 @@ export const useSaveQuestionnaireDraft = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (data: Partial<QuestionnaireData>): Promise<QuestionnaireResponse> => {
-      const response = await authenticatedFetch(API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', ''), {
+    mutationFn: async (partial: Partial<QuestionnaireData>): Promise<QuestionnaireResponse> => {
+      const endpoint = API.QUESTIONNAIRE.replace(
+        import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br',
+        ''
+      );
+      const data = await authenticatedFetch(endpoint, {
         method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category: data.categoria, // Backend espera 'category'
-          data: data.respostas || {},
-          is_complete: false
+          category: partial.categoria,
+            data: partial.respostas || {},
+            is_complete: false,
         }),
       });
-      return response;
+      return data as QuestionnaireResponse;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['questionnaire'] });
+    onSuccess: (data) => {
+      queryClient.setQueryData(['questionnaire'], data);
       queryClient.invalidateQueries({ queryKey: ['questionnaire-status'] });
     },
   });
