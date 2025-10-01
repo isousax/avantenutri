@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from 'react';
-import { useMealLogs } from './useMealLogs';
+import { useMealData } from './useMealData';
 import { useMetasAutomaticas } from './useMetasAutomaticas';
 
 export interface ProgressoInteligente {
@@ -23,7 +23,15 @@ export interface MetasInteligentes {
  * e sincroniza metas personalizadas quando necessário
  */
 export function useMealLogsInteligente(defaultDays = 7) {
-  const mealLogs = useMealLogs(defaultDays);
+  const mealData = useMealData(defaultDays);
+  const mealLogs = {
+    logs: mealData.logs,
+    goals: mealData.goals,
+    progress: mealData.progress,
+    days: mealData.summary?.days || [],
+    stats: mealData.stats,
+    setGoals: mealData.setGoals,
+  };
   const { metas, metasCalculadas } = useMetasAutomaticas();
   
   // Metas finais (prioridade: manual > automática > padrão)

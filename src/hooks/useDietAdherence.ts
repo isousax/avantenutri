@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useMealLogs } from './useMealLogs';
+import { useMealData } from './useMealData';
 
 export interface DietAdherence {
   percentage: number; // 0-100
@@ -14,7 +14,10 @@ export function useDietAdherence(days = 7): {
   loading: boolean;
   error: string | null;
 } {
-  const { days: summaryDays, loading: mealsLoading, error: mealsError } = useMealLogs(days);
+  const mealData = useMealData(days);
+  const summaryDays = mealData.summary?.days || [];
+  const mealsLoading = mealData.loading;
+  const mealsError = mealData.error as any as string | null;
   const [adherence, setAdherence] = useState<DietAdherence | null>(null);
 
   const calculateAdherence = useCallback(() => {

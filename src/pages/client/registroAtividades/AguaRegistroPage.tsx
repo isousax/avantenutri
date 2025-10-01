@@ -5,26 +5,12 @@ import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
 import { useWaterLogsInteligente } from "../../../hooks/useWaterLogsInteligente";
 import { ProgressoHidratacao } from "../../../components/dashboard/ProgressoHidratacao";
+import DataSection from '../../../components/ui/DataSection';
+import { shouldShowSkeleton } from '../../../utils/loadingHelpers';
 import { useI18n, formatNumber } from "../../../i18n";
 import { useToast } from "../../../components/ui/ToastProvider";
 import { motion, AnimatePresence } from "framer-motion";
-
-import {
-  ArrowLeft,
-  Plus,
-  Minus,
-  Target,
-  Trophy,
-  TrendingUp,
-  Calendar,
-  ChevronDown,
-  Droplets,
-  GlassWater,
-  Settings,
-  Check,
-  X,
-  Zap,
-} from "lucide-react";
+import { ArrowLeft, Plus, Minus, Target, Trophy, TrendingUp, Calendar, ChevronDown, Droplets, GlassWater, Settings, Check, X, Zap } from '../../../components/icons';
 
 const AguaRegistroPage: React.FC = () => {
   const { t } = useI18n();
@@ -36,8 +22,6 @@ const AguaRegistroPage: React.FC = () => {
   const {
     logs,
     add,
-    avgPerDay,
-    bestDay,
     summaryDays,
     metasFinais,
     progressoHoje,
@@ -269,7 +253,14 @@ const AguaRegistroPage: React.FC = () => {
         </Card>
 
         {/* Progresso de Hidratação Inteligente - ABAIXO DO REGISTRO */}
-        <ProgressoHidratacao />
+        <DataSection
+          isLoading={shouldShowSkeleton(summaryDays == null && logs.length === 0, summaryDays || logs)}
+          error={null}
+          skeletonLines={5}
+          skeletonClassName="h-48"
+        >
+          <ProgressoHidratacao />
+        </DataSection>
 
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Painel Principal - Metas e Informações */}
@@ -487,13 +478,8 @@ const AguaRegistroPage: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-bold text-blue-600">
-                          {avgPerDay
-                            ? formatNumber(
-                                +(avgPerDay / mlPorCopo).toFixed(1),
-                                "pt"
-                              )
-                            : "0"}{" "}
-                          copos
+                          {/* Média diária removida (avgPerDay indisponível) */}
+                          -- copos
                         </span>
                       </div>
 
@@ -527,13 +513,8 @@ const AguaRegistroPage: React.FC = () => {
                           </span>
                         </div>
                         <span className="font-bold text-purple-600">
-                          {bestDay
-                            ? formatNumber(
-                                Math.round(bestDay.amount / mlPorCopo),
-                                "pt"
-                              )
-                            : 0}{" "}
-                          copos
+                          {/* Melhor dia removido (bestDay indisponível) */}
+                          -- copos
                         </span>
                       </div>
                     </motion.div>

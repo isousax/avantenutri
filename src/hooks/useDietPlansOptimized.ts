@@ -216,3 +216,38 @@ export const useDietPlans = () => {
     getDetail,
   };
 };
+
+export function prefetchDietPlans(qc: ReturnType<typeof useQueryClient>, fetcher: (input: RequestInfo, init?: RequestInit)=>Promise<Response>, options: { archived?: boolean } = {}) {
+  const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+  const params = new URLSearchParams();
+  if (options.archived !== undefined) params.append('archived', options.archived.toString());
+  const url = params.toString() ? `${endpoint}?${params}` : endpoint;
+  qc.prefetchQuery({
+    queryKey: ['diet-plans', options],
+    queryFn: async () => {
+      const r = await fetcher(url);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Falha ao carregar planos de dieta');
+      return data.results || [];
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function prefetchDietPlanDetail(qc: ReturnType<typeof useQueryClient>, fetcher: (input: RequestInfo, init?: RequestInit)=>Promise<Response>, planId: string, includeData = false) {
+  if (!planId) return;
+  const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+  const params = new URLSearchParams();
+  if (includeData) params.append('include_data','true');
+  const url = params.toString() ? `${endpoint}/${planId}?${params}` : `${endpoint}/${planId}`;
+  qc.prefetchQuery({
+    queryKey: ['diet-plan-detail', planId, includeData],
+    queryFn: async () => {
+      const r = await fetcher(url);
+      const data = await r.json();
+      if (!r.ok) throw new Error(data.error || 'Falha ao carregar detalhes do plano');
+      return data.plan;
+    },
+    staleTime: 10 * 60 * 1000,
+  });
+}

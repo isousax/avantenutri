@@ -1,7 +1,7 @@
 import React from 'react';
 import { useMetasAutomaticas } from '../../hooks/useMetasAutomaticas';
-import { useMealLogs } from '../../hooks/useMealLogs';
-import { useWaterLogs } from '../../hooks/useWaterLogs';
+import { useMealData } from '../../hooks/useMealData';
+import { useWaterData } from '../../hooks/useWaterData';
 
 interface ProgressoNutricionalProps {
   className?: string;
@@ -9,12 +9,15 @@ interface ProgressoNutricionalProps {
 
 const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className = '' }) => {
   const { metas, metasCalculadas } = useMetasAutomaticas();
-  const { days } = useMealLogs(1); // Apenas hoje
-  const { totalToday, cupSize } = useWaterLogs(1);
+  // Reutilizar queries reativas (1 dia para granularidade). Caso deseje evitar nova query, aceitar props no futuro.
+  const meal = useMealData(1);
+  const water = useWaterData(1);
+  const days = meal.summary?.days || [];
+  const totalToday = water.totalToday;
   
   // Dados de hoje
   const hoje = days[0];
-  const aguaHoje = (totalToday * cupSize) || 0; // converter copos para ml
+  const aguaHoje = (totalToday) || 0; // totalToday já em ml no hook atual
   
   // Calcular percentuais
   const progressos = {

@@ -71,6 +71,7 @@ export const API = {
   // Notifications
   NOTIFICATIONS: `${API_AUTH_BASE}/notifications`, // GET list user notifications
   notificationRead: (id: string) => `${API_AUTH_BASE}/notifications/${id}/read`, // POST mark as read
+  NOTIFICATIONS_READ_ALL: `${API_AUTH_BASE}/notifications/read-all`, // POST mark all as read
   // Blog
   BLOG_POSTS: `${API_AUTH_BASE}/blog/posts`, // GET list posts
   BLOG_CATEGORIES: `${API_AUTH_BASE}/blog/categories`, // GET categories

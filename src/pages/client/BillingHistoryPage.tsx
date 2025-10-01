@@ -1,71 +1,24 @@
-import { useEffect, useState, useCallback } from 'react';
-import { API } from '../../config/api';
-import { useAuth } from '../../contexts/useAuth';
+import { useCallback } from 'react';
 import { useI18n } from '../../i18n';
 import { SEO } from '../../components/comum/SEO';
-import { useToast } from '../../components/ui/ToastProvider';
-import {
-  ArrowLeft,
-  RefreshCw,
-  CreditCard,
-  CheckCircle,
-  Clock,
-  XCircle,
-  AlertTriangle,
-  Download,
-  Eye,
-  Calendar,
-  Hash
-} from 'lucide-react';
+import { ArrowLeft, Calendar } from '../../components/icons';
+import { RefreshCw, CreditCard, CheckCircle, Clock, XCircle, AlertTriangle, Download, Eye, Hash } from 'lucide-react';
+import StatusPill, { getStatusTone } from '../../components/ui/StatusPill';
 import Card from '../../components/ui/Card';
+import { SkeletonCard } from '../../components/ui/Loading';
+import DataSection from '../../components/ui/DataSection';
+import { shouldShowSkeleton } from '../../utils/loadingHelpers';
 import Button from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
-
-interface Payment { 
-  id: string; 
-  plan_id: string; 
-  amount_cents: number; 
-  currency: string; 
-  status: string; 
-  status_detail?: string | null; 
-  external_id?: string | null; 
-  processed_at?: string | null; 
-  created_at: string; 
-}
+import { useBillingHistory } from '../../hooks/useBillingHistory';
 
 export default function BillingHistoryPage(){
-  const { getAccessToken } = useAuth();
   const { locale, t } = useI18n();
-  const { push } = useToast();
+  // Mantido caso queiramos notificar em refetch manual; não usado agora
+  // const { push } = useToast();
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(true);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [error, setError] = useState<string | null>(null);
-
-  const load = useCallback(async ()=> {
-    setLoading(true); 
-    setError(null);
-    try {
-      const token = await getAccessToken(); 
-      if (!token) { 
-        setError(t('auth.error.loginRequired')); 
-        return; 
-      }
-      const pRes = await fetch(API.BILLING_PAYMENTS, { 
-        headers: { Authorization: 'Bearer '+token }
-      });
-      const pJson = await pRes.json();
-      if(!pRes.ok) throw new Error(pJson.error || t('billing.history.error.payments'));
-      setPayments(pJson.payments || []);
-    } catch (e:any) {
-      setError(e.message || t('billing.history.error.generic'));
-      push({ type: 'error', message: e.message || t('billing.history.error.generic') });
-    } finally { 
-      setLoading(false); 
-    }
-  }, [getAccessToken, t, push]);
-
-  useEffect(()=> { load(); }, [load]);
+  const { payments, loading, error, refetch, isFetching } = useBillingHistory();
+  const load = useCallback(()=> { refetch(); }, [refetch]);
 
   function fmtCurrency(cents:number){
     return new Intl.NumberFormat(locale==='pt'?'pt-BR':'en-US', { 
@@ -170,30 +123,28 @@ export default function BillingHistoryPage(){
             onClick={load}
             variant="secondary"
             className="flex items-center gap-2"
-            disabled={loading}
+            disabled={loading || isFetching}
           >
             <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
             {t('billing.history.reload')}
           </Button>
         </div>
 
-        {/* Estados de Loading e Error */}
-        {loading && (
-          <Card className="p-8 text-center">
-            <div className="flex flex-col items-center gap-3">
-              <RefreshCw size={32} className="animate-spin text-blue-500" />
-              <p className="text-gray-600 font-medium">{t('billing.history.loading')}</p>
-            </div>
-          </Card>
-        )}
-
-        {error && !loading && (
+        {/* Lista de Pagamentos */}
+        <DataSection
+          isLoading={shouldShowSkeleton(loading, payments)}
+          error={error ? error : null}
+          skeletonLines={4}
+          skeletonClassName="h-32"
+          customSkeleton={<div className="space-y-4">{Array.from({length:3}).map((_,i)=>(<SkeletonCard key={i} lines={4} className="h-32" />))}</div>}
+        >
+  {error && !loading && (
           <Card className="p-6 border-l-4 border-red-500 bg-red-50">
             <div className="flex items-start gap-3">
               <AlertTriangle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
               <div>
                 <h3 className="font-semibold text-red-800 mb-1">Erro ao carregar</h3>
-                <p className="text-red-700 text-sm">{error}</p>
+                <p className="text-red-700 text-sm">{String(error)}</p>
                 <Button
                   onClick={load}
                   variant="secondary"
@@ -206,9 +157,7 @@ export default function BillingHistoryPage(){
             </div>
           </Card>
         )}
-
-        {/* Lista de Pagamentos */}
-        {!loading && !error && (
+  {!loading && !error && (
           <div className="space-y-4">
             {payments.length === 0 ? (
               <Card className="p-8 text-center">
@@ -247,9 +196,10 @@ export default function BillingHistoryPage(){
                             <h3 className="font-semibold text-gray-900 truncate">
                               {payment.plan_id}
                             </h3>
-                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${statusConfig.bgColor} ${statusConfig.color} border ${statusConfig.borderColor}`}>
-                              {statusConfig.label}
-                            </span>
+                            <StatusPill 
+                              label={statusConfig.label}
+                              tone={getStatusTone(statusConfig.label)}
+                            />
                           </div>
                           
                           <div className="flex items-center gap-4 text-sm text-gray-600">
@@ -324,7 +274,8 @@ export default function BillingHistoryPage(){
               })
             )}
           </div>
-        )}
+  )}
+  </DataSection>
 
         {/* Resumo Estatístico */}
         {payments.length > 0 && (

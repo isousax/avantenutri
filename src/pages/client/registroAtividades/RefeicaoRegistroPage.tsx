@@ -4,44 +4,34 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
 import { useMealLogsInteligente } from '../../../hooks/useMealLogsInteligente';
+import { useMealData } from '../../../hooks/useMealData';
 import MiniSparkline from '../../../components/ui/MiniSparkline';
 import { useI18n, formatNumber } from '../../../i18n';
 import ConfirmDialog from '../../../components/ui/ConfirmDialog';
 import SeletorAlimentos from '../../../components/ui/SeletorAlimentos';
 import ProgressoNutricional from '../../../components/dashboard/ProgressoNutricional';
+import DataSection from '../../../components/ui/DataSection';
+import { shouldShowSkeleton } from '../../../utils/loadingHelpers';
 import type { Alimento } from '../../../data/alimentos';
 import { calcularNutricao } from '../../../data/alimentos';
-import {
-  ArrowLeft,
-  Plus,
-  Settings,
-  Edit3,
-  Trash2,
-  Check,
-  X,
-  Calendar,
-  Utensils,
-  Target,
-  BarChart3,
-  Clock,
-  Search,
-  Scale
-} from 'lucide-react';
+import { ArrowLeft, Plus, Settings, Check, X, Calendar } from '../../../components/icons';
+import { Trash2, Target, BarChart3, Clock, Search, Scale, Utensils, Pencil as Edit3 } from 'lucide-react';
 import { formatDateSafe } from '../../../utils/formatDate';
 
 const mealTypes = ['breakfast','lunch','dinner','snack','other'] as const;
 
 const RefeicaoRegistroPage: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    create, 
-    logs, 
-    days, 
-    metasFinais, 
-    setGoals, 
-    patch, 
-    remove
-  } = useMealLogsInteligente(7);
+  const inteligente = useMealLogsInteligente(7);
+  const mealBase = useMealData(7);
+  const logs = mealBase.logs;
+  const daysData = mealBase.summary?.days || [];
+  const metasFinais = inteligente.metasFinais || mealBase.goals || {} as any;
+  const create = mealBase.create;
+  const patch = mealBase.patch;
+  const remove = mealBase.remove;
+  const setGoals = mealBase.setGoals;
+  const days = mealBase.days; // número de dias; usamos daysData para arrays
   const { t, locale } = useI18n();
   
   // Estados para metas
@@ -150,13 +140,13 @@ const RefeicaoRegistroPage: React.FC = () => {
   
   const saveEdit = async ()=> { 
     if(!editingId) return; 
-    await patch(editingId,{ 
-      description: editDesc, 
+    await patch({ id: editingId, data: { 
+      description: editDesc || undefined, 
       calories: editCal?Number(editCal):undefined, 
       protein_g: editProtein?Number(editProtein):undefined, 
       carbs_g: editCarbs?Number(editCarbs):undefined, 
       fat_g: editFat?Number(editFat):undefined 
-    }); 
+    }}); 
     setEditingId(null); 
   };
   
@@ -248,7 +238,14 @@ const RefeicaoRegistroPage: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Progresso Nutricional em Tempo Real */}
-        <ProgressoNutricional />
+        <DataSection
+          isLoading={shouldShowSkeleton(logs.length === 0, logs)}
+          error={null}
+          skeletonLines={4}
+          skeletonClassName="h-40"
+        >
+          <ProgressoNutricional />
+        </DataSection>
 
         {/* Formulário de registro modernizado */}
         <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
@@ -266,7 +263,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             <form onSubmit={submit} className="space-y-6">
               {/* Tipo de refeição */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                   <Clock size={16} className="text-gray-500" />
                   Tipo de Refeição
                 </label>
@@ -284,7 +281,7 @@ const RefeicaoRegistroPage: React.FC = () => {
               {/* Alimentos selecionados */}
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <label className="block text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                     <Search size={16} className="text-gray-500" />
                     Alimentos da Refeição
                   </label>
@@ -408,7 +405,7 @@ const RefeicaoRegistroPage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h2 className="text-lg font-semibold text-gray-900">Metas e Estatísticas</h2>
-                <p className="text-sm text-gray-500">Progresso dos últimos {days.length} dias</p>
+                <p className="text-sm text-gray-500">Progresso dos últimos {days} dias</p>
               </div>
               {!editingGoals ? (
                 <button 
@@ -520,7 +517,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                         {progress.calories != null ? progress.calories + '%' : '—'}
                       </span>
                     </div>
-                    <MiniSparkline values={days.map(d => d.calories)} stroke="#f97316" />
+                    <MiniSparkline values={daysData.map((d:any) => d.calories)} stroke="#f97316" />
                     {goals.calorias && (
                       <div className="h-2 mt-3 bg-gray-200 rounded-full overflow-hidden">
                         <div 
@@ -543,7 +540,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                         {progress.protein_g != null ? progress.protein_g + '%' : '—'}
                       </span>
                     </div>
-                    <MiniSparkline values={days.map(d => d.protein_g)} stroke="#10b981" />
+                    <MiniSparkline values={daysData.map((d:any) => d.protein_g)} stroke="#10b981" />
                     {goals.proteina && (
                       <div className="h-2 mt-3 bg-gray-200 rounded-full overflow-hidden">
                         <div 
@@ -566,7 +563,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                         {progress.carbs_g != null ? progress.carbs_g + '%' : '—'}
                       </span>
                     </div>
-                    <MiniSparkline values={days.map(d => d.carbs_g)} stroke="#3b82f6" />
+                    <MiniSparkline values={daysData.map((d:any) => d.carbs_g)} stroke="#3b82f6" />
                     {goals.carboidratos && (
                       <div className="h-2 mt-3 bg-gray-200 rounded-full overflow-hidden">
                         <div 
@@ -589,7 +586,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                         {progress.fat_g != null ? progress.fat_g + '%' : '—'}
                       </span>
                     </div>
-                    <MiniSparkline values={days.map(d => d.fat_g)} stroke="#ec4899" />
+                    <MiniSparkline values={daysData.map((d:any) => d.fat_g)} stroke="#ec4899" />
                     {goals.gordura && (
                       <div className="h-2 mt-3 bg-gray-200 rounded-full overflow-hidden">
                         <div 

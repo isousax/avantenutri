@@ -1,4 +1,7 @@
 import { useMemo } from 'react';
+// Migrado para reutilizar cache do React Query (useWeightData)
+// Mantemos fallback ao hook antigo caso necessário em edge cases
+import { useWeightData } from './useWeightData';
 import { useWeightLogs } from './useWeightLogs';
 import { useMetasAutomaticas } from './useMetasAutomaticas';
 
@@ -67,7 +70,21 @@ export interface PredicoesPeso {
  * Combina dados históricos com IA para insights e previsões
  */
 export function useWeightLogsInteligente(days: number = 90) {
-  const weightLogs = useWeightLogs(days);
+  // Primeiro tenta usar novo hook com cache compartilhado
+  const weightData = useWeightData(Math.min(days, 120));
+  // Adaptador para interface antiga esperada mais abaixo
+  const weightLogs = weightData.logs.length > 0 || weightData.loading || weightData.error == null ? {
+    logs: weightData.logs.map(l => ({ id: l.id, log_date: l.log_date, weight_kg: l.weight_kg, note: l.note, created_at: l.created_at, updated_at: l.updated_at })),
+    latest: weightData.latest ? { date: weightData.latest.date, weight_kg: weightData.latest.weight_kg } : null,
+    goal: weightData.goal,
+    summary: weightData.summary,
+    series: weightData.series?.map(s=> ({ date: s.date, weight_kg: s.weight_kg })),
+    diff_kg: weightData.diff_kg,
+    diff_percent: weightData.diff_percent,
+    trend_slope: weightData.trend_slope,
+    loading: weightData.loading,
+    error: weightData.error,
+  } : useWeightLogs(days); // fallback (se nenhum dado e erro anterior)
   const { dadosPerfil, metasCalculadas } = useMetasAutomaticas();
 
   // Calcular IMC e status de saúde

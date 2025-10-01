@@ -8,6 +8,13 @@ import { QuestionarioProvider } from "./contexts/QuestionarioProvider";
 import { queryClient } from './lib/queryClient';
 import "./index.css";
 import App from "./App";
+import DevQueryPanel from './panels/DevQueryPanel';
+import { API } from './config/api';
+
+if (import.meta.env.DEV) {
+  // eslint-disable-next-line no-console
+  console.log('[BOOT] API base:', API.API_AUTH_BASE);
+}
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>
@@ -16,6 +23,7 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         <QuestionarioProvider>
           <BrowserRouter>
             <App />
+            {import.meta.env.DEV && <DevQueryPanel />}
             <ReactQueryDevtools initialIsOpen={false} />
           </BrowserRouter>
         </QuestionarioProvider>

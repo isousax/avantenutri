@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "../../contexts";
 import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
@@ -11,11 +11,6 @@ import { SEO } from "../../components/comum/SEO";
 import Perfil from "../../components/dashboard/Perfil";
 import Consultas from "../../components/dashboard/Consultas";
 import Suporte from "../../components/dashboard/Suporte";
-import { useDietPlans } from "../../hooks/useDietPlans";
-import { useWeightLogs } from "../../hooks/useWeightLogs";
-import { useMealLogs } from "../../hooks/useMealLogs";
-import { useWaterLogs } from "../../hooks/useWaterLogs";
-import { useDietAdherence } from "../../hooks/useDietAdherence";
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
@@ -28,7 +23,15 @@ import {
   CalendarIcon,
   BillingIcon,
 } from "../../components/dashboard/icon";
-import { LoadingState, SkeletonCard } from "../../components/ui/Loading";
+import { SkeletonCard } from "../../components/ui/Loading";
+import DataSection from '../../components/ui/DataSection';
+import { useWeightData } from "../../hooks/useWeightData"; // mantido para WeightSection isolada
+import { useDietPlans } from "../../hooks/useDietPlans";
+import { useDashboardData } from "../../hooks/useDashboardData";
+import { useQueryClient } from '@tanstack/react-query';
+import Prefetch, { logPrefetchMetrics } from '../../utils/prefetch';
+import { shouldShowSkeleton } from '../../utils/loadingHelpers';
+import { useIntersectionPrefetch } from '../../hooks/useIntersectionPrefetch';
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -203,6 +206,7 @@ const BottomNav: React.FC<{
 const WeightSection: React.FC<{
   heightCm?: number;
 }> = ({ heightCm }) => {
+  // Substituído para novo hook baseado em React Query (cache compartilhado entre páginas)
   const {
     latest: latestWeight,
     diff_kg: weightDiff,
@@ -212,7 +216,7 @@ const WeightSection: React.FC<{
     series,
     loading,
     error,
-  } = useWeightLogs(30);
+  } = useWeightData(30); // antes: useWeightLogs(30)
 
   const [editingGoal, setEditingGoal] = React.useState(false);
   const [goalInput, setGoalInput] = React.useState<string>(
@@ -251,9 +255,12 @@ const WeightSection: React.FC<{
     : undefined;
 
   return (
-    <LoadingState isLoading={loading} 
-      error={error ? new Error(error) : null}
-      loadingComponent={<SkeletonCard lines={3} className="h-32" />}>
+    <DataSection
+      isLoading={loading}
+      error={error ? (error as Error) : null}
+      skeletonLines={3}
+      skeletonClassName="h-32"
+    >
       <Card>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
@@ -340,13 +347,24 @@ const WeightSection: React.FC<{
           />
         </div>
       </Card>
-    </LoadingState>
+    </DataSection>
   );
 };
 
 const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  // Hover timers for deep (includeData) diet plan prefetch
+  const dietHoverTimers = useRef<Record<string, number>>({});
+
+  // Cleanup any pending timers on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(dietHoverTimers.current).forEach((t) => clearTimeout(t));
+      dietHoverTimers.current = {};
+    };
+  }, []);
 
   // First login redirect hook
   useFirstLoginRedirect();
@@ -365,6 +383,16 @@ const DashboardPage: React.FC = () => {
   >("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // Prefetch baseado em visibilidade para dietas (mobile support)
+  useIntersectionPrefetch('[data-plan-id]', { rootMargin: '200px 0px', deepDelayMs: 700 });
+
+  // Log métricas de prefetch ao trocar aba em dev
+  useEffect(() => {
+    if ((import.meta as any).env?.DEV) {
+      logPrefetchMetrics();
+    }
+  }, [activeTab]);
+
   // Diet Plans integration
   const {
     plans,
@@ -376,15 +404,14 @@ const DashboardPage: React.FC = () => {
     revising,
     error: dietError,
   } = useDietPlans();
-  const { adherence } = useDietAdherence(7); // últimos 7 dias
-
-  // Dynamic data for progress bars
-  const { progress: mealProgress, goals: mealGoals } = useMealLogs(1);
-  const { totalToday: waterToday, dailyGoalCups } = useWaterLogs(1);
-  const { latest: latestWeight, goal } = useWeightLogs(30);
-  const progressPercent = dailyGoalCups
-    ? Math.min((waterToday / dailyGoalCups) * 100, 100)
-    : 0;
+  const { meals, water, weight: weightAgg, adherence, loading: dashLoading, error: dashError } = useDashboardData();
+  const mealProgress = meals.progress;
+  const mealGoals = meals.goals;
+  const waterToday = water.totalToday;
+  const dailyGoalCups = water.dailyGoalCups;
+  const latestWeight = weightAgg.latest;
+  const goal = weightAgg.goal;
+  // progressPercent era usado para trend visual; removido ao padronizar LoadingState
 
   // Questionário para altura e IMC
   const { questionarioData } = useQuestionario();
@@ -689,7 +716,7 @@ const DashboardPage: React.FC = () => {
 
           {/* Navigation */}
           <nav className="flex-1 p-4">
-            {[
+            {[ 
               { id: "overview", label: "Visão Geral", icon: "📊" },
               { id: "perfil", label: "Meu Perfil", icon: "👤" },
               { id: "consultas", label: "Consultas", icon: "📅" },
@@ -710,6 +737,13 @@ const DashboardPage: React.FC = () => {
                     setActiveTab(item.id as any);
                   }
                   setSidebarOpen(false);
+                }}
+                onMouseEnter={() => {
+                  const ctx = { qc, fetcher: fetch } as const;
+                  if (item.id === 'overview') Prefetch.overview(ctx);
+                  else if (item.id === 'exercicios') Prefetch.exercicios(ctx);
+                  else if (item.id === 'dietas') Prefetch.dietas(ctx);
+                  else if (item.id === 'notificacoes') Prefetch.notificacoes(ctx);
                 }}
                 className={`w-full flex items-center px-4 py-3.5 rounded-2xl mb-2 transition-all duration-300 ${
                   activeTab === item.id
@@ -830,6 +864,7 @@ const DashboardPage: React.FC = () => {
                       <div
                         key={index}
                         onClick={action.onClick}
+                        onMouseEnter={() => Prefetch.quickAction({ qc, fetcher: fetch }, action.label)}
                         className="flex-none w-40 touch-manipulation active:scale-95 transition-transform"
                       >
                         <div className="bg-white rounded-2xl p-4 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col group">
@@ -870,6 +905,7 @@ const DashboardPage: React.FC = () => {
                     <div
                       key={index}
                       onClick={action.onClick}
+                      onMouseEnter={() => Prefetch.quickAction({ qc, fetcher: fetch }, action.label)}
                       className="touch-manipulation active:scale-95 transition-transform"
                     >
                       <div className="bg-white rounded-2xl p-5 shadow-lg border border-gray-100 hover:shadow-xl transition-all duration-300 h-full flex flex-col group">
@@ -946,74 +982,92 @@ const DashboardPage: React.FC = () => {
               {/* Métricas Principais */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <WeightSection heightCm={heightCm} />
-                <StatsCard
-                  title="Hidratação"
-                  value={`${waterToday} copos`}
-                  description={
-                    dailyGoalCups ? `Meta: ${dailyGoalCups} copos` : "Sem meta"
-                  }
-                  icon="water"
-                  trend={{
-                    value: progressPercent,
-                    isPositive: progressPercent >= 50,
-                  }}
-                  gradient="to-blue-400 from-emerald-300"
-                />
-                <StatsCard
-                  title="Adesão à Dieta"
-                  value={adherence ? `${adherence.percentage}%` : "-"}
-                  description={
-                    adherence
-                      ? `${adherence.daysCovered}/${adherence.totalDays} dias com registros`
-                      : "Registre suas refeições"
-                  }
-                  icon="stats"
-                  gradient="from-purple-300 to-indigo-600"
-                />
+                <DataSection
+                  isLoading={shouldShowSkeleton(dashLoading, waterToday, dailyGoalCups)}
+                  error={dashError ? (dashError as Error) : null}
+                  skeletonLines={3}
+                  skeletonClassName="h-32"
+                >
+                  {(() => {
+                    const parts: string[] = [];
+                    if (dailyGoalCups) parts.push(`Meta: ${dailyGoalCups} copos`);
+                    if (water.avgPerDay) {
+                      const avgCups = water.cupSize ? Math.round(water.avgPerDay / water.cupSize) : null;
+                      parts.push(`Média: ${avgCups ?? '-'} copos/dia`);
+                    }
+                    if (water.bestDay) {
+                      const bestCups = water.cupSize ? Math.round(water.bestDay.amount / water.cupSize) : null;
+                      parts.push(`Melhor: ${bestCups ?? '-'} copos`);
+                    }
+                    const cups = water.cupSize ? Math.round(waterToday / water.cupSize) : null;
+                    return <StatsCard title="Hidratação" value={`${waterToday} ml${cups!=null?` (${cups} copos)`:''}`} description={parts.length ? parts.join(' • ') : 'Sem meta'} icon="water" gradient="to-blue-400 from-emerald-300" />;
+                  })()}
+                </DataSection>
+                <DataSection
+                  isLoading={shouldShowSkeleton(dashLoading, adherence)}
+                  error={dashError ? (dashError as Error) : null}
+                  skeletonLines={3}
+                  skeletonClassName="h-32"
+                >
+                  <StatsCard
+                    title="Adesão à Dieta"
+                    value={adherence ? `${adherence.percentage}%` : "-"}
+                    description={adherence ? `${adherence.daysCovered}/${adherence.totalDays} dias com registros` : "Registre suas refeições"}
+                    icon="stats"
+                    gradient="from-purple-300 to-indigo-600"
+                  />
+                </DataSection>
               </div>
 
               {/* Progress and Diet Plans */}
               <div className="grid gap-6 lg:grid-cols-2">
-                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
-                  <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                    <span>🎯</span>
-                    Progresso dos Objetivos
-                  </h3>
-                  <div className="space-y-4">
-                    <Progress
-                      current={latestWeight?.weight_kg || 0}
-                      target={goal || 70}
-                      label="Meta de Peso"
-                      unit="kg"
-                      size="sm"
-                      gradient="from-green-500 to-emerald-600"
-                    />
-                    <Progress
-                      current={mealProgress?.calories || 0}
-                      target={mealGoals?.calories || 2000}
-                      label="Meta de Calorias"
-                      unit="kcal"
-                      size="sm"
-                      gradient="from-amber-500 to-orange-600"
-                    />
-                    <Progress
-                      current={waterToday}
-                      target={dailyGoalCups || 8}
-                      label="Copos de Água"
-                      unit=""
-                      size="sm"
-                      gradient="from-blue-500 to-cyan-600"
-                    />
-                    <Progress
-                      current={adherence?.percentage || 0}
-                      target={100}
-                      label="Adesão à Dieta"
-                      unit="%"
-                      size="sm"
-                      gradient="from-purple-500 to-indigo-600"
-                    />
-                  </div>
-                </Card>
+                <DataSection
+                  isLoading={shouldShowSkeleton(dashLoading, latestWeight, mealProgress, waterToday)}
+                  error={dashError ? (dashError as Error) : null}
+                  skeletonLines={6}
+                  skeletonClassName="h-64"
+                >
+                  <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                    <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                      <span>🎯</span>
+                      Progresso dos Objetivos
+                    </h3>
+                    <div className="space-y-4">
+                      <Progress
+                        current={latestWeight?.weight_kg || 0}
+                        target={goal || 70}
+                        label="Meta de Peso"
+                        unit="kg"
+                        size="sm"
+                        gradient="from-green-500 to-emerald-600"
+                      />
+                      <Progress
+                        current={mealProgress?.calories || 0}
+                        target={mealGoals?.calories || 2000}
+                        label="Meta de Calorias"
+                        unit="kcal"
+                        size="sm"
+                        gradient="from-amber-500 to-orange-600"
+                      />
+                      <Progress
+                        current={waterToday}
+                        target={dailyGoalCups || 8}
+                        label="Copos de Água"
+                        unit=""
+                        size="sm"
+                        gradient="from-blue-500 to-cyan-600"
+                      />
+                      <Progress
+                        current={adherence?.percentage || 0}
+                        target={100}
+                        label="Adesão à Dieta"
+                        unit="%"
+                        size="sm"
+                        gradient="from-purple-500 to-indigo-600"
+                      />
+                    </div>
+                  </Card>
+                </DataSection>
 
                 <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
                   <div className="flex items-center justify-between mb-4">
@@ -1031,14 +1085,37 @@ const DashboardPage: React.FC = () => {
                   </div>
                   <div className="space-y-4">
                     {plans.slice(0, 3).map((p) => (
-                      <DietPlanCard
+                      <div
                         key={p.id}
-                        diet={{ ...p, isCurrent: p.status === "active" }}
-                        onView={openDetail}
-                        onRevise={handleRevise}
-                        canEdit={canEditDiets}
-                        locale={locale}
-                      />
+                        data-plan-id={p.id}
+                        onMouseEnter={() => {
+                          const ctx = { qc, fetcher: fetch } as const;
+                          // Basic detail (metadata & versions list)
+                          Prefetch.dietPlanDetail(ctx, p.id);
+                          // Schedule deep detail (includeData) after sustained hover if not already cached
+                          if (!qc.getQueryState(["diet-plan-detail", p.id, true])) {
+                            if (dietHoverTimers.current[p.id]) clearTimeout(dietHoverTimers.current[p.id]);
+                            dietHoverTimers.current[p.id] = window.setTimeout(() => {
+                              Prefetch.dietPlanDetail(ctx, p.id, true);
+                              delete dietHoverTimers.current[p.id];
+                            }, 700);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          if (dietHoverTimers.current[p.id]) {
+                            clearTimeout(dietHoverTimers.current[p.id]);
+                            delete dietHoverTimers.current[p.id];
+                          }
+                        }}
+                      >
+                        <DietPlanCard
+                          diet={{ ...p, isCurrent: p.status === "active" }}
+                          onView={openDetail}
+                          onRevise={handleRevise}
+                          canEdit={canEditDiets}
+                          locale={locale}
+                        />
+                      </div>
                     ))}
                     {plans.length === 0 && (
                       <div className="text-center py-8 bg-gradient-to-br from-gray-50 to-gray-100/50 rounded-2xl">
@@ -1103,14 +1180,35 @@ const DashboardPage: React.FC = () => {
                   ))
                 )}
                 {!creating && plans.map((diet) => (
-                  <DietPlanCard
+                  <div
                     key={diet.id}
-                    diet={{ ...diet, isCurrent: diet.status === "active" }}
-                    onView={openDetail}
-                    onRevise={handleRevise}
-                    canEdit={canEditDiets}
-                    locale={locale}
-                  />
+                    data-plan-id={diet.id}
+                    onMouseEnter={() => {
+                      const ctx = { qc, fetcher: fetch } as const;
+                      Prefetch.dietPlanDetail(ctx, diet.id);
+                      if (!qc.getQueryState(["diet-plan-detail", diet.id, true])) {
+                        if (dietHoverTimers.current[diet.id]) clearTimeout(dietHoverTimers.current[diet.id]);
+                        dietHoverTimers.current[diet.id] = window.setTimeout(() => {
+                          Prefetch.dietPlanDetail(ctx, diet.id, true);
+                          delete dietHoverTimers.current[diet.id];
+                        }, 700);
+                      }
+                    }}
+                    onMouseLeave={() => {
+                      if (dietHoverTimers.current[diet.id]) {
+                        clearTimeout(dietHoverTimers.current[diet.id]);
+                        delete dietHoverTimers.current[diet.id];
+                      }
+                    }}
+                  >
+                    <DietPlanCard
+                      diet={{ ...diet, isCurrent: diet.status === "active" }}
+                      onView={openDetail}
+                      onRevise={handleRevise}
+                      canEdit={canEditDiets}
+                      locale={locale}
+                    />
+                  </div>
                 ))}
                 {!creating && plans.length === 0 && (
                   <div className="col-span-full text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">

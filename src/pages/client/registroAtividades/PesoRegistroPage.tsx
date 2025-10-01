@@ -1,41 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../../../components/ui/Card';
+import DataSection from '../../../components/ui/DataSection';
 import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
 import { useWeightLogsInteligente } from '../../../hooks/useWeightLogsInteligente';
+import { useWeightData } from '../../../hooks/useWeightData';
 import { AnalisePesoInteligente } from '../../../components/dashboard/AnalisePesoInteligente';
 import Sparkline from '../../../components/ui/Sparkline';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { CAPABILITIES } from '../../../types/capabilities';
 import { useI18n, formatNumber } from '../../../i18n';
 import { formatDateSafe } from '../../../utils/formatDate';
-import { 
-  ArrowLeft, 
-  TrendingUp, 
-  Target, 
-  Edit3, 
-  Check, 
-  X,
-  Plus,
-  BarChart3,
-  Calendar,
-  Scale,
-  Sparkles
-} from 'lucide-react';
+import { ArrowLeft, Target, Plus, Check, X, Calendar } from '../../../components/icons';
+import { TrendingUp, BarChart3, Sparkles, Scale, Edit3 } from 'lucide-react';
+import StatusPill, { getStatusTone } from '../../../components/ui/StatusPill';
+import { shouldShowSkeleton } from '../../../utils/loadingHelpers';
 
 const PesoRegistroPage: React.FC = () => {
-  const { 
-    latest, 
-    upsert, 
-    logs, 
-    diff_kg,
-    series, 
-    goal, 
-    setGoal, 
-    patch,
-    analiseTendencia
-  } = useWeightLogsInteligente(90);
+  // Inteligente para análises, mas operações (upsert/goal/patch) vêm do hook base React Query
+  const inteligente = useWeightLogsInteligente(90);
+  const { latest, logs, diff_kg, series, goal, setGoal, upsert, patch } = useWeightData(90) as any;
+  const analiseTendencia = inteligente.analiseTendencia;
   const { t, locale } = useI18n();
   const { can } = usePermissions();
   const navigate = useNavigate();
@@ -138,27 +124,40 @@ const PesoRegistroPage: React.FC = () => {
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
         {/* Card de status rápido */}
         <div className="grid grid-cols-2 gap-4">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 border-0 shadow-lg rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Scale size={16} className="text-blue-100" />
-              <span className="text-blue-100 text-sm font-medium">Peso Atual</span>
-            </div>
-            <p className="text-2xl font-bold">
-              {latest ? formatNumber(+latest.weight_kg.toFixed(1), locale) : '--'}
-              <span className="text-lg font-semibold text-blue-100 ml-1">kg</span>
-            </p>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 border-0 shadow-lg rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Target size={16} className="text-purple-100" />
-              <span className="text-purple-100 text-sm font-medium">Meta</span>
-            </div>
-            <p className="text-2xl font-bold">
-              {goal ? formatNumber(+goal.toFixed(1), locale) : '--'}
-              <span className="text-lg font-semibold text-purple-100 ml-1">kg</span>
-            </p>
-          </Card>
+          <DataSection
+            isLoading={shouldShowSkeleton(!latest, latest)}
+            error={null}
+            skeletonLines={3}
+            skeletonClassName="h-28"
+          >
+            <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 border-0 shadow-lg rounded-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Scale size={16} className="text-blue-100" />
+                <span className="text-blue-100 text-sm font-medium">Peso Atual</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {latest ? formatNumber(+latest.weight_kg.toFixed(1), locale) : '--'}
+                <span className="text-lg font-semibold text-blue-100 ml-1">kg</span>
+              </p>
+            </Card>
+          </DataSection>
+          <DataSection
+            isLoading={shouldShowSkeleton(!goal && !latest, goal)}
+            error={null}
+            skeletonLines={3}
+            skeletonClassName="h-28"
+          >
+            <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 border-0 shadow-lg rounded-2xl">
+              <div className="flex items-center gap-2 mb-2">
+                <Target size={16} className="text-purple-100" />
+                <span className="text-purple-100 text-sm font-medium">Meta</span>
+              </div>
+              <p className="text-2xl font-bold">
+                {goal ? formatNumber(+goal.toFixed(1), locale) : '--'}
+                <span className="text-lg font-semibold text-purple-100 ml-1">kg</span>
+              </p>
+            </Card>
+          </DataSection>
         </div>
 
         {/* Progresso */}
@@ -321,14 +320,11 @@ const PesoRegistroPage: React.FC = () => {
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-1">
                           <p className="text-sm font-medium text-gray-700">Tendência atual</p>
-                          <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                            analiseTendencia.direcao === 'subindo' ? 'bg-red-100 text-red-700' :
-                            analiseTendencia.direcao === 'descendo' ? 'bg-green-100 text-green-700' :
-                            analiseTendencia.direcao === 'oscilando' ? 'bg-yellow-100 text-yellow-700' :
-                            'bg-gray-100 text-gray-700'
-                          }`}>
-                            {analiseTendencia.direcao}
-                          </span>
+                          <StatusPill
+                            label={analiseTendencia.direcao}
+                            tone={getStatusTone(analiseTendencia.direcao)}
+                            subtle
+                          />
                         </div>
                         <p className="text-xs text-gray-500">
                           {analiseTendencia.confiabilidade}% de confiabilidade • {analiseTendencia.velocidade}
@@ -368,7 +364,7 @@ const PesoRegistroPage: React.FC = () => {
               </div>
             ) : (
               <div className="space-y-3">
-                {logs.map((log, index) => (
+                {logs.map((log: any, index: number) => (
                   <div 
                     key={log.id || log.log_date} 
                     className={`p-4 rounded-xl border transition-all duration-200 ${

@@ -1,3 +1,7 @@
+/**
+ * LEGACY: Substituído por useWaterData (React Query).
+ * Mantido temporariamente para compatibilidade. Evitar novos usos.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { API } from '../config/api';
 import { useAuth } from '../contexts';

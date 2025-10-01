@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useWaterLogs } from './useWaterLogs';
+import { useWaterData } from './useWaterData';
 import { useMetasAutomaticas } from './useMetasAutomaticas';
 
 export interface MetasAguaInteligentes {
@@ -39,19 +39,30 @@ export interface EstatisticasAguaSemana {
  * Combina metas automáticas com logs de água e fornece insights
  */
 export function useWaterLogsInteligente(days: number = 7) {
-  const waterLogs = useWaterLogs(days);
+  const waterData = useWaterData(Math.min(days, 30));
+  const waterLogs = {
+    logs: waterData.logs,
+    totalToday: waterData.totalToday,
+    summaryDays: waterData.summaryDays,
+    dailyGoalCups: waterData.dailyGoalCups,
+    cupSize: waterData.cupSize,
+    goalSource: 'manual', // placeholder até backend expor fonte
+    updateGoal: waterData.updateGoal,
+    updateCupSize: waterData.updateCupSize,
+    add: waterData.add,
+  };
   const { metas, dadosPerfil, metasCalculadas } = useMetasAutomaticas();
 
   // Tamanho do copo padrão ou personalizado
-  const cupSize = waterLogs.cupSize || 250;
+  const cupSize = (waterLogs as any).cupSize || 250;
 
   // Metas inteligentes de água
   const metasFinais: MetasAguaInteligentes = useMemo(() => {
     // Se há meta manual definida pelo usuário, usar ela
-    if (waterLogs.dailyGoalCups && waterLogs.goalSource === 'manual') {
+    if ((waterLogs as any).dailyGoalCups && (waterLogs as any).goalSource === 'manual') {
       return {
-        metaML: waterLogs.dailyGoalCups * cupSize,
-        metaCopos: waterLogs.dailyGoalCups,
+        metaML: (waterLogs as any).dailyGoalCups * cupSize,
+        metaCopos: (waterLogs as any).dailyGoalCups,
         cupSize,
         fonte: 'manual'
       };
@@ -81,11 +92,11 @@ export function useWaterLogsInteligente(days: number = 7) {
       cupSize,
       fonte: 'automatica'
     };
-  }, [metas.agua, metasCalculadas, waterLogs.dailyGoalCups, waterLogs.goalSource, cupSize, dadosPerfil.nivelAtividade]);
+  }, [metas.agua, metasCalculadas, (waterLogs as any).dailyGoalCups, (waterLogs as any).goalSource, cupSize, dadosPerfil.nivelAtividade]);
 
   // Progresso de hoje
   const progressoHoje: ProgressoAguaHoje = useMemo(() => {
-    const consumidoML = waterLogs.totalToday;
+  const consumidoML = (waterLogs as any).totalToday;
     const consumidoCopos = Math.round(consumidoML / cupSize);
     const percentual = Math.round((consumidoML / metasFinais.metaML) * 100);
     const faltaML = Math.max(0, metasFinais.metaML - consumidoML);
@@ -104,7 +115,7 @@ export function useWaterLogsInteligente(days: number = 7) {
       faltaCopos,
       status
     };
-  }, [waterLogs.totalToday, metasFinais.metaML, cupSize]);
+  }, [(waterLogs as any).totalToday, metasFinais.metaML, cupSize]);
 
   // Dicas inteligentes de hidratação
   const dicasInteligentes: DicasHidratacao[] = useMemo(() => {
@@ -158,7 +169,7 @@ export function useWaterLogsInteligente(days: number = 7) {
 
   // Estatísticas da semana
   const estatisticasSemana: EstatisticasAguaSemana = useMemo(() => {
-    if (!waterLogs.summaryDays || waterLogs.summaryDays.length === 0) {
+    if (!(waterLogs as any).summaryDays || (waterLogs as any).summaryDays.length === 0) {
       return {
         mediaML: 0,
         mediaCopos: 0,
@@ -169,18 +180,18 @@ export function useWaterLogsInteligente(days: number = 7) {
       };
     }
 
-    const consumosDiarios = waterLogs.summaryDays.map(d => d.total_ml);
-    const mediaML = consumosDiarios.reduce((a, b) => a + b, 0) / consumosDiarios.length;
+  const consumosDiarios: number[] = (waterLogs as any).summaryDays.map((d:any) => d.total_ml as number);
+  const mediaML = consumosDiarios.reduce((a: number, b: number) => a + b, 0) / consumosDiarios.length;
     const mediaCopos = Math.round(mediaML / cupSize);
     const melhorDia = Math.max(...consumosDiarios);
     const piorDia = Math.min(...consumosDiarios);
-    const diasCumpridos = consumosDiarios.filter(ml => ml >= metasFinais.metaML).length;
+  const diasCumpridos = consumosDiarios.filter((ml: number) => ml >= metasFinais.metaML).length;
 
     // Calcular tendência baseada nos últimos 3 dias vs 3 primeiros
     let tendencia: EstatisticasAguaSemana['tendencia'] = 'estavel';
     if (consumosDiarios.length >= 6) {
-      const primeiros3 = consumosDiarios.slice(0, 3).reduce((a, b) => a + b, 0) / 3;
-      const ultimos3 = consumosDiarios.slice(-3).reduce((a, b) => a + b, 0) / 3;
+  const primeiros3 = consumosDiarios.slice(0, 3).reduce((a: number, b: number) => a + b, 0) / 3;
+  const ultimos3 = consumosDiarios.slice(-3).reduce((a: number, b: number) => a + b, 0) / 3;
       const diferenca = ultimos3 - primeiros3;
       
       if (diferenca > 200) tendencia = 'subindo';
@@ -195,16 +206,16 @@ export function useWaterLogsInteligente(days: number = 7) {
       diasCumpridos,
       tendencia
     };
-  }, [waterLogs.summaryDays, metasFinais.metaML, cupSize]);
+  }, [(waterLogs as any).summaryDays, metasFinais.metaML, cupSize]);
 
   // Função para definir meta manual
   const setMetaManual = async (copos: number) => {
-    await waterLogs.updateGoal(copos);
+  await (waterLogs as any).updateGoal(copos);
   };
 
   // Função para resetar para meta automática
   const resetarParaAutomatica = async () => {
-    await waterLogs.updateGoal(metasFinais.metaCopos);
+  await (waterLogs as any).updateGoal(metasFinais.metaCopos);
   };
 
   return {

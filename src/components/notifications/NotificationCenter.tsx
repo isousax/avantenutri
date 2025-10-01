@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNotifications, useMarkNotificationRead } from '../../hooks/useNotifications';
 import Card from '../ui/Card';
 import Button from '../ui/Button';
@@ -9,6 +9,10 @@ const NotificationCenter: React.FC = () => {
   const pageSize = 10;
 
   const { data, isLoading, error } = useNotifications(showOnlyUnread, pageSize, currentPage * pageSize);
+  // meta armazenada no query: lastRead timestamp e função de update
+  const lastRead = (data as any)?.meta?.lastRead as string | null | undefined;
+  const updateLastRead = (data as any)?.meta?.updateLastRead as (ts?: string)=>void | undefined;
+  const [groupMode, setGroupMode] = useState<'none' | 'day' | 'type'>('day');
   const { mutate: markAsRead } = useMarkNotificationRead();
 
   const getTypeIcon = (type: string) => {
@@ -71,6 +75,34 @@ const NotificationCenter: React.FC = () => {
   }
 
   const notifications = data?.notifications || [];
+
+  const lastReadDate = useMemo(() => lastRead ? new Date(lastRead) : null, [lastRead]);
+
+  const grouped = useMemo(() => {
+    if (groupMode === 'none') return { '__all__': notifications } as Record<string, typeof notifications>;
+    const map: Record<string, typeof notifications> = {};
+    for (const n of notifications) {
+      let key = '';
+      if (groupMode === 'day') {
+        const d = new Date(n.created_at);
+        key = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric' });
+      } else if (groupMode === 'type') {
+        key = n.type;
+      }
+      (map[key] ||= []).push(n);
+    }
+    // Ordenar grupos por data desc (quando day) ou manter inserção
+    if (groupMode === 'day') {
+      return Object.fromEntries(
+        Object.entries(map).sort((a,b) => {
+          const pa = a[0].split('/').reverse().join('-');
+          const pb = b[0].split('/').reverse().join('-');
+          return pa < pb ? 1 : -1;
+        })
+      );
+    }
+    return map;
+  }, [notifications, groupMode]);
   const totalPages = Math.ceil((data?.total || 0) / pageSize);
   const unreadCount = notifications.filter(n => !n.read_at).length;
 
@@ -91,7 +123,19 @@ const NotificationCenter: React.FC = () => {
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 text-sm">
+            <span className="text-gray-600">Agrupar:</span>
+            <select
+              value={groupMode}
+              onChange={e => setGroupMode(e.target.value as any)}
+              className="text-sm border rounded px-2 py-1 bg-white"
+            >
+              <option value="none">Nenhum</option>
+              <option value="day">Por dia</option>
+              <option value="type">Por tipo</option>
+            </select>
+          </div>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"
@@ -104,6 +148,10 @@ const NotificationCenter: React.FC = () => {
             />
             Apenas não lidas
           </label>
+          <button
+            onClick={() => updateLastRead?.()}
+            className="text-xs px-3 py-1 border rounded hover:bg-gray-100 transition-colors"
+          >Marcar ponto de leitura</button>
         </div>
       </div>
 
@@ -124,45 +172,61 @@ const NotificationCenter: React.FC = () => {
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {notifications.map((notification) => (
-            <div
-              key={notification.user_notification_id}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                notification.read_at 
-                  ? 'bg-gray-50 border-gray-200 opacity-75' 
-                  : `${getTypeColor(notification.type)} shadow-sm`
-              }`}
-            >
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-lg">{getTypeIcon(notification.type)}</span>
-                    <h3 className="font-semibold text-gray-900 truncate">
-                      {notification.title}
-                    </h3>
-                    {!notification.read_at && (
-                      <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
-                    )}
-                  </div>
-                  <p className="text-gray-700 text-sm mb-2 whitespace-pre-wrap">
-                    {notification.message}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(notification.created_at)}
-                  </p>
-                </div>
-
-                {!notification.read_at && (
-                  <Button
-                    onClick={() => handleMarkAsRead(notification.notification_id)}
-                    variant="secondary"
-                    className="text-xs px-3 py-1 flex-shrink-0"
+        <div className="space-y-8">
+          {Object.entries(grouped).map(([groupKey, list]) => (
+            <div key={groupKey} className="space-y-3">
+              {groupMode !== 'none' && (
+                <h4 className="text-sm font-semibold text-gray-600 flex items-center gap-2">
+                  <span>{groupMode === 'day' ? groupKey : groupKey.toUpperCase()}</span>
+                  <span className="text-[10px] font-normal text-gray-400">{list.length} item{list.length>1?'s':''}</span>
+                </h4>
+              )}
+              {list.map(notification => {
+                const created = new Date(notification.created_at);
+                const isNewSinceRead = lastReadDate ? created > lastReadDate : true;
+                return (
+                  <div
+                    key={notification.user_notification_id}
+                    className={`p-4 rounded-lg border-2 transition-all relative ${
+                      notification.read_at
+                        ? 'bg-gray-50 border-gray-200 opacity-75'
+                        : `${getTypeColor(notification.type)} shadow-sm`
+                    }`}
                   >
-                    Marcar como lida
-                  </Button>
-                )}
-              </div>
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className="text-lg">{getTypeIcon(notification.type)}</span>
+                          <h3 className="font-semibold text-gray-900 truncate max-w-[60%]">
+                            {notification.title}
+                          </h3>
+                          {!notification.read_at && (
+                            <span className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></span>
+                          )}
+                          {isNewSinceRead && (
+                            <span className="text-[10px] uppercase tracking-wide bg-green-600 text-white px-2 py-0.5 rounded-full animate-pulse">NOVO</span>
+                          )}
+                        </div>
+                        <p className="text-gray-700 text-sm mb-2 whitespace-pre-wrap">
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {formatDate(notification.created_at)}
+                        </p>
+                      </div>
+                      {!notification.read_at && (
+                        <Button
+                          onClick={() => handleMarkAsRead(notification.notification_id)}
+                          variant="secondary"
+                          className="text-xs px-3 py-1 flex-shrink-0"
+                        >
+                          Marcar como lida
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           ))}
         </div>

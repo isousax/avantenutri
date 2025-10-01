@@ -33,6 +33,20 @@ interface SendNotificationRequest {
 export function useNotifications(onlyUnread = false, limit = 20, offset = 0) {
   const { authenticatedFetch, user } = useAuth();
 
+  // Persistência de última leitura global (timestamp ISO)
+  const LAST_READ_KEY = '@AvanteNutri:notifications:last_read';
+  const lastRead = (() => {
+    try {
+      return localStorage.getItem(LAST_READ_KEY) || null;
+    } catch { return null; }
+  })();
+
+  const updateLastRead = (ts?: string) => {
+    try {
+      localStorage.setItem(LAST_READ_KEY, ts || new Date().toISOString());
+    } catch {/* ignore */}
+  };
+
   return useQuery({
     queryKey: ['notifications', onlyUnread, limit, offset],
     queryFn: async (): Promise<NotificationsResponse> => {
@@ -46,14 +60,24 @@ export function useNotifications(onlyUnread = false, limit = 20, offset = 0) {
       }
 
       const response = await authenticatedFetch(`${API.NOTIFICATIONS}?${params.toString()}`);
+      if (response.status === 404) {
+        // Backend ainda não implementado / migração incompleta -> retorna vazio em vez de quebrar UI
+        return { notifications: [], total: 0, limit, offset };
+      }
       if (!response.ok) {
-        throw new Error('Failed to fetch notifications');
+        let detail: string | undefined;
+        try {
+          const js = await response.json();
+          detail = js?.error || js?.message;
+        } catch {/* ignore */}
+        throw new Error(`Failed to fetch notifications (${response.status})${detail ? ': ' + detail : ''}`);
       }
       return response.json();
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
+    meta: { lastRead, updateLastRead },
   });
 }
 
@@ -100,5 +124,39 @@ export function useSendNotification() {
       
       return response.json();
     },
+  });
+}
+
+export function useMarkAllNotificationsRead() {
+  const { authenticatedFetch } = useAuth();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      const response = await authenticatedFetch(API.NOTIFICATIONS_READ_ALL, { method: 'POST' });
+      if (!response.ok) {
+        throw new Error('Failed to mark all notifications as read');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    }
+  });
+}
+
+// Prefetch util para antecipar notificações (ex: hover no sino ou menu)
+export function prefetchNotifications(qc: ReturnType<typeof useQueryClient>, fetcher: (input: RequestInfo, init?: RequestInit)=>Promise<Response>, opts: { onlyUnread?: boolean; limit?: number; offset?: number } = {}) {
+  const { onlyUnread = false, limit = 5, offset = 0 } = opts;
+  const params = new URLSearchParams({ limit: String(limit), offset: String(offset) });
+  if (onlyUnread) params.set('unread','true');
+  qc.prefetchQuery({
+    queryKey: ['notifications', onlyUnread, limit, offset],
+    queryFn: async () => {
+      const res = await fetcher(`${API.NOTIFICATIONS}?${params.toString()}`);
+      if (res.status === 404) return { notifications: [], total: 0, limit, offset } as NotificationsResponse;
+      if (!res.ok) throw new Error('Prefetch notifications failed');
+      return res.json();
+    },
+    staleTime: 2 * 60 * 1000,
   });
 }

@@ -4,6 +4,7 @@ import Button from "../ui/Button";
 import { useConsultations } from "../../hooks/useConsultations";
 import { useI18n, formatDate } from "../../i18n";
 import React from "react";
+import StatusPill, { getStatusTone } from "../ui/StatusPill";
 
 const Consultas: React.FC = () => {
   const navigate = useNavigate();
@@ -167,10 +168,12 @@ const Consultas: React.FC = () => {
                             })}
                           </span>
                         </div>
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${statusConfig.color} flex items-center gap-1`}>
-                          {statusConfig.icon}
-                          {statusConfig.text}
-                        </span>
+                        <StatusPill
+                          label={statusConfig.text}
+                          icon={<span>{statusConfig.icon}</span>}
+                          tone={getStatusTone(statusConfig.text)}
+                          subtle={consultation.status === 'scheduled'}
+                        />
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
                         <span className="flex items-center gap-1 capitalize">

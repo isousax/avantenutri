@@ -1,3 +1,8 @@
+/**
+ * LEGACY: Este hook foi substituído por useMealData (React Query).
+ * Mantido temporariamente apenas para compatibilidade se algo externo ainda importar.
+ * TODO: Remover quando não houver mais referências.
+ */
 import { useCallback, useEffect, useState } from 'react';
 import { API } from '../config/api';
 import { useAuth } from '../contexts';
