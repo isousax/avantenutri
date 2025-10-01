@@ -13,7 +13,8 @@ export function useQuestionnaireStatus() {
   return useQuery({
     queryKey: ['questionnaire-status'],
     queryFn: async (): Promise<QuestionnaireStatus> => {
-      const response = await authenticatedFetch(API.QUESTIONNAIRE_STATUS);
+      const endpoint = API.QUESTIONNAIRE_STATUS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const response = await authenticatedFetch(endpoint);
       if (!response.ok) {
         throw new Error('Failed to fetch questionnaire status');
       }

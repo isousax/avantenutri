@@ -43,10 +43,14 @@ export const useSaveQuestionnaire = () => {
 
   return useMutation({
     mutationFn: async (data: QuestionnaireData): Promise<QuestionnaireResponse> => {
-      const response = await authenticatedFetch(API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', ''), {
+      const endpoint = API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const response = await authenticatedFetch(endpoint, {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({
-          categoria: data.categoria,
+          category: data.categoria, // Backend espera 'category'
           data: data.respostas,
           is_complete: true
         }),
@@ -72,7 +76,7 @@ export const useSaveQuestionnaireDraft = () => {
       const response = await authenticatedFetch(API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', ''), {
         method: 'POST',
         body: JSON.stringify({
-          categoria: data.categoria,
+          category: data.categoria, // Backend espera 'category'
           data: data.respostas || {},
           is_complete: false
         }),

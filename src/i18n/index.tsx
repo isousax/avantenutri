@@ -2004,4 +2004,5 @@ export function formatDate(date: Date | string | number, locale: Locale, opts?: 
   return new Intl.DateTimeFormat(locale==='pt'?'pt-BR':'en-US', opts || { dateStyle: 'short'}).format(d);
 }
 
+
 // NOTE: TranslationKey type is now generated in src/types/i18n.d.ts via script.

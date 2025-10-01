@@ -296,6 +296,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 role: normalizeRole(p.role),
                 full_name: (p.full_name ?? p.name ?? "") as string,
                 display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
+                phone: (p.phone ?? "") as string,
               };
               setUser(derived);
               saveUserToStorage(derived, rememberMe);
@@ -971,6 +972,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     full_name: (meData.full_name ||
                       meData.name ||
                       userObj.full_name) as string,
+                    display_name: (meData.display_name ?? meData.full_name ?? meData.name ?? userObj.full_name) as string,
+                    phone: (meData.phone ?? userObj.phone ?? "") as string,
                   } as User;
                   setUser(updated);
                   saveUserToStorage(updated, rememberMe);
@@ -1244,6 +1247,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               user?.full_name ||
               "") as string,
             display_name: (data.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
+            phone: (data.phone ?? user?.phone ?? "") as string,
           };
           setUser(updated);
           const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);

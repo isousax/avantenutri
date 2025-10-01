@@ -73,7 +73,7 @@ export function useWeightLogs(defaultDays = 90) {
     return d.weight_goal_kg as number | null;
   }, [authenticatedFetch, can, load]);
 
-  useEffect(()=> { void load(defaultDays); }, [load, defaultDays]);
+  useEffect(()=> { void load(defaultDays); }, [defaultDays]); // Removido 'load' para evitar loops
 
   const latest = summary?.stats?.latest || null;
   const diff_kg = summary?.stats?.diff_kg ?? null;

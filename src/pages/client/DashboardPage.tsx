@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import StatsCard from "../../components/StatsCard";
-import NotificationBell from "../../components/NotificationBell";
+import NotificationBellReal from "../../components/NotificationBellReal";
 import Progress from "../../components/ui/Progress";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
@@ -166,6 +166,7 @@ const BottomNav: React.FC<{
   activeTab: string;
   onTabChange: (tab: any) => void;
 }> = ({ activeTab, onTabChange }) => {
+  const navigate = useNavigate();
   const tabs = [
     { id: "overview", label: "Visão", icon: "📊" },
     { id: "dietas", label: "Dietas", icon: "🍽️" },
@@ -180,7 +181,7 @@ const BottomNav: React.FC<{
         {tabs.map((tab) => (
           <button
             key={tab.id}
-            onClick={() => onTabChange(tab.id)}
+            onClick={() => (tab as any).navigate ? navigate((tab as any).navigate) : onTabChange(tab.id)}
             className={`flex flex-col items-center py-2 px-1 flex-1 min-w-0 rounded-xl transition-all duration-300 ${
               activeTab === tab.id
                 ? "text-green-600 bg-green-50/80"
@@ -364,26 +365,6 @@ const DashboardPage: React.FC = () => {
   >("overview");
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Notifications data
-  const notifications = [
-    {
-      id: "1",
-      title: "Nova Dieta Disponível",
-      message: "Sua dieta foi atualizada com base na última consulta",
-      time: "Há 1 hora",
-      read: false,
-      type: "diet",
-    },
-    {
-      id: "2",
-      title: "Lembrete de Consulta",
-      message: "Você tem uma consulta marcada para amanhã às 14h",
-      time: "Há 2 horas",
-      read: true,
-      type: "appointment",
-    },
-  ];
-
   // Diet Plans integration
   const {
     plans,
@@ -439,7 +420,7 @@ const DashboardPage: React.FC = () => {
     if (canViewDiets) {
       void load();
     }
-  }, [canViewDiets, load]);
+  }, [canViewDiets]); // Removido 'load' para evitar loops
 
   const openDetail = async (id: string) => {
     setSelectedPlanId(id);
@@ -527,9 +508,7 @@ const DashboardPage: React.FC = () => {
     },
   ];
 
-  const handleNotificationClick = (id: string) => {
-    console.log(`Notification ${id} clicked`);
-  };
+
 
   const { locale, t } = useI18n();
 
@@ -700,9 +679,9 @@ const DashboardPage: React.FC = () => {
                 <h3 className="font-bold text-gray-900 text-base truncate">
                   {user?.display_name || user?.full_name || "Usuário"}
                 </h3>
-                <p className="text-green-600 font-semibold text-sm truncate flex items-center gap-1">
+                <p className="text-green-600 font-semibold text-xs truncate flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Plano Ativo
+                  Ativo
                 </p>
               </div>
             </div>
@@ -712,16 +691,20 @@ const DashboardPage: React.FC = () => {
           <nav className="flex-1 p-4">
             {[
               { id: "overview", label: "Visão Geral", icon: "📊" },
-              { id: "questionario", label: "Questionário", icon: "📝" },
-              { id: "dietas", label: "Minhas Dietas", icon: "🍽️" },
-              { id: "consultas", label: "Consultas", icon: "📅" },
               { id: "perfil", label: "Meu Perfil", icon: "👤" },
+              { id: "consultas", label: "Consultas", icon: "📅" },
+              { id: "dietas", label: "Minhas Dietas", icon: "🍽️" },
+              { id: "exercicios", label: "Exercícios", icon: "💪", navigate: "/exercicios" },
+              { id: "questionario", label: "Questionário", icon: "📝" },
+              { id: "notificacoes", label: "Notificações", icon: "🔔", navigate: "/notificacoes" },
               { id: "suporte", label: "Suporte", icon: "💬" },
             ].map((item) => (
               <button
                 key={item.id}
                 onClick={() => {
-                  if (item.id === "questionario") {
+                  if (item.navigate) {
+                    navigate(item.navigate);
+                  } else if (item.id === "questionario") {
                     navigate("/questionario");
                   } else {
                     setActiveTab(item.id as any);
@@ -804,10 +787,7 @@ const DashboardPage: React.FC = () => {
               </div>
 
               <div className="flex items-center space-x-4">
-                <NotificationBell
-                  notifications={notifications}
-                  onNotificationClick={handleNotificationClick}
-                />
+                <NotificationBellReal />
               </div>
             </div>
           </div>
@@ -1117,7 +1097,12 @@ const DashboardPage: React.FC = () => {
               )}
 
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
-                {plans.map((diet) => (
+                {creating && (
+                  Array.from({ length: 3 }).map((_, i) => (
+                    <SkeletonCard key={i} lines={4} className="h-48" />
+                  ))
+                )}
+                {!creating && plans.map((diet) => (
                   <DietPlanCard
                     key={diet.id}
                     diet={{ ...diet, isCurrent: diet.status === "active" }}
@@ -1127,7 +1112,7 @@ const DashboardPage: React.FC = () => {
                     locale={locale}
                   />
                 ))}
-                {plans.length === 0 && (
+                {!creating && plans.length === 0 && (
                   <div className="col-span-full text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
                     Nenhum plano de dieta ainda. Agende uma consulta para
                     receber sua primeira dieta!

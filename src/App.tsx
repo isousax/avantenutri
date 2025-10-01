@@ -28,6 +28,8 @@ import PesoRegistroPage from "./pages/client/registroAtividades/PesoRegistroPage
 import AguaRegistroPage from "./pages/client/registroAtividades/AguaRegistroPage.tsx";
 import AgendarConsultaPage from "./pages/client/registroAtividades/AgendarConsultaPage.tsx";
 import BillingHistoryPage from "./pages/client/BillingHistoryPage.tsx";
+import { ExerciciosPage } from "./pages/client/ExerciciosPage.tsx";
+import NotificationsPage from "./pages/client/NotificationsPage.tsx";
 import NotFound from "./pages/handle/NotFound.tsx";
 import CookieBanner from "./components/comum/CookieBanner.tsx";
 
@@ -237,6 +239,22 @@ function App() {
                 element={
                   <PrivateRoute>
                     <AgendarConsultaPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/exercicios"
+                element={
+                  <PrivateRoute>
+                    <ExerciciosPage />
+                  </PrivateRoute>
+                }
+              />
+              <Route
+                path="/notificacoes"
+                element={
+                  <PrivateRoute>
+                    <NotificationsPage />
                   </PrivateRoute>
                 }
               />

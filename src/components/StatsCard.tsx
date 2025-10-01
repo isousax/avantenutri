@@ -1,6 +1,7 @@
 import React from "react";
 import Card from "./ui/Card";
 import { WaterIcon, StatsIcon } from "./dashboard/icon";
+import { SkeletonCard } from "./ui/Loading";
 
 interface StatsCardProps {
   title: string;
@@ -12,6 +13,7 @@ interface StatsCardProps {
     value: number;
     isPositive: boolean;
   };
+  isLoading?: boolean;
 }
 
 const StatsCard: React.FC<StatsCardProps> = ({
@@ -20,7 +22,11 @@ const StatsCard: React.FC<StatsCardProps> = ({
   description,
   icon,
   gradient = "from-green-500 to-emerald-600",
+  isLoading = false,
 }) => {
+  if (isLoading) {
+    return <SkeletonCard lines={3} className="h-32" />;
+  }
   return (
     <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
       <div className="flex items-center justify-between">

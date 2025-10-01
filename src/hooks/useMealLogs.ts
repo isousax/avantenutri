@@ -45,7 +45,7 @@ export function useMealLogs(defaultDays = 7) {
     return true;
   }, [authenticatedFetch, load]);
 
-  useEffect(()=> { void load(defaultDays); }, [load, defaultDays]);
+  useEffect(()=> { void load(defaultDays); }, [defaultDays]); // Removido 'load' para evitar loops
 
   const patch = useCallback(async (id: string, data: Partial<{ description: string; calories: number; protein_g: number; carbs_g: number; fat_g: number; }>) => {
     const r = await authenticatedFetch(API.mealLogId(id), { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });

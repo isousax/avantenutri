@@ -89,7 +89,7 @@ export function useWaterLogs(initialDays = 7) {
     } catch (e:any) { setError(e.message || 'Erro'); return false; }
   }, [authenticatedFetch, load]);
 
-  useEffect(()=> { void load(initialDays); }, [load, initialDays]);
+  useEffect(()=> { void load(initialDays); }, [initialDays]); // Removido 'load' para evitar loops
 
   // Agregações simples
   const today = (()=> {

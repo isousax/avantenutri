@@ -582,75 +582,75 @@ const AdminPage: React.FC = () => {
 
   return (
     <RoleRoute role="admin">
-      <div className="min-h-screen flex flex-col bg-gray-50 p-4">
+      <div className="w-full space-y-6">
         <SEO title={t("admin.dashboard.seo.title")} description={t("admin.dashboard.seo.desc")} />
-        <div className="max-w-7xl mx-auto w-full">
-          {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 mb-6">
-            <div>
-              <h2 className="text-xl sm:text-2xl font-bold text-green-700">{t("admin.dashboard.title")}</h2>
-              <p className="text-gray-600 text-sm">Bem-vinda, Dra. Cawanne</p>
-            </div>
-            <div className="flex flex-wrap gap-2 sm:gap-3 items-center text-sm">
-              <Link to="/admin/usuarios" className="text-green-700 hover:underline px-2 py-1">{t("admin.users.title")}</Link>
-              <Link to="/admin/audit" className="text-green-700 hover:underline px-2 py-1">Auditoria</Link>
-              <Link to="/admin/entitlements" className="text-green-700 hover:underline px-2 py-1">Entitlements</Link>
-              <Button variant="secondary" onClick={logout} className="px-3 py-1">Sair</Button>
-            </div>
+        
+        {/* Header */}
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-green-700">{t("admin.dashboard.title")}</h2>
+            <p className="text-gray-600 text-sm">Bem-vinda, Dra. Cawanne</p>
           </div>
+          <div className="flex flex-wrap gap-2 sm:gap-3 items-center text-sm">
+            <Link to="/admin/usuarios" className="text-green-700 hover:underline px-2 py-1">{t("admin.users.title")}</Link>
+            <Link to="/admin/audit" className="text-green-700 hover:underline px-2 py-1">Auditoria</Link>
+            <Link to="/admin/entitlements" className="text-green-700 hover:underline px-2 py-1">Entitlements</Link>
+            <Button variant="secondary" onClick={logout} className="px-3 py-1">Sair</Button>
+          </div>
+        </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Card className="bg-white p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-gray-600">Total de Pacientes</p>
-                  <p className="text-2xl font-bold text-green-700">{stats.totalPacientes}</p>
-                </div>
-                <div className="p-3 bg-green-100 rounded-full">
-                  <svg className="w-6 h-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="bg-white p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-600">Total de Pacientes</p>
+                <p className="text-2xl font-bold text-green-700">{stats.totalPacientes}</p>
               </div>
-            </Card>
-            <Card className="bg-white p-4 flex flex-col justify-center"><p className="text-sm text-gray-600 mb-1">Planos (indicativo)</p><p className="text-xl font-semibold text-green-700">-</p></Card>
-            <Card className="bg-white p-4 flex flex-col justify-center"><p className="text-sm text-gray-600 mb-1">Atividade (mês)</p><p className="text-xl font-semibold text-green-700">-</p></Card>
-          </div>
+              <div className="p-3 bg-green-100 rounded-full">
+                <svg className="w-6 h-6 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+            </div>
+          </Card>
+          <Card className="bg-white p-4 flex flex-col justify-center"><p className="text-sm text-gray-600 mb-1">Planos (indicativo)</p><p className="text-xl font-semibold text-green-700">-</p></Card>
+          <Card className="bg-white p-4 flex flex-col justify-center"><p className="text-sm text-gray-600 mb-1">Atividade (mês)</p><p className="text-xl font-semibold text-green-700">-</p></Card>
+        </div>
 
-          {/* Tabs */}
-          <div className="flex space-x-4 mb-6">
-            <button
-              className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "pacientes" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
-              onClick={() => setTab("pacientes")}
-            >
-              Pacientes
-            </button>
-            <button
-              className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "consultas" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
-              onClick={() => setTab("consultas")}
-            >
-              Consultas
-            </button>
-            <button
-              className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "dietas" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
-              onClick={() => setTab("dietas")}
-            >
-              Dietas
-            </button>
-            <button
-              className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "notificacoes" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
-              onClick={() => setTab("notificacoes")}
-            >
-              Notificações
-            </button>
-            <button
-              className={`px-4 py-2 font-medium rounded-lg transition-colors ${tab === "relatorios" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
-              onClick={() => setTab("relatorios")}
-            >
-              Relatórios
-            </button>
-          </div>
+        {/* Tabs */}
+        <div className="flex flex-wrap gap-2 md:gap-4">
+          <button
+            className={`px-3 md:px-4 py-2 font-medium rounded-lg transition-colors text-sm ${tab === "pacientes" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+            onClick={() => setTab("pacientes")}
+          >
+            Pacientes
+          </button>
+          <button
+            className={`px-3 md:px-4 py-2 font-medium rounded-lg transition-colors text-sm ${tab === "consultas" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+            onClick={() => setTab("consultas")}
+          >
+            Consultas
+          </button>
+          <button
+            className={`px-3 md:px-4 py-2 font-medium rounded-lg transition-colors text-sm ${tab === "dietas" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+            onClick={() => setTab("dietas")}
+          >
+            Dietas
+          </button>
+          <button
+            className={`px-3 md:px-4 py-2 font-medium rounded-lg transition-colors text-sm ${tab === "notificacoes" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+            onClick={() => setTab("notificacoes")}
+          >
+            Notificações
+          </button>
+          <button
+            className={`px-3 md:px-4 py-2 font-medium rounded-lg transition-colors text-sm ${tab === "relatorios" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+            onClick={() => setTab("relatorios")}
+          >
+            Relatórios
+          </button>
+        </div>
 
           {/* --- PACIENTES --- */}
           {tab === "pacientes" && (
@@ -827,8 +827,7 @@ const AdminPage: React.FC = () => {
             </Card>
           )}
         </div>
-      </div>
-    </RoleRoute>
+      </RoleRoute>
   );
 };
 

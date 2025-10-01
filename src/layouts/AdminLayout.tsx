@@ -58,6 +58,8 @@ const AdminLayout: React.FC = () => {
   const commandRef = useRef<HTMLDivElement | null>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
   const { push } = useToast();
+  // Mobile sidebar state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   // Collapsible groups
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   const LS_GROUP_KEY = 'admin.sidebar.collapsedGroups';
@@ -76,6 +78,11 @@ const AdminLayout: React.FC = () => {
     try { localStorage.setItem(LS_GROUP_KEY, JSON.stringify(collapsedGroups)); } catch { /* ignore */ }
   }, [collapsedGroups]);
   const toggleGroup = (g: string) => setCollapsedGroups(c => ({ ...c, [g]: !c[g] }));
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setSidebarOpen(false);
+  }, [location.pathname]);
 
   // Tentativa suave de endpoints agregados (fallback silencioso se não existirem)
   const loadMetrics = useCallback(async (): Promise<boolean> => {
@@ -242,11 +249,31 @@ const AdminLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 flex text-sm">
-  <SEO title={t('admin.layout.seo.title')} description={t('admin.layout.seo.desc')} />
+      <SEO title={t('admin.layout.seo.title')} description={t('admin.layout.seo.desc')} />
+      
+      {/* Mobile sidebar overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* Sidebar */}
-      <aside className="w-56 bg-white border-r shadow-sm flex flex-col">
-        <div className="h-14 flex items-center px-4 border-b font-semibold tracking-wide text-green-700">
+      <aside className={`fixed md:static inset-y-0 left-0 z-50 w-64 md:w-56 bg-white border-r shadow-sm flex flex-col transform transition-transform duration-300 ease-in-out ${
+        sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0`}>
+        <div className="h-14 flex items-center justify-between px-4 border-b font-semibold tracking-wide text-green-700">
           <Link to="/" className="hover:opacity-80">AvanteNutri</Link>
+          {/* Mobile close button */}
+          <button 
+            className="md:hidden p-1 rounded-md hover:bg-gray-100"
+            onClick={() => setSidebarOpen(false)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
         <nav className="flex-1 overflow-y-auto py-3">
           {Object.entries(grouped).map(([groupName, items]) => {
@@ -295,19 +322,29 @@ const AdminLayout: React.FC = () => {
       </aside>
 
       {/* Main content */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 md:ml-0">
         {/* Top bar */}
         <header className="h-14 bg-white/95 backdrop-blur border-b flex items-center justify-between px-4 gap-6 sticky top-0 z-10">
-            <div className="flex flex-col leading-tight" aria-label="Breadcrumb">
-              <ol className="flex items-center gap-1 text-[11px] text-gray-500">
-                {breadcrumb.map((b,i) => (
-                  <li key={i} className="flex items-center gap-1">
-                    {i>0 && <span className="text-gray-300">/</span>}
-                    <span className={i===breadcrumb.length-1? 'text-gray-700 font-medium' : ''}>{b}</span>
-                  </li>
-                ))}
-              </ol>
-            <div className="flex gap-4 mt-1">
+          {/* Mobile hamburger button */}
+          <button
+            className="md:hidden p-2 rounded-md hover:bg-gray-100 mr-2"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+
+          <div className="flex flex-col leading-tight min-w-0 flex-1" aria-label="Breadcrumb">
+            <ol className="flex items-center gap-1 text-[11px] text-gray-500">
+              {breadcrumb.map((b,i) => (
+                <li key={i} className="flex items-center gap-1">
+                  {i>0 && <span className="text-gray-300">/</span>}
+                  <span className={`${i===breadcrumb.length-1? 'text-gray-700 font-medium' : ''} truncate`}>{b}</span>
+                </li>
+              ))}
+            </ol>
+            <div className="hidden lg:flex gap-4 mt-1">
               {metrics.map(m => (
                 <div key={m.key} className="flex flex-col min-w-[90px]">
                   <span className="text-[10px] uppercase tracking-wide text-gray-400">{m.label}</span>
@@ -318,13 +355,13 @@ const AdminLayout: React.FC = () => {
           </div>
           <div className="flex items-center gap-3">
             <button onClick={()=> setCommandOpen(true)} className="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-md border text-xs text-gray-600 hover:border-green-500 hover:text-green-700 transition" aria-haspopup="dialog" aria-expanded={commandOpen}>
-              <span>{t('admin.layout.searchGo')}</span>
+              <span className="hidden lg:inline">{t('admin.layout.searchGo')}</span>
               <kbd className="text-[10px] px-1 py-0.5 bg-gray-100 rounded border">Ctrl+K</kbd>
             </button>
-            <Link to="/dashboard" className="text-xs text-gray-500 hover:text-green-700">{t('admin.layout.backToApp')}</Link>
+            <Link to="/dashboard" className="text-xs text-gray-500 hover:text-green-700 hidden sm:inline">{t('admin.layout.backToApp')}</Link>
           </div>
         </header>
-        <main className="p-4 md:p-6 flex-1 overflow-y-auto">
+        <main className="p-3 md:p-4 lg:p-6 flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>

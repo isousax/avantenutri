@@ -3,345 +3,714 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
-import { useWaterLogs } from "../../../hooks/useWaterLogs";
-import { useI18n, formatNumber } from '../../../i18n';
-import { useToast } from '../../../components/ui/ToastProvider';
+import { useWaterLogsInteligente } from "../../../hooks/useWaterLogsInteligente";
+import { ProgressoHidratacao } from "../../../components/dashboard/ProgressoHidratacao";
+import { useI18n, formatNumber } from "../../../i18n";
+import { useToast } from "../../../components/ui/ToastProvider";
+import { motion, AnimatePresence } from "framer-motion";
+
+import {
+  ArrowLeft,
+  Plus,
+  Minus,
+  Target,
+  Trophy,
+  TrendingUp,
+  Calendar,
+  ChevronDown,
+  Droplets,
+  GlassWater,
+  Settings,
+  Check,
+  X,
+  Zap,
+} from "lucide-react";
 
 const AguaRegistroPage: React.FC = () => {
   const { t } = useI18n();
   const { push } = useToast();
-  useEffect(() => { document.title = t('water.log.title') + ' - Avante Nutri'; }, [t]);
+  useEffect(() => {
+    document.title = t("water.log.title") + " - Avante Nutri";
+  }, [t]);
   const navigate = useNavigate();
-  const { logs, add, totalToday, avgPerDay, bestDay, summaryDays, dailyGoalCups, goalSource, cupSize, updateGoal, updateCupSize, limit } = useWaterLogs(7);
-  const [metaDiaria, setMetaDiaria] = useState<number>(8);
-  const [editingGoal, setEditingGoal] = useState(false);
-  const [goalInput, setGoalInput] = useState('8');
+  const {
+    logs,
+    add,
+    avgPerDay,
+    bestDay,
+    summaryDays,
+    metasFinais,
+    progressoHoje,
+    setMetaManual,
+    resetarParaAutomatica,
+    updateCupSize,
+  } = useWaterLogsInteligente(7);
 
-  // Sync persisted goal when loaded
-  useEffect(()=> {
-    if (dailyGoalCups && dailyGoalCups !== metaDiaria) {
-      setMetaDiaria(dailyGoalCups);
-      setGoalInput(String(dailyGoalCups));
-    }
-  }, [dailyGoalCups]);
-  const mlPorCopo = cupSize || 250; // conversão personalizada
-  const coposHoje = Math.round(totalToday / mlPorCopo);
+  // Estados locais
+  const [editingGoal, setEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
+  const [historicoAberto, sethistoricoAberto] = useState(false);
+  const [EstatiscicaAberto, setEstatiscicaAberto] = useState(false);
+  const [metaAberto, setMetaAberto] = useState(false);
+
+  // Sync com meta inteligente
+  useEffect(() => {
+    setGoalInput(metasFinais.metaCopos.toString());
+  }, [metasFinais.metaCopos]);
+
+  const mlPorCopo = metasFinais.cupSize;
+  const coposHoje = progressoHoje.consumidoCopos;
+  const metaDiaria = metasFinais.metaCopos;
   const historico = useMemo(() => {
     if (summaryDays) {
-      return summaryDays.map(d => ({ data: d.date, copos: Math.round(d.total_ml / mlPorCopo), meta: metaDiaria }));
+      return summaryDays.map((d) => ({
+        data: d.date,
+        copos: Math.round(d.total_ml / mlPorCopo),
+        meta: metaDiaria,
+      }));
     }
     const byDate: { date: string; amount: number }[] = [];
-    const map = logs.reduce<Record<string, number>>((acc,l)=> { acc[l.log_date] = (acc[l.log_date]||0)+l.amount_ml; return acc; }, {});
-    Object.entries(map).forEach(([date, amount])=> byDate.push({ date, amount }));
-    return byDate.sort((a,b)=> a.date.localeCompare(b.date)).map(d => ({ data: d.date, copos: Math.round(d.amount / mlPorCopo), meta: metaDiaria }));
-  }, [logs, metaDiaria, summaryDays]);
+    const map = logs.reduce<Record<string, number>>((acc, l) => {
+      acc[l.log_date] = (acc[l.log_date] || 0) + l.amount_ml;
+      return acc;
+    }, {});
+    Object.entries(map).forEach(([date, amount]) =>
+      byDate.push({ date, amount })
+    );
+    return byDate
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map((d) => ({
+        data: d.date,
+        copos: Math.round(d.amount / mlPorCopo),
+        meta: metaDiaria,
+      }));
+  }, [logs, metaDiaria, summaryDays, mlPorCopo]);
 
-  const [pendingCops, setPendingCops] = useState(0); // incrementos locais antes do push
-  const adicionarCopo = () => { if (pendingCops + coposHoje < 40) setPendingCops(p => p + 1); };
-  const removerCopo = () => { if (pendingCops > 0) setPendingCops(p => p - 1); };
+  const [pendingCops, setPendingCops] = useState(0);
+  const adicionarCopo = () => {
+    const limiteInteligente = metaDiaria * 3;
+    if (pendingCops + coposHoje < limiteInteligente) {
+      setPendingCops((p) => p + 1);
+    }
+  };
+  const removerCopo = () => {
+    if (pendingCops > 0) setPendingCops((p) => p - 1);
+  };
 
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async () => {
-  if (pendingCops <= 0) { navigate('/dashboard'); return; }
+    if (pendingCops <= 0) {
+      navigate("/dashboard");
+      return;
+    }
     try {
       setIsSaving(true);
-  const totalMl = pendingCops * mlPorCopo;
+      const totalMl = pendingCops * mlPorCopo;
       const ok = await add(totalMl);
       if (ok) {
-        push({ type:'success', message: t('water.toast.saved') });
+        push({ type: "success", message: t("water.toast.saved") });
         setPendingCops(0);
-        navigate('/dashboard');
+        navigate("/dashboard");
       } else {
-        push({ type:'error', message: t('water.toast.partial') });
+        push({ type: "error", message: t("water.toast.partial") });
       }
     } catch (err) {
-      console.error('Erro ao registrar água', err);
-      push({ type:'error', message: t('water.toast.error') });
-    } finally { setIsSaving(false); }
+      console.error("Erro ao registrar água", err);
+      push({ type: "error", message: t("water.toast.error") });
+    } finally {
+      setIsSaving(false);
+    }
   };
-
-  const calcularProgresso = () => {
-    return Math.min((coposHoje / metaDiaria) * 100, 100);
-  };
-
-  interface MensagemMotivacional {
-    mensagem: string;
-    cor: string;
-  }
-
-  const getMensagemMotivacional = (): MensagemMotivacional => {
-    const progresso = calcularProgresso();
-    if (progresso >= 100) return { mensagem: t('water.mot.100'), cor: 'text-green-600'};
-    if (progresso >= 75) return { mensagem: t('water.mot.75'), cor: 'text-blue-600'};
-    if (progresso >= 50) return { mensagem: t('water.mot.50'), cor: 'text-yellow-600'};
-    return { mensagem: t('water.mot.start'), cor: 'text-orange-600'};
-  };
-
-  const mensagem = getMensagemMotivacional();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50 py-8 px-4">
-  <SEO title={t('water.log.seo.title')} description={t('water.log.seo.desc')} />
-      <div className="max-w-4xl mx-auto">
-        {/* Cabeçalho */}
-        <div className="mb-8 flex flex-col items-center gap-2">
-          <h1 className="text-3xl font-bold text-blue-800">{t('water.log.heading')}</h1>
-          <p className="text-gray-600">{t('water.log.subheading')}</p>
-          <button type="button" onClick={()=> navigate(-1)} className="text-sm text-blue-600 hover:underline">{t('common.back')}</button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 safe-area-bottom">
+      <SEO
+        title={t("water.log.seo.title")}
+        description={t("water.log.seo.desc")}
+      />
 
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Contador Principal */}
-          <Card className="p-6 shadow-xl border border-blue-100">
-            <div className="text-center mb-6">
-              <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl">💧</span>
-              </div>
-              <h2 className="text-2xl font-bold text-blue-800">{t('common.today')}</h2>
-              <p className="text-gray-600">
-                {new Date().toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </p>
-            </div>
-
-            {/* Contador / Meta */}
-            <div className="text-center mb-6">
-              <div className="text-6xl font-bold text-blue-600 mb-2">
-                {coposHoje + pendingCops}
-              </div>
-              <p className="text-gray-600 flex items-center justify-center gap-2">
-                {t('water.cups')}
-                {goalSource && (
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 uppercase tracking-wide">
-                    {goalSource === 'user' && t('water.goal.source.user')}
-                    {goalSource === 'plan' && t('water.goal.source.plan')}
-                    {goalSource === 'default' && t('water.goal.source.default')}
-                  </span>
-                )}
-              </p>
-              <div className="mt-3 space-y-2">
-                {!editingGoal && (
-                  <button type="button" onClick={()=> { setGoalInput(String(metaDiaria)); setEditingGoal(true); }} className="text-xs text-blue-600 underline">
-                    {t('water.goal.edit')}: {metaDiaria}
-                  </button>
-                )}
-                {editingGoal && (
-                  <div className="flex items-center justify-center gap-2 text-xs">
-                    <label className="text-slate-600">
-                      {t('water.goal.daily')}
-                      <input value={goalInput} onChange={e=> setGoalInput(e.target.value.replace(/[^0-9]/g,''))} className="ml-1 w-14 border rounded px-1 py-0.5 text-center" />
-                    </label>
-                    <button type="button" onClick={async ()=> {
-                      const v = Math.max(1, Math.min(40, Number(goalInput||'0')));
-                      if (v === metaDiaria) { setEditingGoal(false); return; }
-                      const ok = await updateGoal(v);
-                      if (ok) { setMetaDiaria(v); push({ type:'success', message: t('water.goal.updated')}); }
-                      setEditingGoal(false);
-                    }} className="text-green-600">{t('water.goal.save')}</button>
-                    <button type="button" onClick={()=> setEditingGoal(false)} className="text-red-500">{t('water.goal.cancel')}</button>
-                  </div>
-                )}
-                <CupSizeEditor current={mlPorCopo} onSave={async (newSize)=> { const ok = await updateCupSize(newSize); if (ok) push({ type:'success', message: t('water.cup.updated').replace('{ml}', String(newSize)) }); }} />
-              </div>
-            </div>
-
-            {/* Barra de Progresso */}
-            <div className="mb-6">
-              <div className="flex justify-between text-sm text-blue-800 mb-2">
-                <span>{t('water.progress')}</span>
-                <span>{Math.min(((coposHoje + pendingCops)/ metaDiaria)*100,100).toFixed(0)}%</span>
-              </div>
-              <div className="w-full bg-blue-200 rounded-full h-4">
-                <div
-                  className="bg-blue-500 h-4 rounded-full transition-all duration-500"
-                  style={{ width: `${Math.min(((coposHoje + pendingCops)/ metaDiaria)*100,100)}%` }}
-                ></div>
-              </div>
-              <p className="text-center text-sm text-blue-600 mt-2">
-                {coposHoje + pendingCops} / {metaDiaria} {t('water.cups')} ({mlPorCopo}ml)
-                {limit != null && (
-                  <span className="block text-[11px] text-slate-500 mt-1">
-                    {t('water.limit.plan')}: {t('water.limit.plan.ml').replace('{ml}', String(limit)).replace('{cups}', String(Math.max(1, Math.round(limit/250))))}
-                  </span>
-                )}
-              </p>
-            </div>
-
-            {/* Mensagem Motivacional */}
-            <div
-              className={`text-center p-4 rounded-lg mb-6 ${
-                mensagem.cor === "text-green-600"
-                  ? "bg-green-600"
-                  : mensagem.cor === "text-blue-600"
-                  ? "bg-blue-600"
-                  : mensagem.cor === "text-yellow-600"
-                  ? "bg-yellow-600"
-                  : "bg-orange-600"
-              } bg-opacity-10`}
+      {/* Header compacto e moderno */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
+        <div className="max-w-5xl mx-auto px-4 py-3">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
+              aria-label="Voltar"
             >
-              <p className="font-medium">{mensagem.mensagem}</p>
+              <ArrowLeft size={18} className="text-gray-700" />
+            </button>
+
+            <div className="flex-1 min-w-0">
+              <h1 className="text-lg font-semibold text-gray-900 truncate">
+                Hidratação
+              </h1>
+              <p className="text-xs text-gray-500 truncate">
+                {logs.length} registros •{" "}
+                {new Date().toLocaleDateString("pt-BR")}
+              </p>
             </div>
 
-            {/* Controles */}
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <Button
-                onClick={removerCopo}
-                variant="secondary"
-                className="w-full flex items-center justify-center"
-                disabled={pendingCops === 0}
-                aria-label="Remover um copo de água"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M20 12H4"
-                  />
-                </svg>
-                {t('water.remove.pending')}
-              </Button>
-              <Button
-                onClick={adicionarCopo}
-                className="w-full flex items-center justify-center"
-                aria-label="Adicionar um copo de água"
-              >
-                <svg
-                  className="w-5 h-5 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                {t('water.add250')}
-              </Button>
+            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">
+              <Droplets size={18} className="text-white" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {/* Card Principal de Registro - AGORA NO TOPO */}
+        <Card className="bg-white border-0 shadow-xl rounded-2xl overflow-hidden">
+          <div className="p-6">
+            {/* Cabeçalho com Data */}
+            <div className="text-center mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-1">
+                Registrar Água
+              </h2>
             </div>
 
-            {/* Botão Salvar */}
-            <Button onClick={handleSubmit} className="w-full flex items-center justify-center" disabled={isSaving}>
-              {isSaving ? t('common.saving') : t('water.save')}
-            </Button>
-          {/* Estatísticas e Histórico */}
-          <div className="space-y-6">
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('water.stats.week')}
-              </h3>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center p-3 bg-blue-50 rounded-lg">
-                  <span className="text-blue-800">{t('water.stats.dailyAvg')}</span>
-                  <span className="font-bold text-blue-800">{avgPerDay ? formatNumber(+ (avgPerDay / mlPorCopo).toFixed(1), 'pt') : '0'} {t('water.cups')}</span>
+            {/* Contador e Controles - Layout Compacto */}
+            <div className="flex items-center justify-between mb-6">
+              {/* Contador Visual */}
+              <div className="flex items-center gap-4">
+                <div className="relative">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center shadow-2xl">
+                    <span className="text-2xl font-bold text-white">
+                      {coposHoje + pendingCops}
+                    </span>
+                  </div>
+                  <div className="absolute -bottom-1 -right-1 bg-white rounded-full p-1 shadow-lg border border-blue-100">
+                    <GlassWater size={12} className="text-blue-600" />
+                  </div>
                 </div>
-                <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                  <span className="text-green-800">{t('water.stats.daysOnTarget')}</span>
-                  <span className="font-bold text-green-800">{historico.filter(h => h.copos >= metaDiaria).length}/{historico.length}</span>
-                </div>
-                <div className="flex justify-between items-center p-3 bg-purple-50 rounded-lg">
-                  <span className="text-purple-800">{t('water.stats.bestDay')}</span>
-                  <span className="font-bold text-purple-800">{bestDay ? formatNumber(Math.round(bestDay.amount / mlPorCopo), 'pt') : 0} {t('water.cups')}</span>
+                <div>
+                  <p className="text-lg font-semibold text-gray-900">
+                    {(coposHoje + pendingCops) * mlPorCopo}ml
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {coposHoje + pendingCops} de {metaDiaria} copos
+                  </p>
                 </div>
               </div>
-            </Card>
 
-            <Card className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                {t('water.history.week')}
-              </h3>
-              <div
-                className="space-y-3"
-                role="list"
-                aria-label="Histórico de consumo de água"
-              >
-                {historico.map((registro, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center p-3 border border-gray-100 rounded-lg"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {new Date(registro.data).toLocaleDateString("pt-BR", {
-                          weekday: "short",
-                        })}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {new Date(registro.data).toLocaleDateString("pt-BR")}
-                      </p>
+              {/* Controles de Ação */}
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={removerCopo}
+                  variant="secondary"
+                  className="w-12 h-12 flex items-center justify-center border-2 border-red-200 hover:border-red-400 hover:bg-red-50 transition-all active:scale-95"
+                  disabled={pendingCops === 0}
+                  aria-label="Remover um copo de água"
+                >
+                  <Minus size={20} className="text-red-500" />
+                </Button>
+
+                <Button
+                  onClick={adicionarCopo}
+                  className="w-12 h-12 flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-xl transition-all active:scale-95"
+                  disabled={coposHoje + pendingCops >= metaDiaria * 3}
+                  aria-label="Adicionar um copo de água"
+                >
+                  <Plus size={20} className="text-white" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Barra de Progresso Compacta */}
+            <div className="mb-6">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700">
+                  Progresso
+                </span>
+                <span className="text-sm font-bold text-blue-600">
+                  {Math.min(
+                    ((coposHoje + pendingCops) / metaDiaria) * 100,
+                    100
+                  ).toFixed(0)}
+                  %
+                </span>
+              </div>
+              <div className="relative w-full bg-blue-100 rounded-full h-3 overflow-hidden shadow-inner">
+                <div
+                  className="bg-gradient-to-r from-blue-500 to-cyan-500 h-3 rounded-full transition-all duration-500 ease-out relative"
+                  style={{
+                    width: `${Math.min(
+                      ((coposHoje + pendingCops) / metaDiaria) * 100,
+                      100
+                    )}%`,
+                  }}
+                >
+                  <div className="absolute inset-0 bg-white bg-opacity-20 rounded-full animate-pulse"></div>
+                </div>
+              </div>
+            </div>
+
+            {/* Botão Salvar Destaque */}
+            <Button
+              onClick={handleSubmit}
+              className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all rounded-xl active:scale-[0.98]"
+              disabled={isSaving || pendingCops === 0}
+            >
+              {isSaving ? (
+                <div className="flex items-center gap-2">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  {t("common.saving")}
+                </div>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <Check size={20} />
+                  {t("water.save")}{" "}
+                  {pendingCops > 0 && `(+${pendingCops} copos)`}
+                </span>
+              )}
+            </Button>
+          </div>
+        </Card>
+
+        {/* Progresso de Hidratação Inteligente - ABAIXO DO REGISTRO */}
+        <ProgressoHidratacao />
+
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Painel Principal - Metas e Informações */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Controles de Meta */}
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="p-5">
+                {/* Cabeçalho clicável */}
+                <div
+                  className="flex items-center justify-between cursor-pointer mb-2"
+                  onClick={() => setMetaAberto(!metaAberto)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <Target size={20} className="text-blue-600" />
                     </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-bold ${
-                          registro.copos >= registro.meta
-                            ? "text-green-600"
-                            : "text-orange-600"
-                        }`}
-                      >
-                        {formatNumber(registro.copos, 'pt')} {t('water.cups')}
-                      </p>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Meta Diária
+                      </h3>
                       <p className="text-sm text-gray-500">
-                        {t('common.goal')}: {registro.meta}
+                        Calculada com base no seu perfil
                       </p>
                     </div>
                   </div>
-                ))}
-              </div>
-            </Card>
 
-            {/* Dicas */}
-            <Card className="p-6 bg-cyan-50 border border-cyan-100">
-              <h3 className="text-lg font-semibold text-cyan-800 mb-3">
-                💡 {t('water.tips.title')}
-              </h3>
-              <ul className="space-y-2 text-sm text-cyan-700">
-                <li>• {t('water.tip.1')}</li>
-                <li>• {t('water.tip.2')}</li>
-                <li>• {t('water.tip.3')}</li>
-                <li>• {t('water.tip.4')}</li>
-              </ul>
+                  <ChevronDown
+                    className={`transition-transform duration-300 text-gray-400 ${
+                      metaAberto ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+
+                {/* Conteúdo com animação */}
+                <AnimatePresence initial={false}>
+                  {metaAberto && (
+                    <motion.div
+                      key="meta-diaria"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-4"
+                    >
+                      {/* Meta atual ou edição */}
+                      {!editingGoal ? (
+                        <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
+                          <div>
+                            <p className="font-medium text-gray-700">
+                              Meta atual
+                            </p>
+                            <p className="text-2xl font-bold text-blue-600">
+                              {metaDiaria} copos
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {metaDiaria * mlPorCopo}ml por dia
+                            </p>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="bg-blue-50 rounded-xl p-4 space-y-4">
+                          <div className="flex items-center gap-3">
+                            <div className="flex-1">
+                              <label className="block text-sm font-medium text-gray-700 mb-2">
+                                Nova meta diária (copos)
+                              </label>
+                              <input
+                                value={goalInput}
+                                onChange={(e) =>
+                                  setGoalInput(
+                                    e.target.value.replace(/[^0-9]/g, "")
+                                  )
+                                }
+                                className="w-full border-2 border-blue-300 rounded-lg px-4 py-3 text-center font-bold text-lg"
+                                placeholder="8"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                const v = Math.max(
+                                  1,
+                                  Math.min(20, Number(goalInput || "0"))
+                                );
+                                if (v === metaDiaria) {
+                                  setEditingGoal(false);
+                                  return;
+                                }
+                                await setMetaManual(v);
+                                push({
+                                  type: "success",
+                                  message: t("water.goal.updated"),
+                                });
+                                setEditingGoal(false);
+                              }}
+                              className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
+                            >
+                              <Check size={16} />
+                              Salvar Meta
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingGoal(false)}
+                              className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                            >
+                              <X size={16} />
+                              Cancelar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tamanho do copo */}
+                      <CupSizeEditor
+                        current={mlPorCopo}
+                        onSave={async (newSize) => {
+                          const ok = await updateCupSize(newSize);
+                          if (ok)
+                            push({
+                              type: "success",
+                              message: t("water.cup.updated").replace(
+                                "{ml}",
+                                String(newSize)
+                              ),
+                            });
+                        }}
+                      />
+
+                      {/* Meta inteligente */}
+                      {metasFinais.fonte === "manual" && (
+                        <div className="bg-green-50 rounded-xl p-4 border border-green-200">
+                          <div className="flex items-center gap-3">
+                            <Zap size={20} className="text-green-600" />
+                            <div className="flex-1">
+                              <p className="font-medium text-green-800">
+                                Meta Inteligente Disponível
+                              </p>
+                              <p className="text-sm text-green-600">
+                                Use nossa recomendação automática
+                              </p>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                await resetarParaAutomatica();
+                                push({
+                                  type: "success",
+                                  message:
+                                    "Meta automática ativada com base no seu perfil!",
+                                });
+                              }}
+                              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
+                            >
+                              Ativar
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </Card>
           </div>
-          </Card>
+
+          {/* Painel Lateral - Estatísticas e Histórico */}
+          <div className="space-y-6">
+            {/* Estatísticas */}
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="p-5">
+                {/* Cabeçalho com botão de expandir */}
+                <div
+                  className="flex items-center justify-between cursor-pointer mb-2"
+                  onClick={() => setEstatiscicaAberto(!EstatiscicaAberto)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                      <TrendingUp size={20} className="text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Estatísticas
+                      </h3>
+                      <p className="text-sm text-gray-500">Últimos 7 dias</p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`transition-transform duration-300 text-gray-400 ${
+                      EstatiscicaAberto ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+
+                {/* Conteúdo expansível com animação */}
+                <AnimatePresence initial={false}>
+                  {EstatiscicaAberto && (
+                    <motion.div
+                      key="estatisticas"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden space-y-3"
+                    >
+                      {/* Média diária */}
+                      <div className="flex justify-between items-center p-3 bg-white rounded-xl border border-blue-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <TrendingUp size={14} className="text-blue-600" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">
+                            Média diária
+                          </span>
+                        </div>
+                        <span className="font-bold text-blue-600">
+                          {avgPerDay
+                            ? formatNumber(
+                                +(avgPerDay / mlPorCopo).toFixed(1),
+                                "pt"
+                              )
+                            : "0"}{" "}
+                          copos
+                        </span>
+                      </div>
+
+                      {/* Dias na meta */}
+                      <div className="flex justify-between items-center p-3 bg-white rounded-xl border border-green-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+                            <Target size={14} className="text-green-600" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">
+                            Dias na meta
+                          </span>
+                        </div>
+                        <span className="font-bold text-green-600">
+                          {
+                            historico.filter((h) => h.copos >= metaDiaria)
+                              .length
+                          }
+                          /{historico.length}
+                        </span>
+                      </div>
+
+                      {/* Melhor dia */}
+                      <div className="flex justify-between items-center p-3 bg-white rounded-xl border border-purple-100">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <Trophy size={14} className="text-purple-600" />
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">
+                            Melhor dia
+                          </span>
+                        </div>
+                        <span className="font-bold text-purple-600">
+                          {bestDay
+                            ? formatNumber(
+                                Math.round(bestDay.amount / mlPorCopo),
+                                "pt"
+                              )
+                            : 0}{" "}
+                          copos
+                        </span>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </Card>
+
+            {/* Histórico */}
+            <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
+              <div className="p-5">
+                {/* Cabeçalho */}
+                <div
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => sethistoricoAberto(!historicoAberto)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                      <Calendar size={20} className="text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">
+                        Histórico
+                      </h3>
+                      <p className="text-sm text-gray-500">Últimos 7 dias</p>
+                    </div>
+                  </div>
+                  <ChevronDown
+                    className={`transition-transform duration-300 text-gray-400 ${
+                      historicoAberto ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+
+                {/* Conteúdo expansível com animação */}
+                <AnimatePresence initial={false}>
+                  {historicoAberto && (
+                    <motion.div
+                      key="conteudo"
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3, ease: "easeInOut" }}
+                      className="overflow-hidden mt-4 space-y-3"
+                    >
+                      {historico.map((registro, index) => (
+                        <div
+                          key={index}
+                          className="flex justify-between items-center p-3 bg-white rounded-xl border border-gray-100 hover:shadow-sm transition-shadow"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <span className="text-xs font-bold text-blue-600">
+                                {new Date(registro.data)
+                                  .toLocaleDateString("pt-BR", {
+                                    weekday: "short",
+                                  })
+                                  .slice(0, 3)}
+                              </span>
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-gray-900">
+                                {new Date(registro.data).toLocaleDateString(
+                                  "pt-BR",
+                                  {
+                                    day: "numeric",
+                                    month: "short",
+                                  }
+                                )}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <p
+                              className={`font-bold text-sm ${
+                                registro.copos >= registro.meta
+                                  ? "text-green-600"
+                                  : "text-orange-600"
+                              }`}
+                            >
+                              {formatNumber(registro.copos, "pt")} copos
+                            </p>
+                            <div className="w-12 bg-gray-200 rounded-full h-1.5 mt-1">
+                              <div
+                                className={`h-1.5 rounded-full ${
+                                  registro.copos >= registro.meta
+                                    ? "bg-green-500"
+                                    : "bg-orange-500"
+                                }`}
+                                style={{
+                                  width: `${Math.min(
+                                    (registro.copos / registro.meta) * 100,
+                                    100
+                                  )}%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </Card>
+          </div>
         </div>
       </div>
     </div>
   );
 };
 
-interface CupSizeEditorProps { current: number; onSave: (n: number) => void | Promise<void>; }
+interface CupSizeEditorProps {
+  current: number;
+  onSave: (n: number) => void | Promise<void>;
+}
 const CupSizeEditor: React.FC<CupSizeEditorProps> = ({ current, onSave }) => {
-  const { t } = useI18n();
   const [open, setOpen] = useState(false);
   const [value, setValue] = useState(String(current));
-  useEffect(()=> { setValue(String(current)); }, [current]);
+  useEffect(() => {
+    setValue(String(current));
+  }, [current]);
+
   return (
-    <div className="text-xs text-slate-600 flex flex-col items-center gap-1">
-      {!open && (
-        <button type="button" onClick={()=> setOpen(true)} className="underline text-blue-600">
-          {t('water.cup.adjust')} ({current}ml)
-        </button>
-      )}
-      {open && (
+    <div className="bg-blue-50 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
-          <input value={value} onChange={e=> setValue(e.target.value.replace(/[^0-9]/g,''))} className="w-16 border rounded px-1 py-0.5 text-center" />
-          <span>ml</span>
-          <button type="button" className="text-green-600" onClick={async ()=> { const n = Math.max(50, Math.min(1000, Number(value||'0'))); if (!n) return; await onSave(n); setOpen(false); }}>{t('common.save')}</button>
-          <button type="button" className="text-red-500" onClick={()=> setOpen(false)}>{t('common.cancel')}</button>
+          <GlassWater size={16} className="text-blue-600" />
+          <span className="text-sm font-medium text-gray-700">
+            Tamanho do copo
+          </span>
+        </div>
+        {!open ? (
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className="text-sm bg-white hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-colors border border-blue-200 flex items-center gap-1"
+          >
+            <Settings size={12} />
+            Ajustar
+          </button>
+        ) : (
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              className="w-6 h-6 bg-green-500 text-white rounded flex items-center justify-center hover:bg-green-600 transition-colors"
+              onClick={async () => {
+                const n = Math.max(50, Math.min(1000, Number(value || "0")));
+                if (!n) return;
+                await onSave(n);
+                setOpen(false);
+              }}
+            >
+              <Check size={12} />
+            </button>
+            <button
+              type="button"
+              className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+              onClick={() => setOpen(false)}
+            >
+              <X size={12} />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {!open ? (
+        <p className="text-lg font-bold text-blue-600">{current}ml por copo</p>
+      ) : (
+        <div className="flex items-center gap-2">
+          <input
+            value={value}
+            onChange={(e) => setValue(e.target.value.replace(/[^0-9]/g, ""))}
+            className="flex-1 border-2 border-blue-300 rounded-lg px-3 py-2 text-center font-medium"
+            placeholder="250"
+          />
+          <span className="text-gray-600 font-medium">ml</span>
         </div>
       )}
     </div>

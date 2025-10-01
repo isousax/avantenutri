@@ -26,13 +26,15 @@ const Perfil: React.FC = () => {
     phone?: string | undefined;
   }>({});
 
+  console.log("Telefone: ", phone)
+
   useEffect(() => {
     if (user) {
-      setDisplayName(user.display_name || user.full_name || "");
+      setDisplayName(user.display_name || "");
       setFullName(user.full_name || "");
       setPhone(user.phone || "");
       originalRef.current = {
-        display_name: user.display_name || user.full_name || "",
+        display_name: user.display_name || "",
         full_name: user.full_name || "",
         phone: user.phone || "",
       };
@@ -188,7 +190,7 @@ const Perfil: React.FC = () => {
           </p>
           <div className="flex items-center gap-2 mt-1">
             <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-              Plano Ativo
+              Ativo
             </span>
           </div>
         </div>
