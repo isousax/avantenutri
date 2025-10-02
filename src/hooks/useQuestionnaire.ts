@@ -26,7 +26,7 @@ export const useGetQuestionnaire = () => {
       try {
         // authenticatedFetch já retorna JSON; garantir formato esperado
         const data = await authenticatedFetch(
-          API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '')
+          API.QUESTIONNAIRE.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '')
         );
         // Backend deve retornar objeto ou erro 404 (capturado e tratado)
         if (!data) return null;
@@ -49,7 +49,7 @@ export const useSaveQuestionnaire = () => {
   return useMutation({
     mutationFn: async (input: QuestionnaireData): Promise<QuestionnaireResponse> => {
       const endpoint = API.QUESTIONNAIRE.replace(
-        import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br',
+        import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev',
         ''
       );
       // authenticatedFetch já lança em caso de !ok
@@ -81,7 +81,7 @@ export const useSaveQuestionnaireDraft = () => {
   return useMutation({
     mutationFn: async (partial: Partial<QuestionnaireData>): Promise<QuestionnaireResponse> => {
       const endpoint = API.QUESTIONNAIRE.replace(
-        import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br',
+        import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev',
         ''
       );
       const data = await authenticatedFetch(endpoint, {

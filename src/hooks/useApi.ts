@@ -3,7 +3,7 @@ import { useAuth } from '../contexts';
 import { API } from '../config/api';
 
 // URLs da API
-const API_BASE = import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev';
 
 // Hook para fetch autenticado
 export const useAuthenticatedFetch = () => {
@@ -15,7 +15,7 @@ export const useAuthenticatedFetch = () => {
       throw new Error('Token de acesso não disponível');
     }
 
-    const response = await fetch(`${API_BASE}${endpoint}`, {
+    const response = await fetch(`${endpoint}`, {
       ...options,
       headers: {
         'Authorization': `Bearer ${token}`,
@@ -41,7 +41,7 @@ export const useUserData = () => {
 
   return useQuery({
     queryKey: ['user', user?.id],
-    queryFn: () => authenticatedFetch(API.ME.replace(`${API_BASE}`, '')),
+    queryFn: () => authenticatedFetch(API.ME),
     enabled: !!user?.id,
     staleTime: 10 * 60 * 1000, // 10 minutos para dados do usuário
   });

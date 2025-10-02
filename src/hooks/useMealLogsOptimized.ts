@@ -65,7 +65,7 @@ export const useMealLogsQuery = (days = 7) => {
       const fromStr = fmt(start);
       const toStr = fmt(end);
 
-      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
       const data = await response.json();
       
@@ -90,7 +90,7 @@ export const useMealSummaryQuery = (days = 7) => {
   return useQuery({
     queryKey: ['meal-summary', days],
     queryFn: async (): Promise<SummaryResponse> => {
-      const endpoint = API.MEAL_SUMMARY.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.MEAL_SUMMARY.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
       const data = await response.json();
       
@@ -123,7 +123,7 @@ export const useMealLogs = (days = 7) => {
       fat_g?: number;
       datetime?: string;
     }) => {
-      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,7 +157,7 @@ export const useMealLogs = (days = 7) => {
         fat_g: number;
       }>;
     }) => {
-      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
@@ -179,7 +179,7 @@ export const useMealLogs = (days = 7) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.MEAL_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
         method: 'DELETE',
       });

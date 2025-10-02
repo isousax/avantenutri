@@ -58,7 +58,7 @@ export const useWeightLogsQuery = (days = 90) => {
       const fromStr = fmt(start);
       const toStr = fmt(today);
 
-      const endpoint = API.WEIGHT_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.WEIGHT_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
       const data = await response.json();
       
@@ -89,7 +89,7 @@ export const useWeightSummaryQuery = (days = 90) => {
         return { ok: false };
       }
 
-      const endpoint = API.WEIGHT_SUMMARY.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.WEIGHT_SUMMARY.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
       const data = await response.json();
       
@@ -120,7 +120,7 @@ export const useWeightLogs = (days = 90) => {
         throw new Error('Sem permissão');
       }
 
-      const endpoint = API.WEIGHT_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.WEIGHT_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -147,7 +147,7 @@ export const useWeightLogs = (days = 90) => {
         throw new Error('Sem permissão');
       }
 
-      const endpoint = API.WEIGHT_LOGS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const endpoint = API.WEIGHT_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
         method: 'DELETE',
       });
