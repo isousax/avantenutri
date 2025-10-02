@@ -48,7 +48,7 @@ export const useWaterLogsQuery = (days = 7) => {
       const fromStr = fmt(start);
       const toStr = fmt(end);
 
-      const endpoint = API.WATER_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.WATER_LOGS;
       const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
       const data = await response.json();
       
@@ -73,7 +73,7 @@ export const useWaterSummaryQuery = (days = 7) => {
   return useQuery({
     queryKey: ['water-summary', days],
     queryFn: async (): Promise<SummaryResponse> => {
-      const endpoint = API.WATER_SUMMARY.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.WATER_SUMMARY;
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
       const data = await response.json();
       
@@ -98,7 +98,7 @@ export const useWaterLogs = (days = 7) => {
 
   const addMutation = useMutation({
     mutationFn: async (amount_ml: number = 250) => {
-      const endpoint = API.WATER_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.WATER_LOGS;
       const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -120,7 +120,7 @@ export const useWaterLogs = (days = 7) => {
 
   const deleteMutation = useMutation({
     mutationFn: async (id: string) => {
-      const endpoint = API.WATER_LOGS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.WATER_LOGS;
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
         method: 'DELETE',
       });

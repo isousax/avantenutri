@@ -39,7 +39,7 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
   return useQuery({
     queryKey: ['diet-plans', options],
     queryFn: async (): Promise<DietPlanSummary[]> => {
-      const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.DIET_PLANS;
       const params = new URLSearchParams();
       if (options.archived !== undefined) {
         params.append('archived', options.archived.toString());
@@ -69,7 +69,7 @@ export const useDietPlanDetailQuery = (planId: string, includeData = false) => {
   return useQuery({
     queryKey: ['diet-plan-detail', planId, includeData],
     queryFn: async (): Promise<DietPlanDetail> => {
-      const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.DIET_PLANS;
       const params = new URLSearchParams();
       if (includeData) {
         params.append('include_data', 'true');
@@ -118,7 +118,7 @@ export const useDietPlans = () => {
         throw new Error('Sem permissão para criar dietas');
       }
 
-      const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.DIET_PLANS;
       const payload = { ...input } as any;
       if (input.format === 'structured') {
         // Se structured_data presente, removemos metas antigas desnecessárias
@@ -193,7 +193,7 @@ export const useDietPlans = () => {
         throw new Error('Sem permissão para revisar dietas');
       }
 
-      const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+      const endpoint = API.DIET_PLANS;
       const body: any = {};
       if (notes) body.notes = notes;
       if (includeData) body.include_data = true;
@@ -266,7 +266,7 @@ export const useDietPlans = () => {
     return await queryClient.fetchQuery({
       queryKey,
       queryFn: async () => {
-        const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+        const endpoint = API.DIET_PLANS;
         const params = new URLSearchParams();
         if (includeData) {
           params.append('include_data', 'true');
@@ -300,7 +300,7 @@ export const useDietPlans = () => {
 };
 
 export function prefetchDietPlans(qc: ReturnType<typeof useQueryClient>, fetcher: (input: RequestInfo, init?: RequestInit)=>Promise<Response>, options: { archived?: boolean } = {}) {
-  const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+  const endpoint = API.DIET_PLANS;
   const params = new URLSearchParams();
   if (options.archived !== undefined) params.append('archived', options.archived.toString());
   const url = params.toString() ? `${endpoint}?${params}` : endpoint;
@@ -318,7 +318,7 @@ export function prefetchDietPlans(qc: ReturnType<typeof useQueryClient>, fetcher
 
 export function prefetchDietPlanDetail(qc: ReturnType<typeof useQueryClient>, fetcher: (input: RequestInfo, init?: RequestInit)=>Promise<Response>, planId: string, includeData = false) {
   if (!planId) return;
-  const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev', '');
+  const endpoint = API.DIET_PLANS;
   const params = new URLSearchParams();
   if (includeData) params.append('include_data','true');
   const url = params.toString() ? `${endpoint}/${planId}?${params}` : `${endpoint}/${planId}`;

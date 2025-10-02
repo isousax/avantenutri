@@ -25,7 +25,7 @@ export function useDietPlans() {
   const updateMeta = async (planId: string, payload: Partial<{ name: string; description: string; status: 'active'|'archived'; results_summary: string; start_date: string; end_date: string; }>) => {
     if (!planId) return false;
     try {
-      const resp = await authenticatedFetch(API.dietPlan(planId).replace((import.meta as any).env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev',''), {
+      const resp = await authenticatedFetch(API.dietPlan(planId), {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
