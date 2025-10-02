@@ -2,9 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '../contexts';
 import { API } from '../config/api';
 
-// URLs da API
-const API_BASE = import.meta.env.VITE_API_URL || 'https://login-service.avantenutri.workers.dev';
-
 // Hook para fetch autenticado
 export const useAuthenticatedFetch = () => {
   const { getAccessToken } = useAuth();
@@ -57,7 +54,7 @@ export const useDashboardData = () => {
     queryFn: async () => {
       // Usar endpoints que realmente existem
       const [profile] = await Promise.all([
-        authenticatedFetch(API.PROFILE.replace(`${API_BASE}`, '')),
+        authenticatedFetch(API.PROFILE),
       ]);
       return { profile };
     },
@@ -73,7 +70,7 @@ export const useWaterIntake = () => {
 
   return useQuery({
     queryKey: ['water-intake', user?.id],
-    queryFn: () => authenticatedFetch(API.WATER_LOGS.replace(`${API_BASE}`, '')),
+    queryFn: () => authenticatedFetch(API.WATER_LOGS),
     enabled: !!user?.id,
     staleTime: 2 * 60 * 1000, // 2 minutos para registros de água
   });
@@ -87,7 +84,7 @@ export const useAddWaterIntake = () => {
 
   return useMutation({
     mutationFn: (amount: number) => 
-      authenticatedFetch(API.WATER_LOGS.replace(`${API_BASE}`, ''), {
+      authenticatedFetch(API.WATER_LOGS, {
         method: 'POST',
         body: JSON.stringify({ amount, timestamp: new Date().toISOString() }),
       }),
@@ -107,7 +104,7 @@ export const useConsultations = () => {
 
   return useQuery({
     queryKey: ['consultations', user?.id],
-    queryFn: () => authenticatedFetch(API.CONSULTATIONS.replace(`${API_BASE}`, '')),
+    queryFn: () => authenticatedFetch(API.CONSULTATIONS),
     enabled: !!user?.id,
     staleTime: 10 * 60 * 1000, // 10 minutos para consultas
   });
@@ -120,7 +117,7 @@ export const usePaymentHistory = () => {
 
   return useQuery({
     queryKey: ['payments', user?.id],
-    queryFn: () => authenticatedFetch(API.BILLING_PAYMENTS.replace(`${API_BASE}`, '')),
+    queryFn: () => authenticatedFetch(API.BILLING_PAYMENTS),
     enabled: !!user?.id,
     staleTime: 15 * 60 * 1000, // 15 minutos para pagamentos
   });
