@@ -9,16 +9,17 @@ import { useI18n } from "../../i18n";
 import { useSaveQuestionnaire } from "../../hooks/useQuestionnaire";
 
 // Tipos
-type CategoriaType = 'infantil' | 'gestante' | 'adulto' | 'esportiva';
+type CategoriaType = "infantil" | "gestante" | "adulto" | "esportiva";
 
 interface Pergunta {
   pergunta: string;
-  tipo: 'texto' | 'numero' | 'select' | 'textarea';
+  tipo: "texto" | "numero" | "select" | "textarea";
   icon: string;
   expansivel?: boolean;
   placeholderExt?: string;
   opcoes?: string[];
   required?: boolean;
+  id: string;
 }
 
 interface Categoria {
@@ -74,11 +75,22 @@ const categorias: Categoria[] = [
 // Perguntas por categoria
 const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   infantil: [
-    { pergunta: "Nome da criança", tipo: "texto", icon: "👧" },
-    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
-    { pergunta: "Peso atual (kg)", tipo: "numero", icon: "⚖️" },
-    { pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
+      id: "nome_crianca",
+      pergunta: "Nome da criança",
+      tipo: "texto",
+      icon: "👧",
+    },
+    { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    {
+      id: "peso_atual",
+      pergunta: "Peso atual (kg)",
+      tipo: "numero",
+      icon: "⚖️",
+    },
+    { id: "altura", pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
+    {
+      id: "restricao_alimentar",
       pergunta: "Possui alguma restrição alimentar?",
       tipo: "select",
       icon: "🚫",
@@ -87,6 +99,7 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
     },
     {
+      id: "objetivo_nutricional",
       pergunta: "Objetivo principal",
       tipo: "select",
       icon: "🎯",
@@ -100,18 +113,29 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
         "Outros",
       ],
     },
-    {
-      pergunta: "Descreva brevemente os hábitos alimentares atuais",
-      tipo: "textarea",
-      icon: "📝",
-    },
   ],
   gestante: [
-    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
-    { pergunta: "Tempo de gestação (semanas)", tipo: "numero", icon: "📅" },
-    { pergunta: "Peso antes da gravidez (kg)", tipo: "numero", icon: "⚖️" },
-    { pergunta: "Peso atual (kg)", tipo: "numero", icon: "⚖️" },
+    { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
     {
+      id: "tempo_gestacao",
+      pergunta: "Tempo de gestação (semanas)",
+      tipo: "numero",
+      icon: "📅",
+    },
+    {
+      id: "peso_antes",
+      pergunta: "Peso antes da gravidez (kg)",
+      tipo: "numero",
+      icon: "⚖️",
+    },
+    {
+      id: "peso_atual",
+      pergunta: "Peso atual (kg)",
+      tipo: "numero",
+      icon: "⚖️",
+    },
+    {
+      id: "restricao_alimentar",
       pergunta: "Possui restrições alimentares?",
       tipo: "select",
       icon: "🚫",
@@ -120,11 +144,16 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
     },
     {
+      id: "problemas_gestacao",
       pergunta: "Teve algum problema de saúde durante a gestação?",
-      tipo: "textarea",
+      tipo: "select",
       icon: "🏥",
+      expansivel: true,
+      placeholderExt: "Qual?",
+      opcoes: ["Não", "Sim"],
     },
     {
+      id: "objetivo_nutricional",
       pergunta: "Objetivo nutricional",
       tipo: "select",
       icon: "🎯",
@@ -139,11 +168,12 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
     },
   ],
   adulto: [
-    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
-    { pergunta: "Profissão", tipo: "texto", icon: "💼" },
-    { pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
-    { pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
+    { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { id: "profissao", pergunta: "Profissão", tipo: "texto", icon: "💼" },
+    { id: "peso", pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
+    { id: "altura", pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
+      id: "atividade_fisica",
       pergunta: "Nível de atividade física",
       tipo: "select",
       icon: "💪",
@@ -156,6 +186,7 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
       ],
     },
     {
+      id: "restricao_alimentar",
       pergunta: "Possui restrições alimentares?",
       tipo: "select",
       icon: "🚫",
@@ -164,6 +195,7 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
       opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
     },
     {
+      id: "objetivo_nutricional",
       pergunta: "Objetivo principal",
       tipo: "select",
       icon: "🎯",
@@ -178,26 +210,22 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
         "Outros",
       ],
     },
-    {
-      pergunta: "Descreva sua rotina alimentar atual",
-      tipo: "textarea",
-      icon: "📝",
-      required: false
-    },
   ],
   esportiva: [
-    { pergunta: "Idade", tipo: "numero", icon: "🎂" },
-    { pergunta: "Esporte praticado", tipo: "texto", icon: "⚽" },
+    { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { id: "esporte", pergunta: "Esporte praticado", tipo: "texto", icon: "⚽" },
     {
+      id: "frequencia_treinos",
       pergunta: "Frequência de treinos",
       tipo: "select",
       icon: "📊",
       expansivel: false,
       opcoes: ["3-4x/semana", "5-6x/semana", "Diário", "Profissional"],
     },
-    { pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
-    { pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
+    { id: "peso", pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
+    { id: "altura", pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
+      id: "objetivo_nutricional",
       pergunta: "Objetivo principal",
       tipo: "select",
       icon: "🎯",
@@ -211,9 +239,13 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
       ],
     },
     {
-      pergunta: "Suplementos utilizados atualmente",
-      tipo: "textarea",
+      id: "suplementos",
+      pergunta: "Utiliza algum suplemento?",
+      tipo: "select",
       icon: "💊",
+      expansivel: true,
+      opcoes: ["Sim", "Não"],
+      placeholderExt: "Quais?",
     },
   ],
 };
@@ -240,8 +272,8 @@ const QuestionarioPage: React.FC = () => {
     if (etapa === 1 && categoria) {
       const perguntas = perguntasPorCategoria[categoria as CategoriaType];
       perguntas.forEach((perguntaObj: Pergunta) => {
-        if (!respostas[perguntaObj.pergunta]?.trim()) {
-          novosErros[perguntaObj.pergunta] = "Campo obrigatório";
+        if (!respostas[perguntaObj.id]?.trim()) {
+          novosErros[perguntaObj.id] = "Campo obrigatório";
         }
       });
     }
@@ -268,23 +300,24 @@ const QuestionarioPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!validarEtapa(step) || !categoria) return;
 
+    console.log("Respostas: ", respostas);
+
     try {
       await saveQuestionnaire.mutateAsync({
         categoria,
-        respostas
+        respostas,
       });
-      
+
       // Limpar dados locais após salvar com sucesso
       updateQuestionario({ step: etapas.length - 1 });
-      
+
       // Exibir sucesso
       console.log("Questionário salvo com sucesso!");
-      
+
       // Opcional: redirecionar para dashboard após alguns segundos
       setTimeout(() => {
         navigate("/dashboard");
       }, 3000);
-      
     } catch (error) {
       console.error("Erro ao salvar questionário:", error);
       // Aqui você poderia mostrar uma mensagem de erro para o usuário
@@ -311,7 +344,9 @@ const QuestionarioPage: React.FC = () => {
                   ? `${cat.activeColor} shadow-lg scale-105`
                   : `${cat.borderColor} ${cat.color} hover:shadow-md`
               }`}
-              onClick={() => updateQuestionario({ categoria: cat.value as CategoriaType })}
+              onClick={() =>
+                updateQuestionario({ categoria: cat.value as CategoriaType })
+              }
             >
               <div className="flex items-center gap-4">
                 <div className="p-3 rounded-xl bg-white shadow-sm">
@@ -391,10 +426,8 @@ const QuestionarioPage: React.FC = () => {
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200"
                   }`}
-                  value={respostas[p.pergunta] || ""}
-                  onChange={(e) =>
-                    handleInputChange(p.pergunta, e.target.value)
-                  }
+                  value={respostas[p.id] || ""}
+                  onChange={(e) => handleInputChange(p.id, e.target.value)}
                   placeholder={`Digite ${p.pergunta.toLowerCase()}`}
                 />
               )}
@@ -406,10 +439,8 @@ const QuestionarioPage: React.FC = () => {
                       ? "border-red-500 bg-red-50"
                       : "border-gray-200"
                   }`}
-                  value={respostas[p.pergunta] || ""}
-                  onChange={(e) =>
-                    handleInputChange(p.pergunta, e.target.value)
-                  }
+                  value={respostas[p.id] || ""}
+                  onChange={(e) => handleInputChange(p.id, e.target.value)}
                   placeholder={`Digite ${p.pergunta.toLowerCase()}`}
                 />
               )}
@@ -421,10 +452,8 @@ const QuestionarioPage: React.FC = () => {
                         ? "border-red-500 bg-red-50"
                         : "border-gray-200"
                     }`}
-                    value={respostas[p.pergunta] || ""}
-                    onChange={(e) =>
-                      handleInputChange(p.pergunta, e.target.value)
-                    }
+                    value={respostas[p.id] || ""}
+                    onChange={(e) => handleInputChange(p.id, e.target.value)}
                   >
                     <option value="">Selecione uma opção</option>
                     {p.opcoes?.map((o: string, i: number) => (
@@ -434,19 +463,16 @@ const QuestionarioPage: React.FC = () => {
                     ))}
                   </select>
                   {p.expansivel &&
-                    (respostas[p.pergunta] === "Sim - Outras" ||
-                      respostas[p.pergunta] === "Outros") && (
+                    ["Sim - Outras", "Outros", "Sim"].includes(
+                      respostas[p.id]
+                    ) && (
                       <input
-                        className="w-full px-4 py-3 border-2 rounded-xl"
+                        value={respostas[`${p.id}_detalhe`] || ""}
+                        onChange={(e) =>
+                          handleInputChange(`${p.id}_detalhe`, e.target.value)
+                        }
                         placeholder={
                           p.placeholderExt || "Por favor, especifique"
-                        }
-                        value={respostas[p.pergunta + " - Detalhe"] || ""}
-                        onChange={(e) =>
-                          handleInputChange(
-                            p.pergunta + " - Detalhe",
-                            e.target.value
-                          )
                         }
                       />
                     )}
@@ -461,10 +487,8 @@ const QuestionarioPage: React.FC = () => {
                       : "border-gray-200"
                   }`}
                   placeholder={`${p.pergunta.toLowerCase()}`}
-                  value={respostas[p.pergunta] || ""}
-                  onChange={(e) =>
-                    handleInputChange(p.pergunta, e.target.value)
-                  }
+                  value={respostas[p.id] || ""}
+                  onChange={(e) => handleInputChange(p.id, e.target.value)}
                 />
               )}
               {erros[p.pergunta] && (
@@ -494,7 +518,9 @@ const QuestionarioPage: React.FC = () => {
     );
   } else if (step === 2) {
     // Resumo final
-    const perguntas = categoria ? perguntasPorCategoria[categoria as CategoriaType] : [];
+    const perguntas = categoria
+      ? perguntasPorCategoria[categoria as CategoriaType]
+      : [];
     conteudo = (
       <div className="space-y-8">
         <div className="text-center mb-6">
@@ -508,9 +534,9 @@ const QuestionarioPage: React.FC = () => {
         <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 border border-gray-200">
           {perguntas.map((p: Pergunta, idx: number) => (
             <div key={idx} className="flex justify-between">
-              <span className="font-medium text-gray-700">{p.pergunta}:</span>
+              <span className="font-medium text-gray-700">{p.id}:</span>
               <span className="text-gray-900">
-                {respostas[p.pergunta] || "—"}
+                {respostas[p.id] || "—"}
               </span>
             </div>
           ))}

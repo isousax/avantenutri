@@ -33,47 +33,6 @@ export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   );
 };
 
-interface LoadingCardProps {
-  title?: string;
-  description?: string;
-  className?: string;
-  children?: React.ReactNode;
-  variant?: 'default' | 'primary' | 'success' | 'warning' | 'error';
-}
-
-export const LoadingCard: React.FC<LoadingCardProps> = ({ 
-  title = "Carregando...", 
-  description,
-  className = '',
-  children,
-  variant = 'default'
-}) => {
-  const variantConfig = {
-    default: { bg: 'bg-white', border: 'border-gray-200', text: 'text-gray-900' },
-    primary: { bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-900' },
-    success: { bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-900' },
-    warning: { bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-900' },
-    error: { bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-900' }
-  };
-
-  const config = variantConfig[variant];
-
-  return (
-    <div className={`rounded-2xl shadow-sm border ${config.bg} ${config.border} p-8 ${className}`}>
-      <div className="flex items-center justify-center flex-col space-y-4">
-        <LoadingSpinner size="lg" variant={variant} />
-        <div className="text-center">
-          <h3 className={`text-lg font-semibold ${config.text}`}>{title}</h3>
-          {description && (
-            <p className={`text-sm mt-2 ${config.text.replace('900', '700')}`}>{description}</p>
-          )}
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-};
-
 // Interface para o componente de erro
 interface ErrorDisplayProps {
   error?: Error | null;

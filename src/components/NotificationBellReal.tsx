@@ -12,7 +12,7 @@ const NotificationBellReal: React.FC = () => {
   const navigate = useNavigate();
   
   const { data: unreadData } = useNotifications(true, 10, 0);
-  const { data: recentData, isLoading, error } = useNotifications(false, 5, 0);
+  const { data: recentData, error } = useNotifications(false, 5, 0);
   const { mutate: markAsRead } = useMarkNotificationRead();
   const { mutate: markAll, isPending: markingAll } = useMarkAllNotificationsRead();
 
@@ -98,14 +98,6 @@ const NotificationBellReal: React.FC = () => {
   };
 
   const renderContent = () => {
-    if (isLoading) {
-      return (
-        <div className="px-4 py-6 text-center">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-green-500 mx-auto"></div>
-          <p className="text-sm text-gray-500 mt-2">Carregando...</p>
-        </div>
-      );
-    }
     if (error) {
       return (
         <div className="px-4 py-6 text-center">
