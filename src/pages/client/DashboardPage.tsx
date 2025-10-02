@@ -39,6 +39,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import Prefetch, { logPrefetchMetrics } from '../../utils/prefetch';
 import { shouldShowSkeleton } from '../../utils/loadingHelpers';
 import { useIntersectionPrefetch } from '../../hooks/useIntersectionPrefetch';
+import { API } from "../../config/api";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -1580,7 +1581,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
                       className="text-[11px] text-blue-600 underline"
                       onClick={() => {
                         if (v.data.file?.key && cached?.id) {
-                          const url = `${location.origin}/diet/plans/${cached.id}/version/${v.id}/file`;
+                          const url = `${API.API_AUTH_BASE}/diet/plans/${cached.id}/version/${v.id}/file`;
                           fetch(url, { headers: { authorization: localStorage.getItem('access_token') ? `Bearer ${localStorage.getItem('access_token')}` : '' } })
                             .then(async (r) => {
                               if (!r.ok) throw new Error('HTTP ' + r.status);

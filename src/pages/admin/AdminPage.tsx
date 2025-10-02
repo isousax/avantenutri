@@ -201,7 +201,7 @@ const DietManagement: React.FC = () => {
 
   const downloadPdf = (planId: string, version: any) => {
     if (version?.data?.file?.key) {
-      const url = `${location.origin}/diet/plans/${planId}/version/${version.id}/file`;
+      const url = `${API.API_AUTH_BASE}/diet/plans/${planId}/version/${version.id}/file`;
       fetch(url, { headers: { authorization: localStorage.getItem("access_token") ? `Bearer ${localStorage.getItem("access_token")}` : "" } })
         .then(async (r) => {
           if (!r.ok) throw new Error();
