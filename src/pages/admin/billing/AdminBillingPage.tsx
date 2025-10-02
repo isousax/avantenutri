@@ -15,7 +15,8 @@ interface PaymentRow {
   user_email?: string;
   first_name?: string;
   last_name?: string;
-  plan_id: string; 
+  purpose?: string;
+  consultation_type?: string;
   amount_cents: number; 
   status: string; 
   status_detail?: string;
@@ -51,8 +52,9 @@ const AdminBillingPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   // Filtros & paginação
   const [payStatus, setPayStatus] = useState<string>('');
-  const [payPlan, setPayPlan] = useState<string>('');
-  const [payPlanInput, setPayPlanInput] = useState<string>(''); // debounce input
+  const [payUser, setPayUser] = useState<string>(''); // filter by user_id
+  const [payUserInput, setPayUserInput] = useState<string>(''); // debounce input
+  const [payConsultType, setPayConsultType] = useState<string>('');
   const [payPage, setPayPage] = useState(1);
   const [payHasMore, setPayHasMore] = useState(false);
   const [payStart, setPayStart] = useState<string>('');
@@ -62,6 +64,11 @@ const AdminBillingPage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const initializedRef = useRef(false);
   const [exportingPayments, setExportingPayments] = useState(false);
+  // Pricing management state
+  const [pricing, setPricing] = useState<{ type: string; amount_cents: number; currency: string; active: number; updated_at: string;}[]>([]);
+  const [loadingPricing, setLoadingPricing] = useState(false);
+  const [pricingDirty, setPricingDirty] = useState<Record<string, number>>({});
+  const [pricingActiveDirty, setPricingActiveDirty] = useState<Record<string, number>>({});
 
   // Ler querystring inicial
   useEffect(() => {
@@ -69,7 +76,8 @@ const AdminBillingPage: React.FC = () => {
     const qView = searchParams.get('view');
     if (qView === 'payments' || qView === 'webhooks' || qView === 'summary') setView(qView);
     const qStatus = searchParams.get('status'); if (qStatus) setPayStatus(qStatus);
-    const qPlan = searchParams.get('plan'); if (qPlan) { setPayPlan(qPlan); setPayPlanInput(qPlan); }
+  const qUser = searchParams.get('user'); if (qUser) { setPayUser(qUser); setPayUserInput(qUser); }
+  const qCt = searchParams.get('ctype'); if (qCt) setPayConsultType(qCt);
     const qPage = Number(searchParams.get('page')||'1'); if (qPage>1) setPayPage(qPage);
     const qs = searchParams.get('start'); if (qs) setPayStart(qs);
     const qe = searchParams.get('end'); if (qe) setPayEnd(qe);
@@ -83,21 +91,22 @@ const AdminBillingPage: React.FC = () => {
     const params: Record<string,string> = {};
     params.view = view;
     if (payStatus) params.status = payStatus;
-    if (payPlan) params.plan = payPlan;
+  if (payUser) params.user = payUser;
+  if (payConsultType) params.ctype = payConsultType;
     if (payPage>1) params.page = String(payPage);
     if (payStart) params.start = payStart;
     if (payEnd) params.end = payEnd;
     setSearchParams(params, { replace:true });
-  }, [view, payStatus, payPlan, payPage, payStart, payEnd, setSearchParams]);
+  }, [view, payStatus, payUser, payConsultType, payPage, payStart, payEnd, setSearchParams]);
 
-  // Debounce campo plan_id
+  // Debounce campo user_id
   useEffect(() => {
     const id = setTimeout(() => {
-      setPayPlan(prev => prev === payPlanInput ? prev : payPlanInput);
+      setPayUser(prev => prev === payUserInput ? prev : payUserInput);
       setPayPage(1);
     }, 400);
     return () => clearTimeout(id);
-  }, [payPlanInput]);
+  }, [payUserInput]);
 
   const loadPayments = useCallback(async () => {
     try {
@@ -106,8 +115,9 @@ const AdminBillingPage: React.FC = () => {
         limit: String(PAGE_SIZE),
         offset: String((payPage - 1) * PAGE_SIZE)
       };
-      if (payStatus) qs.status = payStatus; 
-      if (payPlan) qs.user_id = payPlan; // Reutilizando campo para filtrar por user_id
+  if (payStatus) qs.status = payStatus; 
+  if (payUser) qs.user_id = payUser;
+  if (payConsultType) qs.consultation_type = payConsultType;
       const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
       const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
       if(!r.ok) throw new Error('HTTP '+r.status);
@@ -129,7 +139,18 @@ const AdminBillingPage: React.FC = () => {
     } finally { 
       setLoading(false); 
     }
-  }, [authenticatedFetch, payStatus, payPlan, payPage]);
+  }, [authenticatedFetch, payStatus, payUser, payConsultType, payPage]);
+
+  const loadPricing = useCallback(async ()=> {
+    try {
+      setLoadingPricing(true);
+      const r = await authenticatedFetch(API.ADMIN_CONSULTATION_PRICING, { method:'GET', autoLogout:true });
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      const data = await r.json();
+      setPricing(data.pricing || []);
+    } catch(e:any){ push({ type:'error', message: 'Falha ao carregar preços' }); }
+    finally { setLoadingPricing(false); }
+  }, [authenticatedFetch]);
 
 
 
@@ -151,18 +172,19 @@ const AdminBillingPage: React.FC = () => {
     if (view === 'payments') loadPayments();
   }, [view, loadPayments]);
   useEffect(()=> { if (view === 'webhooks') loadWebhooks(); }, [view, loadWebhooks]);
+  useEffect(()=> { if (view === 'summary') loadPricing(); }, [view, loadPricing]);
 
   const currencyFmt = useCallback((cents: number) => new Intl.NumberFormat(locale==='pt'?'pt-BR':'en-US', { style:'currency', currency:'BRL' }).format(cents/100), [locale]);
 
   const summary = useMemo(() => {
     const totalApproved = payments.filter(p => p.status === 'approved').reduce((acc,p)=> acc + p.amount_cents, 0);
     const totalPending = payments.filter(p => p.status === 'pending').reduce((acc,p)=> acc + p.amount_cents, 0);
-    const byPlan: Record<string, number> = {};
-    payments.forEach(p => { if(!byPlan[p.plan_id]) byPlan[p.plan_id] = 0; byPlan[p.plan_id]+=1; });
-    return { totalApproved, totalPending, byPlan };
+    const byType: Record<string, number> = {};
+    payments.forEach(p => { const key = p.consultation_type || p.purpose || 'outro'; if(!byType[key]) byType[key]=0; byType[key]+=1; });
+    return { totalApproved, totalPending, byType };
   }, [payments]);
 
-  const byPlanEntries = Object.entries(summary.byPlan).sort((a,b)=> b[1]-a[1]);
+  const byTypeEntries = Object.entries(summary.byType).sort((a,b)=> b[1]-a[1]);
 
   // Util simples para gerar CSV
   function toCSV(rows: any[]): string {
@@ -191,7 +213,7 @@ const AdminBillingPage: React.FC = () => {
           offset: String(offset)
         };
         if (payStatus) qs.status = payStatus; 
-        if (payPlan) qs.user_id = payPlan; // Reutilizando campo para filtrar por user_id
+  if (payUser) qs.user_id = payUser;
         const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
         const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
         if(!r.ok) throw new Error('HTTP '+r.status);
@@ -210,7 +232,7 @@ const AdminBillingPage: React.FC = () => {
         user_id: p.user_id || '',
         user_email: p.user_email || '',
         user_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
-        plan_id: p.plan_id,
+  consultation_type: p.consultation_type || '',
         amount_cents: p.amount_cents,
         amount_brl: (p.amount_cents/100).toFixed(2),
         status: p.status,
@@ -261,9 +283,66 @@ const AdminBillingPage: React.FC = () => {
               <div className="text-xl font-semibold">{loading ? <Skeleton className="h-6 w-20" /> : currencyFmt(summary.totalPending)}</div>
             </Card>
             <Card className="p-4 space-y-1">
-              <div className="text-xs text-gray-500">{t('admin.billing.summary.plansTop')}</div>
+              <div className="text-xs text-gray-500">Tipos mais frequentes</div>
               {loading && <div className="space-y-2"><Skeleton className="h-3 w-20" /><Skeleton className="h-3 w-24" /><Skeleton className="h-3 w-16" /></div>}
-              {!loading && <ul className="text-xs space-y-1 max-h-28 overflow-auto">{byPlanEntries.length === 0 && <li className="text-gray-400">—</li>}{byPlanEntries.map(([plan, count])=> <li key={plan}><span className="font-mono">{plan}</span>: {count}</li>)}</ul>}
+              {!loading && <ul className="text-xs space-y-1 max-h-28 overflow-auto">{byTypeEntries.length === 0 && <li className="text-gray-400">—</li>}{byTypeEntries.map(([typ, count])=> <li key={typ}><span className="font-mono">{typ}</span>: {count}</li>)}</ul>}
+            </Card>
+            <Card className="p-4 col-span-full md:col-span-3">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-sm font-semibold">Preços de Consultas</h2>
+                <Button variant="secondary" type="button" onClick={loadPricing} disabled={loadingPricing}>{loadingPricing?'...':'Reload'}</Button>
+              </div>
+              {loadingPricing && <Skeleton lines={2} />}
+              {!loadingPricing && pricing.length===0 && <p className="text-xs text-gray-500">Nenhum preço configurado</p>}
+              {!loadingPricing && pricing.length>0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-left bg-gray-100">
+                        <th className="p-2">Tipo</th>
+                        <th className="p-2">Valor (BRL)</th>
+                        <th className="p-2">Ativo</th>
+                        <th className="p-2">Atualizado</th>
+                        <th className="p-2"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pricing.map(p => {
+                        const edited = pricingDirty[p.type] != null || pricingActiveDirty[p.type] != null;
+                        return (
+                          <tr key={p.type} className="border-b last:border-none">
+                            <td className="p-2 font-mono">{p.type}</td>
+                            <td className="p-2">
+                              <input type="number" className="w-24 border rounded px-1 py-0.5" defaultValue={(p.amount_cents/100).toFixed(2)} step="0.01" onChange={e=> {
+                                const v = Math.round(parseFloat(e.target.value||'0')*100);
+                                setPricingDirty(d=> ({ ...d, [p.type]: v }));
+                              }} />
+                            </td>
+                            <td className="p-2">
+                              <input type="checkbox" defaultChecked={p.active===1} onChange={e=> setPricingActiveDirty(d=> ({ ...d, [p.type]: e.target.checked?1:0 }))} />
+                            </td>
+                            <td className="p-2 text-[10px] text-gray-500">{new Date(p.updated_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</td>
+                            <td className="p-2">
+                              <Button type="button" disabled={!edited} onClick={async ()=> {
+                                try {
+                                  const amount = pricingDirty[p.type] ?? p.amount_cents;
+                                  const active = pricingActiveDirty[p.type] ?? p.active;
+                                  const r = await authenticatedFetch(API.ADMIN_CONSULTATION_PRICING, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type: p.type, amount_cents: amount, active }) });
+                                  if(!r.ok) throw new Error('fail');
+                                  push({ type:'success', message: 'Atualizado' });
+                                  setPricingDirty(d=> { const { [p.type]:_, ...rest } = d; return rest; });
+                                  setPricingActiveDirty(d=> { const { [p.type]:_, ...rest } = d; return rest; });
+                                  loadPricing();
+                                } catch { push({ type:'error', message:'Falha ao salvar'}); }
+                              }}>Salvar</Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </Card>
         </div>
       )}
@@ -283,7 +362,15 @@ const AdminBillingPage: React.FC = () => {
             </div>
             <div>
               <label className="block text-[11px] font-medium mb-1">User ID</label>
-              <input value={payPlanInput} onChange={e=> { setPayPlanInput(e.target.value); }} placeholder="Filtrar por User ID" className="border rounded px-2 py-1 text-sm" />
+              <input value={payUserInput} onChange={e=> { setPayUserInput(e.target.value); }} placeholder="Filtrar por User ID" className="border rounded px-2 py-1 text-sm" />
+            </div>
+            <div>
+              <label className="block text-[11px] font-medium mb-1">Tipo</label>
+              <select value={payConsultType} onChange={e=> { setPayConsultType(e.target.value); setPayPage(1); }} className="border rounded px-2 py-1 text-sm">
+                <option value="">Todos</option>
+                <option value="avaliacao_completa">Avaliação</option>
+                <option value="reavaliacao">Reavaliação</option>
+              </select>
             </div>
             <div>
               <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.start')}</label>
@@ -303,7 +390,7 @@ const AdminBillingPage: React.FC = () => {
               <tr className="bg-gray-100 text-left">
                 <th className="p-2">{t('admin.billing.table.payments.id')}</th>
                 <th className="p-2">Usuário</th>
-                <th className="p-2">{t('admin.billing.table.payments.plan')}</th>
+                <th className="p-2">Tipo</th>
                 <th className="p-2">{t('admin.billing.table.payments.amount')}</th>
                 <th className="p-2">{t('admin.billing.table.payments.status')}</th>
                 <th className="p-2">Método</th>
@@ -325,7 +412,7 @@ const AdminBillingPage: React.FC = () => {
                       <span className="text-gray-400 text-[9px] font-mono">{p.user_id}</span>
                     </div>
                   </td>
-                  <td className="p-2 font-mono text-xs">{p.plan_id}</td>
+                  <td className="p-2 font-mono text-xs">{p.consultation_type || p.purpose || '—'}</td>
                   <td className="p-2">{currencyFmt(p.amount_cents)}
                     {p.installments && p.installments > 1 && <span className="text-xs text-gray-500 ml-1">({p.installments}x)</span>}
                   </td>
@@ -366,7 +453,7 @@ const AdminBillingPage: React.FC = () => {
               </div>
               <div className="text-sm font-medium">{currencyFmt(p.amount_cents)}</div>
               <div className="flex flex-wrap gap-2 text-[11px] text-gray-600">
-                <span>plan: {p.plan_id}</span>
+                <span>tipo: {p.consultation_type || p.purpose || '—'}</span>
                 <span>{new Date(p.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
                 {p.processed_at && <span>{t('admin.billing.table.payments.processed')}: {new Date(p.processed_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>}
               </div>

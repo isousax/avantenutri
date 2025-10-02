@@ -55,8 +55,8 @@ export default function BillingSuccessPage() {
         // If payment is approved, refresh the page after a delay to update user permissions
         if (data.status === 'approved') {
           setTimeout(() => {
-            window.location.href = '/dashboard'; // Hard redirect to refresh permissions
-          }, 3000);
+            window.location.href = '/dashboard';
+          }, 2500);
         }
       } catch (e) {
         setError('Erro de conexão');
@@ -108,9 +108,9 @@ export default function BillingSuccessPage() {
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-4">{t('billing.success.title')}</h1>
             <p className="text-gray-600 mb-2">{t('billing.success.message')}</p>
-            {paymentStatus.plan && (
+            {paymentStatus.purpose === 'consultation' && (
               <p className="text-sm text-gray-500 mb-4">
-                Plano: {paymentStatus.plan.name}
+                Crédito gerado: {paymentStatus.consultation_type === 'avaliacao_completa' ? 'Avaliação Completa' : paymentStatus.consultation_type === 'reavaliacao' ? 'Reavaliação' : 'Consulta'}
               </p>
             )}
             <p className="text-sm text-gray-500 mb-6">{t('billing.success.redirecting')}</p>

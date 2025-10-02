@@ -12,7 +12,7 @@ interface SummaryResponse { ok?: boolean; range?: { from: string; to: string }; 
 
 export function useWeightLogs(defaultDays = 90) {
   const { authenticatedFetch } = useAuth();
-  const { can, usage } = usePermissions();
+  const { can } = usePermissions();
   const [logs, setLogs] = useState<WeightLog[]>([]);
   const [summary, setSummary] = useState<SummaryResponse | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,5 +80,6 @@ export function useWeightLogs(defaultDays = 90) {
   const diff_percent = summary?.stats?.diff_percent ?? null;
   const trend_slope = summary?.stats?.trend_slope ?? null;
 
-  return { logs, summary, loading, error, range, load, upsert, patch, setGoal, latest, diff_kg, diff_percent, trend_slope, goal: summary?.stats?.weight_goal_kg ?? null, series: summary?.series || [], usageWeight: usage?.PESO_ATUAL };
+  // usage?.PESO_ATUAL removido (modelo de entitlements/usage simplificado) – manter compat de chamadas antigas retornando undefined
+  return { logs, summary, loading, error, range, load, upsert, patch, setGoal, latest, diff_kg, diff_percent, trend_slope, goal: summary?.stats?.weight_goal_kg ?? null, series: summary?.series || [] };
 }

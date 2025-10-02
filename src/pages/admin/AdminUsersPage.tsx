@@ -3,7 +3,6 @@ import React, {
   useState,
   type FormEvent,
   type ChangeEvent,
-  useMemo,
 } from "react";
 import { useAuth } from "../../contexts";
 import Card from "../../components/ui/Card";
@@ -11,7 +10,6 @@ import Button from "../../components/ui/Button";
 import { API } from "../../config/api";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { SEO } from "../../components/comum/SEO";
-import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Skeleton from "../../components/ui/Skeleton";
 import { useToast } from "../../components/ui/ToastProvider";
 
@@ -24,7 +22,6 @@ interface ListedUser {
   created_at: string;
   display_name?: string;
   last_login_at?: string;
-  plan_id?: string;
 }
 
 interface ApiResponse {
@@ -43,11 +40,7 @@ const AdminUsersPage: React.FC = () => {
   const [changing, setChanging] = useState<string | null>(null);
   const [userIdFilter, setUserIdFilter] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
-  const [plans, setPlans] = useState<{ id: string; name: string; capabilities?: string[] }[]>([]);
-  const [loadingPlans, setLoadingPlans] = useState(false);
-  const [planEditUser, setPlanEditUser] = useState<string | null>(null);
-  const [planChanging, setPlanChanging] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState<string>("");
+  // Plan system removed
 
   const { push } = useToast();
 
@@ -84,22 +77,7 @@ const AdminUsersPage: React.FC = () => {
     // eslint-disable-next-line
   }, [page, pageSize]);
 
-  // Lazy load plans when first opening a plan edit
-  const ensurePlans = async () => {
-    if (plans.length || loadingPlans) return;
-    try {
-      setLoadingPlans(true);
-      const r = await authenticatedFetch(API.PLANS, { method: 'GET', autoLogout: true });
-      if (!r.ok) throw new Error('Falha ao carregar planos');
-      const data = await r.json();
-      const list = (data.plans || []).map((p: any) => ({ id: p.id, name: p.name, capabilities: p.capabilities || [] }));
-      setPlans(list);
-    } catch (e: any) {
-      setError(e.message || 'Erro ao carregar planos');
-    } finally {
-      setLoadingPlans(false);
-    }
-  };
+  // legacy plan functions removed
 
   const onSearch = (e: FormEvent<HTMLFormElement>): void => {
     e.preventDefault();
@@ -127,48 +105,12 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
-  const submitPlanChange = async (userId: string) => {
-    if (!selectedPlan) return;
-    try {
-      setPlanChanging(true);
-      const r = await authenticatedFetch(API.adminUserPlan(userId), {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ new_plan_id: selectedPlan, reason: 'UI plan change' })
-      });
-      if (!r.ok) throw new Error('Falha ao mudar plano');
-      setPlanEditUser(null);
-      setSelectedPlan('');
-      try { await load(); } catch {}
-      push({ type: 'success', message: 'Plano alterado com sucesso' });
-    } catch (e: any) {
-      const msg = e?.message || 'Erro ao mudar plano';
-      setError(msg);
-      push({ type: 'error', message: msg });
-    } finally {
-      setPlanChanging(false);
-    }
-  };
+  // submitPlanChange removed
 
   // Modal state
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [pendingUserId, setPendingUserId] = useState<string | null>(null);
+  // plan confirmation state removed
 
-  const currentPlanObj = useMemo(()=> {
-    if(!pendingUserId) return null;
-    const target = users.find(u=> u.id === pendingUserId);
-    if(!target?.plan_id) return null;
-    return plans.find(p=> p.id === target.plan_id) || null;
-  }, [pendingUserId, users, plans]);
-
-  const newPlanObj = useMemo(()=> plans.find(p=> p.id === selectedPlan) || null, [selectedPlan, plans]);
-
-  const removedCapabilities = useMemo(()=> {
-    if(!currentPlanObj || !newPlanObj) return [];
-    const cur = new Set(currentPlanObj.capabilities || []);
-    const next = new Set(newPlanObj.capabilities || []);
-    return Array.from(cur).filter(c => !next.has(c)).sort();
-  }, [currentPlanObj, newPlanObj]);
+  // removed legacy derived states
 
   const { locale, t } = useI18n();
   return (
@@ -177,7 +119,7 @@ const AdminUsersPage: React.FC = () => {
   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
     <div>
       <h1 className="text-xl sm:text-2xl font-semibold tracking-tight">{t('admin.users.title')}</h1>
-      <p className="text-xs text-gray-500 mt-0.5">Gerencie contas, planos e roles.</p>
+  <p className="text-xs text-gray-500 mt-0.5">Gerencie contas e roles.</p>
     </div>
     <div className="flex flex-wrap gap-2">
       <Button type="button" variant="secondary" onClick={()=> void load()} disabled={loading} className="text-sm px-3 py-2">
@@ -237,7 +179,7 @@ const AdminUsersPage: React.FC = () => {
               <th className="p-2">{t('admin.user.displayName') || 'Nome de Exibição'}</th>
               <th className="p-2">{t('admin.user.role') || 'Tipo de Acesso'}</th>
               <th className="p-2">{t('admin.user.emailVerified') || 'E-mail Verificado'}</th>
-              <th className="p-2">{t('admin.userPlan.column.plan')}</th>
+              {/* Plan column removed */}
               <th
                 className="p-2"
                 title="Versão de sessão (muda após eventos de segurança)"
@@ -284,7 +226,7 @@ const AdminUsersPage: React.FC = () => {
                     </select>
                   </td>
                   <td className="p-2">{u.email_confirmed ? (t('common.yes') || 'Sim') : (t('common.no') || 'Não')}</td>
-                  <td className="p-2">{u.plan_id || '-'}</td>
+                  {/* Plan cell removed */}
                   <td className="p-2">{u.session_version}</td>
                   <td className="p-2">
                     {fmtDate(u.created_at, locale, { dateStyle: 'short'})}
@@ -321,70 +263,7 @@ const AdminUsersPage: React.FC = () => {
                       >
                         {t('admin.user.forceLogout') || 'Forçar Logout'}
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (planEditUser === u.id) {
-                            setPlanEditUser(null);
-                          } else {
-                            setPlanEditUser(u.id);
-                            setSelectedPlan('');
-                            void ensurePlans();
-                          }
-                        }}
-                        className="text-[10px] text-blue-600 hover:underline"
-                      >
-                        {planEditUser === u.id ? (t('common.cancel') || 'Cancelar Plano') : (t('admin.userPlan.change') || 'Alterar Plano')}
-                      </button>
-                      {planEditUser === u.id && (
-                        <div className="mt-1 p-2 border rounded bg-white shadow-sm space-y-1">
-                          {loadingPlans && (
-                            <div className="space-y-1">
-                              <Skeleton lines={1} className="w-24 h-3" />
-                              <Skeleton lines={1} className="w-32 h-3" />
-                            </div>
-                          )}
-                          {!loadingPlans && (
-                            <>
-                              <select
-                                value={selectedPlan}
-                                onChange={e => setSelectedPlan(e.target.value)}
-                                className="border px-1 py-0.5 rounded text-[11px] w-full"
-                              >
-                                <option value="">-- selecione --</option>
-                                {plans.map(p => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
-                              </select>
-                              {selectedPlan && currentPlanObj && newPlanObj && (
-                                <div className="text-[10px] space-y-1 bg-slate-50 border rounded p-1">
-                                  <div><strong>{t('common.current') || 'Atual'}:</strong> {currentPlanObj.name} ({currentPlanObj.id})</div>
-                                  <div><strong>{t('common.new') || 'Novo'}:</strong> {newPlanObj.name} ({newPlanObj.id})</div>
-                                  {removedCapabilities.length > 0 && (
-                                    <div className="text-rose-600">
-                                      <div className="font-semibold">{t('admin.userPlan.change.capabilities.lost.title', { count: removedCapabilities.length })}</div>
-                                      <ul className="list-disc ml-4">
-                                        {removedCapabilities.map(c => <li key={c} className="break-all">{c}</li>)}
-                                      </ul>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
-                              <div className="flex gap-1">
-                                <button
-                                  disabled={!selectedPlan || planChanging}
-                                  onClick={() => { setPendingUserId(u.id); setConfirmOpen(true); }}
-                                  className="flex-1 text-[10px] bg-green-600 text-white rounded px-2 py-1 disabled:opacity-50"
-                                >{t('common.apply') || 'Aplicar'}</button>
-                                <button
-                                  type="button"
-                                  disabled={planChanging}
-                                  onClick={() => { setPlanEditUser(null); setSelectedPlan(''); }}
-                                  className="text-[10px] px-2 py-1 rounded border"
-                                >{t('common.close') || 'Fechar'}</button>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      )}
+                      {/* Plan editing removed */}
                     </div>
                   </td>
                 </tr>
@@ -410,7 +289,7 @@ const AdminUsersPage: React.FC = () => {
               <div className="min-w-0">
                 <div className="font-medium text-sm break-all">{u.email}</div>
                 <div className="text-[11px] text-gray-500 mt-0.5 flex flex-wrap gap-2">
-                  <span>{t('admin.userPlan.column.plan')}: {u.plan_id || '-'}</span>
+                  {/* Plan info removed */}
                   <span>{t('admin.user.emailVerified')}: {u.email_confirmed ? (t('common.yes')||'Sim') : (t('common.no')||'Não')}</span>
                 </div>
               </div>
@@ -453,59 +332,8 @@ const AdminUsersPage: React.FC = () => {
                 }}
                 className="text-[11px] text-red-600 hover:underline disabled:opacity-50"
               >{t('admin.user.forceLogout')}</button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (planEditUser === u.id) { setPlanEditUser(null); }
-                  else { setPlanEditUser(u.id); setSelectedPlan(''); void ensurePlans(); }
-                }}
-                className="text-[11px] text-blue-600 hover:underline"
-              >{planEditUser === u.id ? (t('common.cancel')||'Cancelar') : (t('admin.userPlan.change')||'Alterar Plano')}</button>
             </div>
-            {planEditUser === u.id && (
-              <div className="mt-1 p-2 border rounded bg-white shadow-sm space-y-2">
-                {loadingPlans && <Skeleton lines={2} />}
-                {!loadingPlans && (
-                  <>
-                    <select
-                      value={selectedPlan}
-                      onChange={e=> setSelectedPlan(e.target.value)}
-                      className="border px-2 py-1 rounded text-[12px] w-full"
-                    >
-                      <option value="">-- {t('common.select') || 'selecione'} --</option>
-                      {plans.map(p => <option key={p.id} value={p.id}>{p.name} ({p.id})</option>)}
-                    </select>
-                    {selectedPlan && currentPlanObj && newPlanObj && (
-                      <div className="text-[10px] space-y-1 bg-slate-50 border rounded p-1">
-                        <div><strong>{t('common.current')}:</strong> {currentPlanObj.name}</div>
-                        <div><strong>{t('common.new')}:</strong> {newPlanObj.name}</div>
-                        {removedCapabilities.length>0 && (
-                          <div className="text-rose-600">
-                            <div className="font-semibold">{t('admin.userPlan.change.capabilities.lost.title', { count: removedCapabilities.length })}</div>
-                            <ul className="list-disc ml-4">
-                              {removedCapabilities.map(c => <li key={c}>{c}</li>)}
-                            </ul>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div className="flex gap-2">
-                      <button
-                        disabled={!selectedPlan || planChanging}
-                        onClick={() => { setPendingUserId(u.id); setConfirmOpen(true); }}
-                        className="flex-1 text-[11px] bg-green-600 text-white rounded px-2 py-1 disabled:opacity-50"
-                      >{t('common.apply')}</button>
-                      <button
-                        type="button"
-                        disabled={planChanging}
-                        onClick={() => { setPlanEditUser(null); setSelectedPlan(''); }}
-                        className="text-[11px] px-2 py-1 rounded border"
-                      >{t('common.close')}</button>
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            {/* Plan edit UI removed */}
           </Card>
         ))}
         {!loading && users.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.users.empty')}</Card>}
@@ -528,31 +356,7 @@ const AdminUsersPage: React.FC = () => {
           {t('common.next') || 'Próxima'}
         </Button>
       </div>
-      <ConfirmDialog
-        open={confirmOpen}
-        title={t('admin.userPlan.change.title')}
-        description={(() => {
-          if (!pendingUserId || !newPlanObj) return '';
-          const target = users.find(u => u.id === pendingUserId);
-          const curName = currentPlanObj?.name || target?.plan_id || t('common.current') || 'atual';
-          const nextName = newPlanObj.name;
-          let base = t('admin.userPlan.change.desc', { current: curName, next: nextName });
-          if (removedCapabilities.length) {
-            base += `\n${t('admin.userPlan.change.capabilities.lost.title', { count: removedCapabilities.length })}:\n- ${removedCapabilities.join('\n- ')}`;
-          }
-          return base;
-        })()}
-        confirmLabel={planChanging ? '...' : t('admin.userPlan.change.confirm')}
-        cancelLabel={t('admin.userPlan.change.cancel')}
-        danger={false}
-        onConfirm={() => {
-          if (!pendingUserId) return;
-          void submitPlanChange(pendingUserId);
-          setConfirmOpen(false);
-          setPendingUserId(null);
-        }}
-        onClose={() => { if(!planChanging){ setConfirmOpen(false); setPendingUserId(null);} }}
-      />
+      {/* Plan change confirmation removed */}
     </div>
   );
 };

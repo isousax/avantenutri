@@ -17,12 +17,10 @@ const baseNavItems: BaseNavItem[] = [
   { path: '/admin', labelKey: 'admin.nav.dashboard', icon: icon('M3 13h2a2 2 0 0 0 2-2V5h3v3a2 2 0 0 0 2 2h2V5h3v6a4 4 0 0 1-4 4h-3v3h3v2H9v-5H7a4 4 0 0 1-4-4Z') },
   { path: '/admin/usuarios', labelKey: 'admin.nav.users', icon: icon('M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4m7-1 3 3m0 0 3-3m-3 3V4'), requiresRole: 'admin' },
   { path: '/admin/consultas', labelKey: 'admin.nav.consultations', icon: icon('M8 7V3h8v4M3 11h18M5 11v9h14v-9'), requiresRole: 'admin' },
-  { path: '/admin/planos', labelKey: 'admin.nav.plans', icon: icon('M12 2 3 6l9 4 9-4-9-4Zm9 10-9 4-9-4m18 6-9 4-9-4'), requiresRole: 'admin' },
   { path: '/admin/billing', labelKey: 'admin.nav.billing', icon: icon('M3 5h18M3 10h18M3 15h18M5 20h14'), requiresRole: 'admin' },
   { path: '/admin/relatorios', labelKey: 'admin.nav.reports', icon: icon('M3 3h18v4H3V3Zm0 6h18v12H3V9Zm4 3v6m5-6v6m5-6v6'), requiresRole: 'admin' },
   { path: '/admin/blog', labelKey: 'admin.nav.posts', icon: icon('M4 19.5 9.5 14m5-5L20 4m-9 1h7v7M5 4h5v5H5V4Zm0 10h5v5H5v-5Z'), groupId: 'content', requiresRole: 'admin' },
   { path: '/admin/blog/new', labelKey: 'admin.nav.postNew', icon: icon('M12 5v14m-7-7h14'), groupId: 'content', requiresRole: 'admin' },
-  { path: '/admin/entitlements', labelKey: 'admin.nav.entitlements', icon: icon('M12 2 2 7l10 5 10-5-10-5Zm10 7-10 5-10-5m10 5v9'), requiresRole: 'admin' },
   { path: '/admin/audit', labelKey: 'admin.nav.audit', icon: icon('M5 21h14M5 3h14M9 7v10M15 7v10'), requiresRole: 'admin' },
 ];
 
@@ -39,7 +37,6 @@ const AdminLayout: React.FC = () => {
     { key: 'users', label: t('admin.metrics.users'), value: null, loading: true },
     { key: 'consultsUpcoming', label: t('admin.metrics.consultsUpcoming'), value: null, loading: true },
     { key: 'posts', label: t('admin.metrics.posts'), value: null, loading: true },
-    { key: 'plans', label: t('admin.metrics.plans'), value: null, loading: true },
   ]);
   // Update metric labels if locale changes
   useEffect(() => {
@@ -48,7 +45,6 @@ const AdminLayout: React.FC = () => {
         case 'users': return { ...mm, label: t('admin.metrics.users') };
         case 'consultsUpcoming': return { ...mm, label: t('admin.metrics.consultsUpcoming') };
         case 'posts': return { ...mm, label: t('admin.metrics.posts') };
-        case 'plans': return { ...mm, label: t('admin.metrics.plans') };
         default: return mm;
       }
     }));
@@ -114,15 +110,6 @@ const AdminLayout: React.FC = () => {
           upd('posts', { value: data.total ?? data.results?.length ?? 0 });
         } else upd('posts', { value: 0 });
       } catch { upd('posts', { value: 0 }); }
-      // Planos
-      try {
-        const r = await authenticatedFetch(API.PLANS);
-        if (r.ok) {
-          const data = await r.json();
-          const count = (data.plans && Array.isArray(data.plans)) ? data.plans.filter((p: any)=> p.active !== false).length : 0;
-          upd('plans', { value: count });
-        } else upd('plans', { value: 0 });
-      } catch { upd('plans', { value: 0 }); }
       return true;
     } catch {/* ignore root */ return false; }
   }, [authenticatedFetch]);
@@ -233,13 +220,11 @@ const AdminLayout: React.FC = () => {
       switch(seg){
         case 'usuarios': return t('admin.nav.users');
         case 'consultas': return t('admin.nav.consultations');
-        case 'planos': return t('admin.nav.plans');
         case 'billing': return t('admin.nav.billing');
         case 'relatorios': return t('admin.nav.reports');
         case 'blog': return t('admin.nav.posts');
         case 'new': return t('admin.nav.postNew');
         case 'edit': return t('common.edit');
-        case 'entitlements': return t('admin.nav.entitlements');
         case 'audit': return t('admin.nav.audit');
         default: return seg.match(/^[a-f0-9-]{6,}$/)? 'ID' : seg;
       }

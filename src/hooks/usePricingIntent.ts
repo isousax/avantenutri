@@ -3,9 +3,8 @@ import { useEffect, useState, useCallback } from 'react';
 /**
  * Hook para gerenciar o query param ?intent= na página de preços/créditos.
  * Ex: /pricing?intent=consultation quando usuário tenta agendar consulta sem crédito.
- * Mantido por compatibilidade; nome legado será futuramente renomeado.
  */
-export function usePlanIntent() {
+export function usePricingIntent() {
   const [intent, setIntent] = useState<string | null>(null);
 
   useEffect(() => {

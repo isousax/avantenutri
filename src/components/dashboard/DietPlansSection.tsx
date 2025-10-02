@@ -13,12 +13,12 @@ interface Props {
 }
 
 const DietPlansSection: React.FC<Props> = ({ limit = 3, onNavigateAll }) => {
-  const { plans, load } = useDietPlans();
+  const { plans, loading } = useDietPlans();
   const { can } = usePermissions();
   const { locale } = useI18n();
   const canViewDiets = can(CAPABILITIES.DIETA_VIEW);
   const canEditDiets = can(CAPABILITIES.DIETA_EDIT);
-  React.useEffect(()=> { if (canViewDiets) { void load(); } }, [canViewDiets, load]);
+  // React Query já faz o fetch automático; sem efeito manual aqui.
 
   return (
     <CapabilitySection
@@ -32,10 +32,11 @@ const DietPlansSection: React.FC<Props> = ({ limit = 3, onNavigateAll }) => {
       fallback={<div className="text-sm text-gray-500">Seu plano não permite visualizar dietas.</div>}
     >
       <div className="space-y-4">
-        {plans.slice(0, limit).map(p => (
+        {loading && <div className="text-xs text-gray-400">Carregando dietas...</div>}
+        {!loading && plans.slice(0, limit).map(p => (
           <DietPlanCardInternal key={p.id} diet={{ ...p, isCurrent: p.status === 'active' }} onView={()=>{/* handled externally in future refactor */}} onRevise={()=>{}} canEdit={canEditDiets} locale={locale} />
         ))}
-        {plans.length === 0 && <div className="text-sm text-gray-500">Nenhuma dieta ainda.</div>}
+        {!loading && plans.length === 0 && <div className="text-sm text-gray-500">Nenhuma dieta ainda.</div>}
       </div>
     </CapabilitySection>
   );

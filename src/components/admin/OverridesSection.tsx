@@ -2,8 +2,6 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { API } from '../../config/api';
 import { useAuth } from '../../contexts';
 import { useI18n } from '../../i18n';
-import { CAPABILITY_CODES } from '../../types/capabilityCodes';
-import { PLAN_LIMIT_KEYS } from '../../types/planLimits';
 
 export interface OverrideItem {
   id: string; user_id: string; type: 'capability-grant'|'capability-revoke'|'limit-set'; key: string; value: number|null; expires_at: string|null; reason: string|null; created_at: string; expired?: boolean;
@@ -44,9 +42,6 @@ const OverridesSection: React.FC<Props> = ({ userId }) => {
 
   useEffect(()=> { load(); }, [load]);
 
-  function emitEntitlementsInvalidated(){
-    try { window.dispatchEvent(new CustomEvent('entitlements:invalidate', { detail: { userId } })); } catch {}
-  }
 
   async function add(){
     const daysNum = form.days ? parseInt(form.days,10) : NaN;
@@ -58,12 +53,11 @@ const OverridesSection: React.FC<Props> = ({ userId }) => {
     const r = await authenticatedFetch(API.ADMIN_OVERRIDES, { method:'POST', body: JSON.stringify(payload), headers:{'Content-Type':'application/json'}, autoLogout:true });
     if(!r.ok) { console.error(await r.text()); return; }
     setForm({ type:'capability-grant', key:'', value:'', days:'', reason:'' });
-    await load();
-    emitEntitlementsInvalidated();
+  await load();
   }
   async function remove(id:string){
     const r = await authenticatedFetch(API.adminOverrideId(id), { method:'DELETE', autoLogout:true });
-    if(r.ok) { setList(prev => prev.filter(o=> o.id!==id)); emitEntitlementsInvalidated(); }
+  if(r.ok) { setList(prev => prev.filter(o=> o.id!==id)); }
   }
 
   async function startEdit(o: OverrideItem){
@@ -80,7 +74,7 @@ const OverridesSection: React.FC<Props> = ({ userId }) => {
     if (editDraft.reason !== undefined) payload.reason = editDraft.reason || null;
     const r = await authenticatedFetch(API.adminOverrideId(o.id), { method:'PATCH', body: JSON.stringify(payload), headers:{'Content-Type':'application/json'}, autoLogout:true });
     if(r.ok){
-      await load(); emitEntitlementsInvalidated(); setEditingId(null); setEditDraft({});
+  await load(); setEditingId(null); setEditDraft({});
     }
   }
 
@@ -119,20 +113,7 @@ const OverridesSection: React.FC<Props> = ({ userId }) => {
           </div>
           <div className="flex flex-col">
             <label className="text-[10px] font-medium mb-0.5">{t('overrides.form.key')}</label>
-            <div className="relative">
-              <input value={form.key} onChange={e=> setForm(f=> ({...f, key:e.target.value}))} placeholder={form.type.startsWith('capability')? 'capability code':'limit key'} className="border rounded px-2 py-1 text-[11px] w-full" />
-              {form.key && (
-                <div className="absolute z-10 left-0 right-0 top-full bg-white border rounded shadow max-h-40 overflow-auto text-[10px]">
-                  {(form.type.startsWith('capability') ? CAPABILITY_CODES : PLAN_LIMIT_KEYS)
-                    .filter(k => k.toLowerCase().includes(form.key.toLowerCase()))
-                    .slice(0,15)
-                    .map(k => (
-                      <button type="button" key={k} onClick={()=> setForm(f=> ({...f, key:k}))} className="block w-full text-left px-2 py-1 hover:bg-slate-100">{k}</button>
-                    ))
-                  }
-                </div>
-              )}
-            </div>
+            <input value={form.key} onChange={e=> setForm(f=> ({...f, key:e.target.value}))} placeholder={form.type.startsWith('capability')? 'capability code':'limit key'} className="border rounded px-2 py-1 text-[11px] w-full" />
           </div>
           {form.type==='limit-set' && (
             <div className="flex flex-col">

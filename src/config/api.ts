@@ -17,15 +17,14 @@ export const API = {
   CHANGE_PASSWORD: `${API_AUTH_BASE}/auth/change-password`,
   ME: `/api/data/me`,
   PROFILE: `${API_AUTH_BASE}/auth/profile`,
-  ENTITLEMENTS: `${API_AUTH_BASE}/auth/entitlements`,
   ADMIN_USERS: `${API_AUTH_BASE}/admin/users`,
   ADMIN_AUDIT: `${API_AUTH_BASE}/admin/audit`,
   ADMIN_CONSULTATIONS: `${API_AUTH_BASE}/admin/consultations`,
   ADMIN_CONSULTATION_AVAILABILITY: `${API_AUTH_BASE}/admin/consultations/availability`,
   ADMIN_CONSULTATION_AVAILABILITY_LOG: `${API_AUTH_BASE}/admin/consultations/availability/log`,
   ADMIN_CONSULTATION_BLOCK: `${API_AUTH_BASE}/admin/consultations/block-slot`,
+  ADMIN_CONSULTATION_PRICING: `${API_AUTH_BASE}/admin/consultations/pricing`,
   adminUserRole: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/role`,
-  adminUserPlan: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/plan`,
   adminUserForceLogout: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/force-logout`,
   adminUserQuestionnaire: (id: string) => `${API_AUTH_BASE}/admin/users/${id}/questionnaire`,
   // Overrides (admin)
@@ -59,11 +58,14 @@ export const API = {
   QUESTIONNAIRE: `${API_AUTH_BASE}/questionnaire`, // GET / POST upsert
   QUESTIONNAIRE_STATUS: `${API_AUTH_BASE}/questionnaire/status`, // GET quick status check
   // Plans & Billing
-  PLANS: `${API_AUTH_BASE}/plans`, // GET active plans
   BILLING_INTENT: `${API_AUTH_BASE}/billing/intent`, // POST create payment intent
   BILLING_PAY: `${API_AUTH_BASE}/billing/pay`, // POST process payment
   BILLING_STATUS: `${API_AUTH_BASE}/billing/status`, // GET payment status
   BILLING_PAYMENTS: `${API_AUTH_BASE}/billing/payments`, // GET list user payments
+  CONSULTATION_CREDITS: `${API_AUTH_BASE}/consultations/credits`, // GET list credits
+  CONSULTATION_CREDITS_SUMMARY: `${API_AUTH_BASE}/consultations/credits/summary`, // GET credits summary
+  CONSULTATION_PRICING_PUBLIC: `${API_AUTH_BASE}/consultations/pricing`, // Public pricing list
+  CONSULTATION_PRICING_STATUS: `${API_AUTH_BASE}/consultations/pricing/status`, // Public pricing hash/status
   // Admin
   ADMIN_PAYMENTS: `${API_AUTH_BASE}/admin/payments`, // GET list all payments (admin only)
   ADMIN_QUESTIONNAIRE_ANALYTICS: `${API_AUTH_BASE}/admin/questionnaire/analytics`, // GET analytics
@@ -74,7 +76,6 @@ export const API = {
   NOTIFICATIONS_READ_ALL: `${API_AUTH_BASE}/notifications/read-all`, // POST mark all as read
   // Blog
   BLOG_POSTS: `${API_AUTH_BASE}/blog/posts`, // GET list posts
-  BLOG_CATEGORIES: `${API_AUTH_BASE}/blog/categories`, // GET categories
   blogPost: (slug: string) => `${API_AUTH_BASE}/blog/posts/${slug}`, // GET single post
   blogPostRelated: (slug: string) => `${API_AUTH_BASE}/blog/posts/${slug}/related`, // GET related posts
 } as const;

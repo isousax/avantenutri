@@ -94,7 +94,7 @@ const NotFound: React.FC = () => {
                 </div>
               </Link>
 
-              <Link to="/#planos">
+              <Link to="/#creditos">
                 <div className="flex items-center p-3 border border-gray-200 rounded-lg hover:border-green-300 hover:bg-green-50 transition-all cursor-pointer">
                   <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center mr-3">
                     <svg
@@ -112,9 +112,9 @@ const NotFound: React.FC = () => {
                     </svg>
                   </div>
                   <div>
-                    <p className="font-medium text-gray-900">Planos e Preços</p>
+                    <p className="font-medium text-gray-900">Créditos e Consultas</p>
                     <p className="text-sm text-gray-600">
-                      Encontre o plano ideal para você
+                      Veja como funcionam os créditos de consulta
                     </p>
                   </div>
                 </div>

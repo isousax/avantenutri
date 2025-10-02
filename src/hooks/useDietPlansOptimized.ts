@@ -104,10 +104,13 @@ export const useDietPlans = () => {
       name: string;
       description?: string;
       format: 'structured' | 'pdf';
+      // legado (será descontinuado): metas isoladas
       meta_kcal?: string;
       meta_protein_g?: string;
       meta_carbs_g?: string;
       meta_fat_g?: string;
+      // novo formato estruturado
+      structured_data?: any; // usar tipos de StructuredDietData; mantemos any para flexibilidade inicial
       pdf_base64?: string;
       pdf_filename?: string;
     }) => {
@@ -116,10 +119,20 @@ export const useDietPlans = () => {
       }
 
       const endpoint = API.DIET_PLANS.replace(import.meta.env.VITE_API_URL || 'https://api.avantenutri.com.br', '');
+      const payload = { ...input } as any;
+      if (input.format === 'structured') {
+        // Se structured_data presente, removemos metas antigas desnecessárias
+        if (payload.structured_data) {
+          delete payload.meta_kcal;
+          delete payload.meta_protein_g;
+          delete payload.meta_carbs_g;
+          delete payload.meta_fat_g;
+        }
+      }
       const response = await authenticatedFetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(input),
+        body: JSON.stringify(payload),
       });
 
       const data = await response.json();
@@ -129,9 +142,41 @@ export const useDietPlans = () => {
 
       return data;
     },
+    // Optimistic create: adiciona entrada temporária para feedback instantâneo
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: ['diet-plans'] });
+      const prev = queryClient.getQueryData<DietPlanSummary[]>(['diet-plans', {}]);
+      const tempId = 'temp-' + Date.now();
+      const optimistic: DietPlanSummary = {
+        id: tempId,
+        name: input.name,
+        description: input.description || null,
+        status: 'active',
+        start_date: null,
+        end_date: null,
+        results_summary: null,
+        current_version_id: null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      };
+      queryClient.setQueryData<DietPlanSummary[]>(['diet-plans', {}], (old) => {
+        if (!old) return [optimistic];
+        return [optimistic, ...old];
+      });
+      return { prev, tempId };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) {
+        queryClient.setQueryData(['diet-plans', {}], ctx.prev);
+      }
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['diet-plans'] });
     },
+    onSettled: () => {
+      // Garantir refetch para substituir a entrada otimista
+      queryClient.invalidateQueries({ queryKey: ['diet-plans'] });
+    }
   });
 
   const reviseMutation = useMutation({
@@ -166,9 +211,46 @@ export const useDietPlans = () => {
 
       return data;
     },
+    onMutate: async (vars) => {
+      await queryClient.cancelQueries({ queryKey: ['diet-plan-detail', vars.planId, false] });
+      await queryClient.cancelQueries({ queryKey: ['diet-plan-detail', vars.planId, true] });
+      const prevDetailFalse = queryClient.getQueryData<DietPlanDetail>(['diet-plan-detail', vars.planId, false]);
+      const prevDetailTrue = queryClient.getQueryData<DietPlanDetail>(['diet-plan-detail', vars.planId, true]);
+      const base = prevDetailTrue || prevDetailFalse;
+      if (base) {
+        const optimisticVersion: DietPlanVersion = {
+          id: 'temp-rev-' + Date.now(),
+          version_number: (base.versions[0]?.version_number || 0) + 1,
+          generated_by: 'you',
+          created_at: new Date().toISOString(),
+          notes: vars.notes || 'Revisão em andamento...',
+          data: vars.includeData ? { pending: true } : undefined,
+        };
+        const updated: DietPlanDetail = {
+          ...base,
+            // assumindo ordem desc (mais recente primeiro)
+          versions: [optimisticVersion, ...base.versions],
+          current_version_id: optimisticVersion.id,
+          updated_at: new Date().toISOString(),
+        };
+        queryClient.setQueryData(['diet-plan-detail', vars.planId, false], updated);
+        queryClient.setQueryData(['diet-plan-detail', vars.planId, true], updated);
+      }
+      return { prevDetailFalse, prevDetailTrue };
+    },
+    onError: (_err, vars, ctx) => {
+      if (ctx?.prevDetailFalse)
+        queryClient.setQueryData(['diet-plan-detail', vars.planId, false], ctx.prevDetailFalse);
+      if (ctx?.prevDetailTrue)
+        queryClient.setQueryData(['diet-plan-detail', vars.planId, true], ctx.prevDetailTrue);
+    },
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['diet-plans'] });
       queryClient.invalidateQueries({ queryKey: ['diet-plan-detail', variables.planId] });
+    },
+    onSettled: (_data, _err, vars) => {
+      queryClient.invalidateQueries({ queryKey: ['diet-plan-detail', vars.planId, false] });
+      queryClient.invalidateQueries({ queryKey: ['diet-plan-detail', vars.planId, true] });
     },
   });
 

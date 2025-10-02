@@ -194,7 +194,15 @@ export default function BillingHistoryPage(){
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-3 mb-2">
                             <h3 className="font-semibold text-gray-900 truncate">
-                              {payment.plan_id}
+                              {payment.consultation_type
+                                ? payment.consultation_type === 'avaliacao_completa'
+                                  ? 'Avaliação Completa'
+                                  : payment.consultation_type === 'reavaliacao'
+                                    ? 'Reavaliação'
+                                    : payment.consultation_type
+                                : payment.purpose === 'consultation'
+                                  ? 'Consulta'
+                                  : 'Pagamento'}
                             </h3>
                             <StatusPill 
                               label={statusConfig.label}

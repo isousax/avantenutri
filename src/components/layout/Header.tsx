@@ -65,9 +65,6 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
               <button onClick={() => scrollToSection("servicos")} className={`font-medium transition-colors hover:text-green-600 text-gray-700`}>
                 {t('nav.services')}
               </button>
-              <button onClick={() => scrollToSection("planos")} className={`font-medium transition-colors hover:text-green-600 text-gray-700`}>
-                {t('nav.plans')}
-              </button>
               <button onClick={() => scrollToSection("sobre")} className={`font-medium transition-colors hover:text-green-600 text-gray-700`}>
                 {t('nav.about')}
               </button>
@@ -151,15 +148,6 @@ const Header: React.FC<HeaderProps> = ({ scrollPosition }) => {
                 {t('nav.services')}
               </button>
 
-              <button
-                onClick={() => scrollToSection("planos")}
-                className="w-full text-left px-4 py-3 text-lg font-medium text-gray-700 hover:text-green-700 hover:bg-green-50 rounded-md transition-colors duration-200 flex items-center"
-              >
-                <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
-                </svg>
-                {t('nav.plans')}
-              </button>
 
               <button
                 onClick={() => scrollToSection("sobre")}

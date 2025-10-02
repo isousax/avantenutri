@@ -4,6 +4,12 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import StatsCard from "../../components/StatsCard";
+import StructuredDietBuilder from '../../components/diet/StructuredDietBuilder';
+import StructuredDietView from '../../components/diet/StructuredDietView';
+import { downloadDietJson, printDiet, copyDietJson, copyDietHtml } from '../../utils/structuredDietExport';
+import { exportDietPdf } from '../../utils/structuredDietPdf';
+import ErrorBoundary from "../../components/ui/ErrorBoundary";
+import Tooltip from "../../components/ui/Tooltip";
 import NotificationBellReal from "../../components/NotificationBellReal";
 import Progress from "../../components/ui/Progress";
 import LogoCroped from "../../components/ui/LogoCroped";
@@ -11,6 +17,7 @@ import { SEO } from "../../components/comum/SEO";
 import Perfil from "../../components/dashboard/Perfil";
 import Consultas from "../../components/dashboard/Consultas";
 import Suporte from "../../components/dashboard/Suporte";
+import { useConsultations } from "../../hooks/useConsultations"; // integração real de consultas
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
@@ -161,6 +168,90 @@ const DietPlanCard: React.FC<{
         )}
       </div>
     </Card>
+  );
+};
+
+// Export controls for structured diet versions (user dashboard)
+const DietVersionExportControls: React.FC<{ data: any; version: number }> = ({ data, version }) => {
+  const [showAlternatives, setShowAlternatives] = useState(true);
+  const [exporting, setExporting] = useState(false);
+  const [phase, setPhase] = useState('');
+  const [optOpen, setOptOpen] = useState(false);
+  const [includeCover, setIncludeCover] = useState(true);
+  const [includeTotals, setIncludeTotals] = useState(true);
+  const [wmRepeat, setWmRepeat] = useState(true);
+  const [wmOpacity, setWmOpacity] = useState(0.08);
+  const [includeQr, setIncludeQr] = useState(false);
+  return (
+    <div className="flex gap-2 flex-wrap text-[10px] items-center">
+      <button type="button" className="px-2 py-1 bg-emerald-600 text-white rounded" onClick={() => downloadDietJson(data, `dieta_v${version}.json`)}>JSON</button>
+      <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded" onClick={() => printDiet(data, `Dieta v${version}`, { showAlternatives })}>Imprimir</button>
+      <button
+        type="button"
+        disabled={exporting}
+        className={`px-2 py-1 rounded text-white ${exporting ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+        onClick={async () => {
+          if (exporting) return;
+          setExporting(true);
+            setPhase('preparando');
+          try {
+            await exportDietPdf(data, {
+              filename: `dieta_v${version}.pdf`,
+              title: `Dieta v${version}`,
+              showAlternatives,
+              headerText: 'Plano Nutricional',
+              footerText: 'AvanteNutri - Uso Pessoal',
+              watermarkText: 'AvanteNutri',
+              watermarkRepeat: wmRepeat,
+              watermarkOpacity: wmOpacity,
+              cover: includeCover ? {
+                title: `Plano Nutricional v${version}`,
+                subtitle: 'Uso Pessoal',
+                showTotals: includeTotals,
+                notes: '',
+                date: new Date(),
+                qrUrl: includeQr ? (location.origin + '/dashboard') : undefined
+              } : undefined,
+              phaseLabels: {
+                prepare: 'Preparando',
+                render: 'Renderizando',
+                cover: 'Capa',
+                paginate: 'Paginando',
+                finalize: 'Finalizando',
+                done: 'Concluído'
+              },
+              onProgress: (p)=> setPhase(p)
+            });
+          } catch (e) {
+            console.error(e);
+            alert('Falha ao gerar PDF');
+          } finally {
+            setExporting(false);
+            setPhase('');
+          }
+        }}
+      >{exporting ? `Gerando (${phase})...` : 'PDF Direto'}</button>
+      <button type="button" className="px-2 py-1 bg-amber-600 text-white rounded" onClick={() => copyDietJson(data)}>Copiar JSON</button>
+      <button type="button" className="px-2 py-1 bg-amber-700 text-white rounded" onClick={() => copyDietHtml(data, `Dieta v${version}`, { showAlternatives })}>Copiar HTML</button>
+      <label className="flex items-center gap-1 cursor-pointer select-none ml-1"><input type="checkbox" checked={showAlternatives} onChange={e=>setShowAlternatives(e.target.checked)} /> Alt</label>
+      <button type="button" className="px-2 py-1 bg-gray-500 text-white rounded" onClick={()=>setOptOpen(o=>!o)}>{optOpen?'Fechar':'Opções'}</button>
+      {optOpen && (
+        <div className="basis-full mt-2 p-2 border rounded bg-gray-50 space-y-2">
+          <div className="flex flex-wrap gap-4">
+            <label className="flex items-center gap-1"><input type="checkbox" checked={includeCover} onChange={e=>setIncludeCover(e.target.checked)} /> Capa</label>
+            <label className="flex items-center gap-1"><input type="checkbox" checked={includeTotals} disabled={!includeCover} onChange={e=>setIncludeTotals(e.target.checked)} /> Totais</label>
+            <label className="flex items-center gap-1"><input type="checkbox" checked={wmRepeat} onChange={e=>setWmRepeat(e.target.checked)} /> Repetir WM</label>
+            <label className="flex items-center gap-1"><input type="checkbox" checked={includeQr} onChange={e=>setIncludeQr(e.target.checked)} /> QR</label>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-[10px]">Opacidade WM</span>
+            <input type="range" min={0.02} max={0.3} step={0.01} value={wmOpacity} onChange={e=>setWmOpacity(parseFloat(e.target.value))} />
+            <span className="text-[10px]">{wmOpacity.toFixed(2)}</span>
+          </div>
+          <p className="text-gray-500 text-[10px]">Ajustes aplicados ao PDF Direto.</p>
+        </div>
+      )}
+    </div>
   );
 };
 
@@ -394,21 +485,14 @@ const DashboardPage: React.FC = () => {
   }, [activeTab]);
 
   // Diet Plans integration
-  const {
-    plans,
-    load,
-    create,
-    creating,
-    getDetail,
-    revise,
-    revising,
-    error: dietError,
-  } = useDietPlans();
+  const { plans, create, creating, getDetail, revise, revising, error: dietError } = useDietPlans();
   const { meals, water, weight: weightAgg, adherence, loading: dashLoading, error: dashError } = useDashboardData();
   const mealProgress = meals.progress;
   const mealGoals = meals.goals;
-  const waterToday = water.totalToday;
-  const dailyGoalCups = water.dailyGoalCups;
+  const waterToday = water.totalToday; // ml consumidos hoje
+  const dailyGoalCups = water.dailyGoalCups; // meta em copos (base legado)
+  const cupSize = water.cupSize || 250;
+  const dailyGoalMl = dailyGoalCups ? dailyGoalCups * cupSize : null;
   const latestWeight = weightAgg.latest;
   const goal = weightAgg.goal;
   // progressPercent era usado para trend visual; removido ao padronizar LoadingState
@@ -420,34 +504,27 @@ const DashboardPage: React.FC = () => {
     ? parseFloat(heightCmRaw.replace(",", "."))
     : undefined;
 
-  const canViewDiets = true; // Todos podem visualizar dietas
+  // Todos podem visualizar dietas (flag removida por não ser usada diretamente)
   const canEditDiets = false; // Pacientes não editam dietas, apenas admin
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [creatingName, setCreatingName] = useState("");
   const [creatingDesc, setCreatingDesc] = useState("");
   // Campos para criação estruturada
-  const [metaKcal, setMetaKcal] = useState("");
-  const [metaProt, setMetaProt] = useState("");
-  const [metaCarb, setMetaCarb] = useState("");
-  const [metaFat, setMetaFat] = useState("");
-  // Suporte a PDF
+  // Suporte a PDF and Structured Diet Builder
   const [planFormat, setPlanFormat] = useState<"structured" | "pdf">(
     "structured"
   );
   const [pdfBase64, setPdfBase64] = useState<string>("");
   const [pdfName, setPdfName] = useState<string>("");
+  const [structuredData, setStructuredData] = useState<any>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [includeData, setIncludeData] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailJson, setDetailJson] = useState<any>(null);
 
-  useEffect(() => {
-    if (canViewDiets) {
-      void load();
-    }
-  }, [canViewDiets]); // Removido 'load' para evitar loops
+  // Fetch automático via React Query – sem efeito manual.
 
   const openDetail = async (id: string) => {
     setSelectedPlanId(id);
@@ -462,51 +539,27 @@ const DashboardPage: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    let data: any = undefined;
-    if (planFormat === "pdf") {
-      if (pdfBase64) {
-        data = {
-          format: "pdf",
-          file: {
-            name: pdfName,
-            mime: "application/pdf",
-            base64: pdfBase64,
-          },
-          observacoes: creatingDesc || null,
-        };
-      }
-    } else {
-      if (metaKcal || metaProt || metaCarb || metaFat) {
-        data = {
-          metas: {
-            kcal_dia: metaKcal ? +metaKcal : null,
-            proteina_g: metaProt ? +metaProt : null,
-            carbo_g: metaCarb ? +metaCarb : null,
-            gordura_g: metaFat ? +metaFat : null,
-          },
-          refeicoes: [],
-          observacoes: creatingDesc || null,
-          format: "structured",
-        };
-      }
-    }
     let finalDesc = creatingDesc;
     if (planFormat === "pdf" && finalDesc && !/^\s*\[PDF\]/i.test(finalDesc)) {
       finalDesc = `[PDF] ${finalDesc}`;
     }
     const id = await create({
-      name: creatingName,
-      description: finalDesc,
-      data,
-    });
+      name: creatingName.trim(),
+      description: finalDesc.trim() || undefined,
+      format: planFormat,
+      structured_data: planFormat === 'structured' ? structuredData || undefined : undefined,
+      meta_kcal: undefined,
+      meta_protein_g: undefined,
+      meta_carbs_g: undefined,
+      meta_fat_g: undefined,
+      pdf_base64: planFormat === 'pdf' ? (pdfBase64 || undefined) : undefined,
+      pdf_filename: planFormat === 'pdf' ? (pdfName || undefined) : undefined,
+    } as any);
     if (id) {
       setShowCreateModal(false);
       setCreatingName("");
       setCreatingDesc("");
-      setMetaKcal("");
-      setMetaProt("");
-      setMetaCarb("");
-      setMetaFat("");
+  setStructuredData(null);
       setPlanFormat("structured");
       setPdfBase64("");
       setPdfName("");
@@ -518,22 +571,12 @@ const DashboardPage: React.FC = () => {
     void openDetail(planId);
   };
 
-  const upcomingAppointments = [
-    {
-      id: "1",
-      date: "15/09/2025",
-      time: "14:00",
-      type: "Consulta de Acompanhamento",
-      status: "confirmada",
-    },
-    {
-      id: "2",
-      date: "01/10/2025",
-      time: "10:30",
-      type: "Reavaliação Completa",
-      status: "agendada",
-    },
-  ];
+  // Consultas (integração real) – usamos hook existente que já faz fetch + cancel etc.
+  const { items: consultations, loading: consultationsLoading, error: consultationsError } = useConsultations();
+  const upcomingAppointments = consultations
+    .filter(c => c.status === 'scheduled' && new Date(c.scheduled_at) > new Date())
+    .sort((a,b) => a.scheduled_at.localeCompare(b.scheduled_at))
+    .slice(0,5);
 
 
 
@@ -981,7 +1024,9 @@ const DashboardPage: React.FC = () => {
 
               {/* Métricas Principais */}
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                <WeightSection heightCm={heightCm} />
+                <ErrorBoundary>
+                  <WeightSection heightCm={heightCm} />
+                </ErrorBoundary>
                 <DataSection
                   isLoading={shouldShowSkeleton(dashLoading, waterToday, dailyGoalCups)}
                   error={dashError ? (dashError as Error) : null}
@@ -990,17 +1035,24 @@ const DashboardPage: React.FC = () => {
                 >
                   {(() => {
                     const parts: string[] = [];
-                    if (dailyGoalCups) parts.push(`Meta: ${dailyGoalCups} copos`);
                     if (water.avgPerDay) {
-                      const avgCups = water.cupSize ? Math.round(water.avgPerDay / water.cupSize) : null;
-                      parts.push(`Média: ${avgCups ?? '-'} copos/dia`);
+                      parts.push(`Média: ${Math.round(water.avgPerDay)} ml/dia`);
                     }
                     if (water.bestDay) {
-                      const bestCups = water.cupSize ? Math.round(water.bestDay.amount / water.cupSize) : null;
-                      parts.push(`Melhor: ${bestCups ?? '-'} copos`);
+                      parts.push(`Melhor: ${Math.round(water.bestDay.amount)} ml`);
                     }
-                    const cups = water.cupSize ? Math.round(waterToday / water.cupSize) : null;
-                    return <StatsCard title="Hidratação" value={`${waterToday} ml${cups!=null?` (${cups} copos)`:''}`} description={parts.length ? parts.join(' • ') : 'Sem meta'} icon="water" gradient="to-blue-400 from-emerald-300" />;
+                    return (
+                      <ErrorBoundary>
+                        <StatsCard
+                        title="Hidratação"
+                        valuePrimary={<>{waterToday} <span className="text-base font-semibold text-blue-600">ml</span></>}
+                        valueMeta={dailyGoalMl ? `/ ${dailyGoalMl} ml` : undefined}
+                        description={parts.length ? parts.join(' • ') : 'Sem meta'}
+                        icon="water"
+                        gradient="to-blue-400 from-emerald-300"
+                        />
+                      </ErrorBoundary>
+                    );
                   })()}
                 </DataSection>
                 <DataSection
@@ -1009,13 +1061,41 @@ const DashboardPage: React.FC = () => {
                   skeletonLines={3}
                   skeletonClassName="h-32"
                 >
-                  <StatsCard
-                    title="Adesão à Dieta"
-                    value={adherence ? `${adherence.percentage}%` : "-"}
-                    description={adherence ? `${adherence.daysCovered}/${adherence.totalDays} dias com registros` : "Registre suas refeições"}
-                    icon="stats"
-                    gradient="from-purple-300 to-indigo-600"
-                  />
+                  <ErrorBoundary>
+                    <StatsCard
+                      title="Adesão à Dieta"
+                      value={adherence ? `${adherence.percentage}%` : "-"}
+                      description={
+                        adherence ? (
+                          <span className="inline-flex items-center gap-1">
+                            {adherence.daysCovered}/{adherence.totalDays} dias com registros
+                            <Tooltip
+                              content={
+                                <div className="text-left leading-snug">
+                                  <div className="font-semibold mb-1">Fórmula</div>
+                                  <div>50% (dias com registro / total dias)</div>
+                                  <div>+ 50% (média refeições/dia / 4)</div>
+                                  <div className="mt-1 text-[10px] text-gray-300">Alvo padrão: 4 refeições/dia</div>
+                                </div>
+                              }
+                            >
+                              <span
+                                role="img"
+                                aria-label="Fórmula de cálculo"
+                                className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-100 text-purple-700 text-[10px] font-bold border border-purple-200 cursor-help hover:bg-purple-200"
+                              >
+                                ?
+                              </span>
+                            </Tooltip>
+                          </span>
+                        ) : (
+                          "Registre suas refeições"
+                        )
+                      }
+                      icon="stats"
+                      gradient="from-purple-300 to-indigo-600"
+                    />
+                  </ErrorBoundary>
                 </DataSection>
               </div>
 
@@ -1051,9 +1131,9 @@ const DashboardPage: React.FC = () => {
                       />
                       <Progress
                         current={waterToday}
-                        target={dailyGoalCups || 8}
-                        label="Copos de Água"
-                        unit=""
+                        target={dailyGoalMl || 2000}
+                        label="Hidratação"
+                        unit="ml"
                         size="sm"
                         gradient="from-blue-500 to-cyan-600"
                       />
@@ -1129,37 +1209,65 @@ const DashboardPage: React.FC = () => {
                 </Card>
               </div>
 
-              {/* Upcoming Appointments */}
+              {/* Próximas Consultas (dados reais) */}
               <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
-                  <span>📅</span>
-                  Próximas Consultas
-                </h3>
-                <div className="space-y-3">
-                  {upcomingAppointments.map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 hover:border-green-200 transition-colors"
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                    <span>📅</span>
+                    Próximas Consultas
+                  </h3>
+                  <button
+                    onClick={() => navigate('/consultas') || setActiveTab('consultas')}
+                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    Ver todas
+                  </button>
+                </div>
+                {consultationsLoading && (
+                  <div className="text-sm text-gray-500 py-6 text-center">Carregando...</div>
+                )}
+                {consultationsError && !consultationsLoading && (
+                  <div className="text-sm text-red-600 py-4 text-center bg-red-50 rounded-lg border border-red-200">
+                    Erro ao carregar consultas
+                  </div>
+                )}
+                {!consultationsLoading && !consultationsError && upcomingAppointments.length === 0 && (
+                  <div className="py-8 text-center bg-white/60 rounded-xl border border-dashed border-gray-300">
+                    <p className="text-sm text-gray-600 font-medium">Nenhuma consulta futura</p>
+                    <button
+                      onClick={() => navigate('/agendar-consulta')}
+                      className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-green-600 hover:text-green-700"
                     >
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-gray-900 text-sm truncate">
-                          {appointment.type}
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          {appointment.date} às {appointment.time}
-                        </p>
-                      </div>
-                      <span
-                        className={`ml-3 px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap ${
-                          appointment.status === "confirmada"
-                            ? "bg-green-100 text-green-800 border border-green-200"
-                            : "bg-amber-100 text-amber-800 border border-amber-200"
-                        }`}
+                      Agendar agora
+                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+                    </button>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {upcomingAppointments.map(app => {
+                    const d = new Date(app.scheduled_at);
+                    const dateStr = d.toLocaleDateString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric'});
+                    const timeStr = d.toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit'});
+                    const statusClass = app.status === 'scheduled'
+                      ? 'bg-green-100 text-green-800 border border-green-200'
+                      : app.status === 'completed'
+                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      : 'bg-amber-100 text-amber-800 border border-amber-200';
+                    return (
+                      <div
+                        key={app.id}
+                        className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 hover:border-green-200 transition-colors"
                       >
-                        {appointment.status}
-                      </span>
-                    </div>
-                  ))}
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-gray-900 text-sm truncate capitalize">{app.type}</p>
+                          <p className="text-xs text-gray-600 mt-1">{dateStr} às {timeStr}</p>
+                        </div>
+                        <span className={`ml-3 px-3 py-1.5 text-xs font-bold rounded-full whitespace-nowrap ${statusClass}`}>
+                          {app.status === 'scheduled' ? 'agendada' : app.status}
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
               </Card>
             </div>
@@ -1315,51 +1423,10 @@ const DashboardPage: React.FC = () => {
                 )}
 
                 {planFormat === "structured" && (
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium mb-1">
-                        Kcal/dia
-                      </label>
-                      <input
-                        value={metaKcal}
-                        onChange={(e) => setMetaKcal(e.target.value)}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="Ex: 2000"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">
-                        Proteína (g)
-                      </label>
-                      <input
-                        value={metaProt}
-                        onChange={(e) => setMetaProt(e.target.value)}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="Ex: 120"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">
-                        Carbo (g)
-                      </label>
-                      <input
-                        value={metaCarb}
-                        onChange={(e) => setMetaCarb(e.target.value)}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="Ex: 180"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium mb-1">
-                        Gordura (g)
-                      </label>
-                      <input
-                        value={metaFat}
-                        onChange={(e) => setMetaFat(e.target.value)}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                        placeholder="Ex: 60"
-                      />
-                    </div>
+                  <div className="mt-2 border rounded p-2 bg-white/60">
+                    <h5 className="text-xs font-semibold mb-2">Montar Dieta Estruturada</h5>
+                    <p className="text-[11px] text-gray-600 mb-2">Adicione alimentos por refeição. Totais são calculados automaticamente.</p>
+                    <StructuredDietBuilder value={structuredData} onChange={setStructuredData} />
                   </div>
                 )}
 
@@ -1436,18 +1503,9 @@ const DashboardPage: React.FC = () => {
                   includeData={includeData}
                   detailJson={detailJson}
                   canEdit={canEditDiets}
-                  onRevise={async (notes, patch) => {
+                  onRevise={async (notes) => {
                     try {
-                      let patchObj: any = {};
-                      try {
-                        patchObj = JSON.parse(patch || "{}");
-                      } catch {
-                        /* ignore */
-                      }
-                      await revise(selectedPlanId, {
-                        notes,
-                        dataPatch: patchObj,
-                      });
+                      await revise({ planId: selectedPlanId, notes, includeData });
                       await openDetail(selectedPlanId);
                     } catch (err) {
                       console.error(err);
@@ -1469,7 +1527,7 @@ interface DetailContentProps {
   includeData: boolean;
   detailJson: any;
   canEdit: boolean;
-  onRevise: (notes: string, patch: string) => Promise<void>;
+  onRevise: (notes: string) => Promise<void>;
   revising: boolean;
   locale: string;
 }
@@ -1501,103 +1559,78 @@ const DetailContent: React.FC<DetailContentProps> = ({
       </div>
       <div>
         <h4 className="font-semibold mb-2">Versões</h4>
-        <div className="max-h-64 overflow-y-auto border rounded divide-y">
-          {cached.versions.map((v: any) => (
-            <div key={v.id} className="p-2 text-xs">
-              <div className="flex justify-between">
-                <span>v{v.version_number}</span>
-                <span>
-                  {fmtDate(v.created_at, locale as any, { dateStyle: "short" })}
-                </span>
-              </div>
-              {v.notes && <div className="text-gray-500 italic">{v.notes}</div>}
-
-              {/* Suporte a PDF */}
-              {includeData &&
-                v.data?.format === "pdf" &&
-                (v.data?.file?.base64 || v.data?.file?.key) && (
-                  <div className="mt-1">
+        <div className="max-h-64 overflow-y-auto border rounded divide-y bg-white/50">
+          {cached.versions.map((v: any, idx: number) => {
+            const isTemp = String(v.id).startsWith('temp-rev-');
+            return (
+              <div key={v.id} className={`p-2 text-xs space-y-1 ${isTemp ? 'opacity-70 animate-pulse' : ''}`}>
+                <div className="flex justify-between items-center gap-2">
+                  <span className="flex items-center gap-2">
+                    v{v.version_number}
+                    {idx === 0 && <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">Mais Recente</span>}
+                    {isTemp && <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">Sincronizando...</span>}
+                  </span>
+                  <span>{fmtDate(v.created_at, locale as any, { dateStyle: 'short' })}</span>
+                </div>
+                {v.notes && <div className="text-gray-500 italic">{v.notes}</div>}
+                {includeData && v.data?.format === 'pdf' && (v.data?.file?.base64 || v.data?.file?.key) && (
+                  <div>
                     <button
                       type="button"
                       className="text-[11px] text-blue-600 underline"
                       onClick={() => {
-                        // Prefer backend streaming quando key presente
                         if (v.data.file?.key && cached?.id) {
                           const url = `${location.origin}/diet/plans/${cached.id}/version/${v.id}/file`;
-                          fetch(url, {
-                            headers: {
-                              authorization: localStorage.getItem(
-                                "access_token"
-                              )
-                                ? `Bearer ${localStorage.getItem(
-                                    "access_token"
-                                  )}`
-                                : "",
-                            },
-                          })
+                          fetch(url, { headers: { authorization: localStorage.getItem('access_token') ? `Bearer ${localStorage.getItem('access_token')}` : '' } })
                             .then(async (r) => {
-                              if (!r.ok) throw new Error("HTTP " + r.status);
+                              if (!r.ok) throw new Error('HTTP ' + r.status);
                               const blob = await r.blob();
                               const dlUrl = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
+                              const a = document.createElement('a');
                               a.href = dlUrl;
-                              a.download =
-                                v.data.file.name ||
-                                `plano_v${v.version_number}.pdf`;
+                              a.download = v.data.file.name || `plano_v${v.version_number}.pdf`;
                               document.body.appendChild(a);
                               a.click();
                               a.remove();
-                              setTimeout(
-                                () => URL.revokeObjectURL(dlUrl),
-                                2000
-                              );
+                              setTimeout(() => URL.revokeObjectURL(dlUrl), 1500);
                             })
-                            .catch((err) => {
-                              console.error(err);
-                              alert("Falha ao baixar PDF");
-                            });
+                            .catch((err) => { console.error(err); alert('Falha ao baixar PDF'); });
                           return;
                         }
-                        // Fallback para base64
                         if (v.data.file?.base64) {
                           try {
                             const base64 = v.data.file.base64 as string;
                             const byteStr = atob(base64);
                             const bytes = new Uint8Array(byteStr.length);
-                            for (let i = 0; i < byteStr.length; i++)
-                              bytes[i] = byteStr.charCodeAt(i);
-                            const blob = new Blob([bytes], {
-                              type: "application/pdf",
-                            });
+                            for (let i = 0; i < byteStr.length; i++) bytes[i] = byteStr.charCodeAt(i);
+                            const blob = new Blob([bytes], { type: 'application/pdf' });
                             const url = URL.createObjectURL(blob);
-                            const a = document.createElement("a");
+                            const a = document.createElement('a');
                             a.href = url;
-                            a.download =
-                              v.data.file.name ||
-                              `plano_v${v.version_number}.pdf`;
+                            a.download = v.data.file.name || `plano_v${v.version_number}.pdf`;
                             document.body.appendChild(a);
                             a.click();
                             a.remove();
-                            setTimeout(() => URL.revokeObjectURL(url), 2000);
-                          } catch (err) {
-                            console.error(err);
-                            alert("Falha ao gerar download do PDF");
-                          }
+                            setTimeout(() => URL.revokeObjectURL(url), 1500);
+                          } catch (err) { console.error(err); alert('Falha ao gerar download do PDF'); }
                         }
                       }}
-                    >
-                      Baixar PDF
-                    </button>
+                    >Baixar PDF</button>
                   </div>
                 )}
-
-              {includeData && v.data && (
-                <pre className="mt-1 bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px]">
-                  {JSON.stringify(v.data, null, 2)}
-                </pre>
-              )}
-            </div>
-          ))}
+                {includeData && v.data && (
+                  v.data.versao === 1 && Array.isArray(v.data.meals) ? (
+                    <div className="mt-2 space-y-1">
+                      <StructuredDietView data={v.data} compact />
+                      <DietVersionExportControls data={v.data} version={v.version_number} />
+                    </div>
+                  ) : (
+                    <pre className="mt-1 bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">{JSON.stringify(v.data, null, 2)}</pre>
+                  )
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
       {canEdit && <RevisionForm revising={revising} onSubmit={onRevise} />}
@@ -1607,22 +1640,21 @@ const DetailContent: React.FC<DetailContentProps> = ({
 
 const RevisionForm: React.FC<{
   revising: boolean;
-  onSubmit: (notes: string, patch: string) => Promise<void>;
+  onSubmit: (notes: string) => Promise<void>;
 }> = ({ revising, onSubmit }) => {
   const [notes, setNotes] = useState("");
-  const [patch, setPatch] = useState('{\n  "meals": []\n}');
   return (
     <form
       className="space-y-2 border-t pt-4"
       onSubmit={async (e) => {
         e.preventDefault();
-        await onSubmit(notes, patch);
+        await onSubmit(notes);
         setNotes("");
       }}
     >
       <h4 className="font-semibold">Nova Revisão</h4>
       <div>
-        <label className="block text-xs font-medium mb-1">Notas</label>
+        <label className="block text-xs font-medium mb-1">Notas da Revisão</label>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
@@ -1630,19 +1662,9 @@ const RevisionForm: React.FC<{
           placeholder="Notas da revisão"
         />
       </div>
-      <div>
-        <label className="block text-xs font-medium mb-1">
-          Patch de Dados (JSON)
-        </label>
-        <textarea
-          value={patch}
-          onChange={(e) => setPatch(e.target.value)}
-          className="w-full border rounded px-2 py-1 text-xs h-32 font-mono resize-none"
-        />
-      </div>
       <div className="flex justify-end gap-2">
         <Button type="submit" disabled={revising}>
-          {revising ? "Salvando..." : "Aplicar Revisão"}
+          {revising ? "Revisando..." : "Aplicar Revisão"}
         </Button>
       </div>
     </form>

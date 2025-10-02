@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
 import { useI18n, formatDate as fmtDate } from "../../../i18n";
-import { API } from "../../../config/api";
+import { useConsultationCreditsSummary } from "../../../hooks/useConsultationCredits";
+import { useConsultationPricing } from "../../../hooks/useConsultationPricing";
 import { useAuth } from "../../../contexts";
 import { useConsultations } from "../../../hooks/useConsultations";
 import { useToast } from "../../../components/ui/ToastProvider";
@@ -52,26 +53,22 @@ const AgendarConsultaPage: React.FC = () => {
     },
   ] as const;
 
-  const [slots, setSlots] = useState<{ date: string; slots: { start: string; end: string; taken: boolean }[] }[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
+      const { data: creditsSummary } = useConsultationCreditsSummary();
+  const { data: pricingData } = useConsultationPricing();
+  const priceMap = useMemo(() => {
+    const map: Record<string,string> = {};
+    if (pricingData?.pricing) {
+      for (const p of pricingData.pricing) {
+        const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: p.currency || 'BRL' });
+        map[p.type] = formatter.format(p.amount_cents / 100);
+      }
+    }
+    return map;
+  }, [pricingData]);
+  // Slots fetching logic moved / may be reintroduced; removing unused state
 
   // Load slots when date changes (fetch a small range around selected date)
-  useEffect(()=>{
-    if (!formData.data) return;
-    const load = async () => {
-      try {
-        setLoadingSlots(true);
-        const from = formData.data;
-        const to = formData.data; // single day for now
-        const qs = new URLSearchParams({ from, to });
-        const r = await authenticatedFetch(`${API.CONSULTATION_AVAILABLE_SLOTS}?${qs.toString()}`);
-        if (r.ok) {
-          const data = await r.json();
-            setSlots(data.days || []);
-        }
-      } finally { setLoadingSlots(false); }
-    }; void load();
-  },[formData.data, authenticatedFetch]);
+  // Slot loading removed for credit gating iteration
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,7 +100,15 @@ const AgendarConsultaPage: React.FC = () => {
         return { dataIso: dt.toISOString() };
       })();
       await create({ scheduledAt: dataIso, type: formData.tipoConsulta, urgency: formData.urgencia });
-      push({ type: 'success', message: t('consultations.status.scheduled') });
+          // Gating: require credit for paid types
+          if (formData.tipoConsulta === 'avaliacao_completa' || formData.tipoConsulta === 'reavaliacao') {
+            const available = creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
+            if (available <= 0) {
+              push({ type: 'error', message: t('consultations.credits.required.cta') });
+              return; // stop here
+            }
+          }
+          setEtapa(2);
       navigate("/dashboard");
     } catch (e: any) {
       const raw = (e?.message || '') as string;
@@ -151,44 +156,77 @@ const AgendarConsultaPage: React.FC = () => {
       else if (raw.includes('questionnaire_required')) mapped = 'É necessário completar o questionário antes de agendar uma consulta.';
       const finalMsg = mapped || t('consultations.schedule.error');
       setSubmitError(finalMsg);
-      push({ type: 'error', message: finalMsg });
+  push({ type: 'error', message: finalMsg });
     } finally {
       setSubmitting(false);
     }
   };
+
+  async function purchaseCredit(type: 'avaliacao_completa' | 'reavaliacao') {
+    const { user } = useAuth();
+    try {
+      const data: any = await authenticatedFetch('/billing/intent', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ type, display_name: user?.display_name }) });
+      if (!data?.checkout_url) {
+        push({ type: 'error', message: data?.error || 'Falha ao iniciar pagamento'});
+        return;
+      }
+      window.location.href = data.checkout_url; // redirect to Mercado Pago
+    } catch (e:any) {
+      push({ type: 'error', message: e?.message || 'Erro inesperado'});
+    }
+  }
 
   const renderEtapa1 = () => (
     <div className="space-y-6">
   <h3 className="text-xl font-semibold text-gray-900 mb-4">{t('consultations.schedule.typeHeading')}</h3>
 
       <div className="grid gap-4">
-        {tiposConsulta.map((tipo) => (
-          <div
-            key={tipo.value}
-            onClick={() =>
-              setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }))
-            }
-            className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
-              formData.tipoConsulta === tipo.value
-                ? "border-green-500 bg-green-50"
-                : "border-gray-200 hover:border-green-300"
-            }`}
-          >
-            <div className="flex justify-between items-start mb-2">
-              <div>
-                <h4 className="font-semibold text-gray-900">{t(tipo.labelKey as any)}</h4>
-                <p className="text-sm text-gray-600">{t(tipo.descKey as any)}</p>
+        {tiposConsulta.map((tipo) => {
+          const needsCredit = tipo.value === 'avaliacao_completa' || tipo.value === 'reavaliacao';
+            const availableCredits = creditsSummary?.summary?.[tipo.value]?.available || 0;
+            const lacks = needsCredit && availableCredits <= 0;
+          return (
+            <div
+              key={tipo.value}
+              onClick={() => setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }))}
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                formData.tipoConsulta === tipo.value
+                  ? "border-green-500 bg-green-50"
+                  : "border-gray-200 hover:border-green-300"
+              }`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{t(tipo.labelKey as any)}</h4>
+                  <p className="text-sm text-gray-600">{t(tipo.descKey as any)}</p>
+                  {needsCredit && (
+                    <p className="mt-1 text-xs">
+                      <span className={lacks ? 'text-rose-600' : 'text-green-600'}>
+                        {lacks ? t('consultations.credits.missing.short') : `${availableCredits} crédito(s)`}
+                      </span>
+                    </p>
+                  )}
+                  {tipo.value === 'reavaliacao' && (
+                    <div className="mt-2 text-[11px] text-gray-500 border-t pt-2">
+                      {t('consultations.credits.reavaliacao.rule')}
+                    </div>
+                  )}
+                </div>
+                <span className="text-lg font-bold text-green-600">
+                  {priceMap[tipo.value] || t(tipo.priceKey as any)}
+                </span>
               </div>
-              <span className="text-lg font-bold text-green-600">
-                {t(tipo.priceKey as any)}
-              </span>
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>{t(tipo.durationKey as any)}</span>
+                <span>{t('consultations.schedule.onlineTag')}</span>
+              </div>
             </div>
-            <div className="flex justify-between text-sm text-gray-500">
-              <span>{t(tipo.durationKey as any)}</span>
-              <span>{t('consultations.schedule.onlineTag')}</span>
-            </div>
-          </div>
-        ))}
+          );
+        })}
+      </div>
+      <div className="flex gap-2 pt-2">
+        <button type="button" onClick={()=> purchaseCredit('avaliacao_completa')} className="text-xs px-3 py-2 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700">{t('consultations.credits.buy.avaliacao')}</button>
+        <button type="button" onClick={()=> purchaseCredit('reavaliacao')} className="text-xs px-3 py-2 rounded bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700">{t('consultations.credits.buy.reavaliacao')}</button>
       </div>
     </div>
   );
@@ -203,52 +241,50 @@ const AgendarConsultaPage: React.FC = () => {
         </div>
       )}
 
-      <div className="grid gap-4 md:grid-cols-2">
-        <div>
-          <label
-            htmlFor="data"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Data da Consulta *
-          </label>
-          <input
-            type="date"
-            id="data"
-            value={formData.data}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, data: e.target.value }))
-            }
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            min={new Date().toISOString().split("T")[0]}
-            required
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="horario"
-            className="block text-sm font-medium text-gray-700 mb-2"
-          >
-            Horário *
-          </label>
-          <select
-            id="horario"
-            value={formData.horario}
-            onChange={(e) =>
-              setFormData((prev) => ({ ...prev, horario: e.target.value }))
-            }
-            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-            required
-          >
-            <option value="">{loadingSlots ? t('consultations.loadingSlots') : t('consultations.selectSlotPlaceholder')}</option>
-            {slots.find(d=> d.date===formData.data)?.slots.filter(s=> !s.taken).map(s=> {
-              const time = new Date(s.start).toISOString().substring(11,16);
-              return <option key={s.start} value={time}>{time}</option>;
-            })}
-          </select>
-        </div>
+      <div className="grid gap-4">
+        {tiposConsulta.map((tipo) => {
+          const needsCredit = tipo.value === 'avaliacao_completa' || tipo.value === 'reavaliacao';
+          const availableCredits = creditsSummary?.summary?.[tipo.value]?.available || 0;
+          const lacks = needsCredit && availableCredits <= 0;
+          return (
+            <div
+              key={tipo.value}
+              onClick={() => setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }))}
+              className={`p-4 border-2 rounded-lg cursor-pointer transition-all duration-200 ${
+                formData.tipoConsulta === tipo.value
+                  ? "border-green-500 bg-green-50"
+                  : "border-gray-200 hover:border-green-300"
+              }`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                  <h4 className="font-semibold text-gray-900">{t(tipo.labelKey as any)}</h4>
+                  <p className="text-sm text-gray-600">{t(tipo.descKey as any)}</p>
+                  {needsCredit && (
+                    <p className="mt-1 text-xs">
+                      <span className={lacks ? 'text-rose-600' : 'text-green-600'}>
+                        {lacks ? t('consultations.credits.missing.short') : `${availableCredits} crédito(s)`}
+                      </span>
+                    </p>
+                  )}
+                </div>
+                <span className="text-lg font-bold text-green-600">
+                  {priceMap[tipo.value] || t(tipo.priceKey as any)}
+                </span>
+              </div>
+              <div className="flex justify-between text-sm text-gray-500">
+                <span>{t(tipo.durationKey as any)}</span>
+                <span>{t('consultations.schedule.onlineTag')}</span>
+              </div>
+              {tipo.value === 'reavaliacao' && (
+                <div className="mt-2 text-[11px] text-gray-500 border-t pt-2">
+                  {t('consultations.credits.reavaliacao.rule')}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           {t('consultations.schedule.urgency.heading')}
@@ -294,7 +330,7 @@ const AgendarConsultaPage: React.FC = () => {
           </p>
           <p>
             <strong>{t('consultations.schedule.summary.price')}:</strong>{" "}
-            {t(tiposConsulta.find((t) => t.value === formData.tipoConsulta)!.priceKey as any)}
+            {priceMap[formData.tipoConsulta] || t(tiposConsulta.find((t) => t.value === formData.tipoConsulta)!.priceKey as any)}
           </p>
         </div>
       </Card>

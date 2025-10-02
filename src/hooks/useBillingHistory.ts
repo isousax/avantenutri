@@ -4,7 +4,8 @@ import { useAuth } from '../contexts';
 
 export interface Payment {
   id: string;
-  plan_id: string;
+  purpose?: string; // 'consultation'
+  consultation_type?: string; // avaliacao_completa | reavaliacao
   amount_cents: number;
   currency: string;
   status: string;

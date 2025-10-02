@@ -176,37 +176,54 @@ const BlogAdminEditPage: React.FC = () => {
 
   const update = (k: keyof FormState, v: string)=> setForm(f=> ({...f, [k]: v }));
 
-  // lazy dynamic import of marked for preview only (frontend dependency not yet installed -> we add lightweight)
-  useEffect(()=> {
-    if(mode === 'html') { setPreviewHtml(form.content_html); return; }
-    // debounce markdown parsing
-    if(previewDebounce.current) clearTimeout(previewDebounce.current);
+  // Simple in-memory cache for parsed markdown to avoid re-parsing identical content
+  const previewCacheRef = useRef<Map<string,string>>(new Map());
+
+  // Markdown preview + selective syntax highlight (lazy) with caching
+  useEffect(() => {
+    if (mode === 'html') { setPreviewHtml(form.content_html); return; }
+    if (previewDebounce.current) clearTimeout(previewDebounce.current);
     previewDebounce.current = setTimeout(async () => {
       setPreviewLoading(true);
       try {
-        const mod: any = await import('marked');
-        const parseFn = mod.parse || (mod.marked && mod.marked.parse) || mod.marked || ((x:string)=> x);
-        let html = parseFn(form.content_md || '');
-        // optional syntax highlight
-        try {
-          const hl = await import('highlight.js');
-          html = html.replace(/<pre><code class="language-([^"]+)">([\s\S]*?)<\/code><\/pre>/g, (_m: string, lang: string, code: string) => {
-            try {
-              const dec = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
-              const highlighted = hl.default.highlight(dec, { language: lang }).value;
-              return `<pre class="hljs"><code class="language-${lang}">${highlighted}</code></pre>`;
-            } catch { return _m; }
-          });
-            html = html.replace(/<pre><code class="language-([^"]+)">([\s\S]*?)<\/code><\/pre>/g, (_m: string, lang: string, code: string) => {
+        const key = (form.content_md || '') + '|md';
+        let generated: string | undefined = previewCacheRef.current.get(key);
+        if(!generated){
+          const mod: any = await import('marked');
+          const parseFn = mod.parse || (mod.marked && mod.marked.parse) || mod.marked || ((x: string) => x);
+          generated = parseFn(form.content_md || '');
+        }
+        // Collect languages from fenced blocks to minimize highlight footprint
+        const codeLangs = [...(form.content_md || '').matchAll(/```([a-zA-Z0-9_-]+)\n/g)].map(m => (m[1] || '').toLowerCase());
+        const unique = Array.from(new Set(codeLangs)).slice(0, 8);
+        if (unique.length) {
+          try {
+            const hlCore: any = await import('highlight.js/lib/core');
+            const alias: Record<string, string> = { js: 'javascript', ts: 'typescript', py: 'python', sh: 'bash' };
+            for (const raw of unique) {
+              const resolved = alias[raw] || raw;
               try {
-                const dec = code.replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&');
-                const highlighted = hl.default.highlight(dec, { language: lang }).value;
-                return `<pre class="hljs"><code class="language-${lang}">${highlighted}</code></pre>`;
+                const langMod = await import(`highlight.js/lib/languages/${resolved}`);
+                hlCore.registerLanguage(resolved, langMod.default);
+              } catch { /* skip unknown */ }
+            }
+            if(generated){
+            generated = generated.replace(/<pre><code class="language-([^"]+)">([\s\S]*?)<\/code><\/pre>/g, (_m: string, lang: string, code: string) => {
+              const resolved = (alias[lang] || lang).toLowerCase();
+              try {
+                const dec = code.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
+                const highlighted = hlCore.highlight(dec, { language: resolved }).value;
+                return `<pre class="hljs"><code class="language-${resolved}">${highlighted}</code></pre>`;
               } catch { return _m; }
             });
-        } catch { /* ignore highlight errors */ }
-        setPreviewHtml(html);
-      } catch { /* ignore */ } finally { setPreviewLoading(false); }
+            }
+          } catch { /* highlight optional */ }
+        }
+        if(generated){
+          previewCacheRef.current.set(key, generated);
+          setPreviewHtml(generated);
+        }
+      } catch { /* parse error ignored */ } finally { setPreviewLoading(false); }
     }, 300);
   }, [mode, form.content_md, form.content_html]);
 

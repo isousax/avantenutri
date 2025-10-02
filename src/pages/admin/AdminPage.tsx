@@ -10,6 +10,12 @@ import { RoleRoute } from "../../components/RoleRoute";
 import { SEO } from "../../components/comum/SEO";
 import { API } from "../../config/api";
 import AdminNotificationSender from "../../components/admin/AdminNotificationSender";
+import AdminCreditsPanel from "../../components/admin/AdminCreditsPanel";
+import StructuredDietBuilder from "../../components/diet/StructuredDietBuilder";
+import StructuredDietView from "../../components/diet/StructuredDietView";
+import type { StructuredDietData } from "../../types/structuredDiet";
+import { downloadDietJson, printDiet, dietHasItems, copyDietJson, copyDietHtml } from "../../utils/structuredDietExport";
+import { exportDietPdf } from "../../utils/structuredDietPdf";
 
 /* --- Types --- */
 interface AdminUser {
@@ -19,7 +25,6 @@ interface AdminUser {
   display_name?: string;
   created_at?: string;
   last_login_at?: string;
-  plan_id?: string;
   email_confirmed?: number;
 }
 interface Consultation {
@@ -55,10 +60,7 @@ const DietManagement: React.FC = () => {
   const [creatingName, setCreatingName] = useState("");
   const [creatingDesc, setCreatingDesc] = useState("");
   const [planFormat, setPlanFormat] = useState<"structured" | "pdf">("structured");
-  const [metaKcal, setMetaKcal] = useState("");
-  const [metaProt, setMetaProt] = useState("");
-  const [metaCarb, setMetaCarb] = useState("");
-  const [metaFat, setMetaFat] = useState("");
+  const [structuredCreateData, setStructuredCreateData] = useState<StructuredDietData | null>(null);
   const [pdfBase64, setPdfBase64] = useState("");
   const [pdfName, setPdfName] = useState("");
   const [targetUserQuery, setTargetUserQuery] = useState("");
@@ -73,11 +75,22 @@ const DietManagement: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<PlanDetail | null>(null);
   const [revNotes, setRevNotes] = useState("");
-  const [revMode, setRevMode] = useState<"json" | "pdf">("json");
+  const [revMode, setRevMode] = useState<"json" | "pdf" | "structured">("json");
+  const [revStructuredData, setRevStructuredData] = useState<StructuredDietData | null>(null);
   const [revPatchJson, setRevPatchJson] = useState("{}");
   const [revPdfName, setRevPdfName] = useState("");
   const [revPdfBase64, setRevPdfBase64] = useState("");
   const [revising, setRevising] = useState(false);
+  const [exportShowAlternatives, setExportShowAlternatives] = useState(true);
+  const [pdfExportingVersion, setPdfExportingVersion] = useState<string | null>(null);
+  const [pdfExportPhase, setPdfExportPhase] = useState<string>('');
+  // PDF advanced options
+  const [pdfIncludeCover, setPdfIncludeCover] = useState(true);
+  const [pdfIncludeTotalsOnCover, setPdfIncludeTotalsOnCover] = useState(true);
+  const [pdfWatermarkRepeat, setPdfWatermarkRepeat] = useState(true);
+  const [pdfWatermarkOpacity, setPdfWatermarkOpacity] = useState(0.08);
+  const [pdfIncludeQr, setPdfIncludeQr] = useState(false);
+  const [showPdfOptions, setShowPdfOptions] = useState(false);
 
   // Search patients (debounced)
   useEffect(() => {
@@ -150,6 +163,7 @@ const DietManagement: React.FC = () => {
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (planFormat === 'structured' && !dietHasItems(structuredCreateData)) { alert('Dieta estruturada vazia.'); return; }
     setCreating(true);
     setError(null);
     try {
@@ -158,13 +172,8 @@ const DietManagement: React.FC = () => {
       let dataObj: any;
       if (planFormat === "pdf" && pdfBase64) {
         dataObj = { format: "pdf", file: { name: pdfName || (creatingName + ".pdf"), mime: "application/pdf", base64: pdfBase64 }, observacoes: creatingDesc || null };
-      } else if (planFormat === "structured" && (metaKcal || metaProt || metaCarb || metaFat)) {
-        dataObj = {
-          metas: { kcal_dia: metaKcal ? +metaKcal : null, proteina_g: metaProt ? +metaProt : null, carbo_g: metaCarb ? +metaCarb : null, gordura_g: metaFat ? +metaFat : null },
-          refeicoes: [],
-          observacoes: creatingDesc || null,
-          format: "structured",
-        };
+      } else if (planFormat === "structured" && structuredCreateData) {
+        dataObj = structuredCreateData;
       }
       let finalDesc = creatingDesc;
       if (planFormat === "pdf" && finalDesc && !/^[ \t]*\[PDF\]/i.test(finalDesc)) finalDesc = `[PDF] ${finalDesc}`;
@@ -176,11 +185,9 @@ const DietManagement: React.FC = () => {
       setShowCreate(false);
       setCreatingName("");
       setCreatingDesc("");
-      setPlanFormat("structured");
-      setMetaKcal("");
-      setMetaProt("");
-      setMetaCarb("");
-      setMetaFat("");
+  setPlanFormat("structured");
+  setStructuredCreateData(null);
+   try { localStorage.removeItem('structuredDietDraft'); } catch {}
       setPdfBase64("");
       setPdfName("");
       setTargetUserId("");
@@ -233,6 +240,7 @@ const DietManagement: React.FC = () => {
   const handleRevise = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!detailId) return;
+    if (revMode === 'structured' && !dietHasItems(revStructuredData)) { alert('Dieta estruturada vazia.'); return; }
     setRevising(true);
     setError(null);
     try {
@@ -388,11 +396,10 @@ const DietManagement: React.FC = () => {
               )}
 
               {planFormat === "structured" && (
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="block text-[11px] font-medium mb-1">Kcal/dia</label><input value={metaKcal} onChange={(e) => setMetaKcal(e.target.value)} className="w-full border rounded px-2 py-1 text-xs" /></div>
-                  <div><label className="block text-[11px] font-medium mb-1">Proteína (g)</label><input value={metaProt} onChange={(e) => setMetaProt(e.target.value)} className="w-full border rounded px-2 py-1 text-xs" /></div>
-                  <div><label className="block text-[11px] font-medium mb-1">Carbo (g)</label><input value={metaCarb} onChange={(e) => setMetaCarb(e.target.value)} className="w-full border rounded px-2 py-1 text-xs" /></div>
-                  <div><label className="block text-[11px] font-medium mb-1">Gordura (g)</label><input value={metaFat} onChange={(e) => setMetaFat(e.target.value)} className="w-full border rounded px-2 py-1 text-xs" /></div>
+                <div className="border rounded p-2 bg-white/60">
+                  <h5 className="text-xs font-semibold mb-2">Montar Dieta Estruturada</h5>
+                  <StructuredDietBuilder value={structuredCreateData} onChange={setStructuredCreateData} showAlternatives={exportShowAlternatives} onToggleAlternatives={setExportShowAlternatives} />
+                  {!structuredCreateData && <p className="text-[10px] text-amber-700 mt-1">Adicione pelo menos um alimento antes de criar.</p>}
                 </div>
               )}
 
@@ -434,10 +441,91 @@ const DietManagement: React.FC = () => {
                   <div className="max-h-72 overflow-y-auto border rounded divide-y">
                     {detail.versions.map((v) => (
                       <div key={v.id} className="p-2 space-y-1">
-                        <div className="flex justify-between"><span>v{v.version_number}</span><span>{fmtDate(v.created_at, "pt", { dateStyle: "short" })}</span></div>
+                        <div className="flex justify-between items-center">
+                          <span className="flex items-center gap-2">v{v.version_number}{v === detail.versions[0] && <span className="text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">Atual</span>}</span>
+                          <span>{fmtDate(v.created_at, "pt", { dateStyle: "short" })}</span>
+                        </div>
                         {v.notes && <div className="italic text-gray-600">{v.notes}</div>}
-                        {detailIncludeData && v.data?.format === "pdf" && (v.data?.file?.key || v.data?.file?.base64) && <button type="button" className="text-blue-600 underline" onClick={() => downloadPdf(detail.id, v)}>Baixar PDF</button>}
-                        {detailIncludeData && v.data && <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">{JSON.stringify(v.data, null, 2)}</pre>}
+                        {detailIncludeData && v.data?.format === "pdf" && (v.data?.file?.key || v.data?.file?.base64) && (
+                          <button type="button" className="text-blue-600 underline" onClick={() => downloadPdf(detail.id, v)}>Baixar PDF</button>
+                        )}
+                        {detailIncludeData && v.data && v.data.versao === 1 && Array.isArray(v.data.meals) && (
+                          <div className="space-y-1">
+                            <StructuredDietView data={v.data} compact />
+                            <div className="flex gap-2 flex-wrap text-[10px] items-center">
+                              <button type="button" className="px-2 py-1 bg-emerald-600 text-white rounded" onClick={() => downloadDietJson(v.data, `dieta_v${v.version_number}.json`)}>JSON</button>
+                              <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded" onClick={() => printDiet(v.data, `Dieta v${v.version_number}`, { showAlternatives: exportShowAlternatives })}>Imprimir / PDF</button>
+                              <button
+                                type="button"
+                                disabled={pdfExportingVersion === v.id}
+                                className={`px-2 py-1 rounded text-white ${pdfExportingVersion === v.id ? 'bg-indigo-400 cursor-wait' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                                onClick={async () => {
+                                  if (pdfExportingVersion) return;
+                                  setPdfExportingVersion(v.id);
+                                  setPdfExportPhase('preparando');
+                                  try {
+                                    await exportDietPdf(v.data, {
+                                      filename: `dieta_v${v.version_number}.pdf`,
+                                      title: `Dieta v${v.version_number}`,
+                                      showAlternatives: exportShowAlternatives,
+                                      headerText: 'Plano Nutricional',
+                                      footerText: 'AvanteNutri - Confidencial',
+                                      watermarkText: 'AvanteNutri',
+                                      watermarkRepeat: pdfWatermarkRepeat,
+                                      watermarkOpacity: pdfWatermarkOpacity,
+                                      cover: pdfIncludeCover ? {
+                                        title: `Plano Nutricional v${v.version_number}`,
+                                        subtitle: detail?.name || 'Paciente',
+                                        showTotals: pdfIncludeTotalsOnCover,
+                                        notes: v.notes || detail?.description || '',
+                                        date: new Date(v.created_at),
+                                        qrUrl: pdfIncludeQr ? `${location.origin}/plan/${detail?.id || ''}` : undefined
+                                      } : undefined,
+                                      phaseLabels: {
+                                        prepare: 'Preparando',
+                                        render: 'Renderizando',
+                                        cover: 'Capa',
+                                        paginate: 'Paginando',
+                                        finalize: 'Finalizando',
+                                        done: 'Concluído'
+                                      },
+                                      onProgress: (ph) => setPdfExportPhase(ph)
+                                    });
+                                  } catch (err) {
+                                    console.error(err);
+                                    alert('Falha ao gerar PDF');
+                                  } finally {
+                                    setPdfExportingVersion(null);
+                                    setPdfExportPhase('');
+                                  }
+                                }}
+                              >{pdfExportingVersion === v.id ? `Gerando (${pdfExportPhase})...` : 'PDF Direto'}</button>
+                              <button type="button" className="px-2 py-1 bg-amber-600 text-white rounded" onClick={() => copyDietJson(v.data)}>Copiar JSON</button>
+                              <button type="button" className="px-2 py-1 bg-amber-700 text-white rounded" onClick={() => copyDietHtml(v.data, `Dieta v${v.version_number}`, { showAlternatives: exportShowAlternatives })}>Copiar HTML</button>
+                              <label className="flex items-center gap-1 cursor-pointer select-none ml-2"><input type="checkbox" checked={exportShowAlternatives} onChange={e=>setExportShowAlternatives(e.target.checked)} /> Alternativas</label>
+                              <button type="button" className="px-2 py-1 bg-gray-500 text-white rounded" onClick={()=>setShowPdfOptions(s=>!s)}>{showPdfOptions? 'Fechar Opções':'Opções PDF'}</button>
+                            </div>
+                            {showPdfOptions && (
+                              <div className="mt-2 p-2 border rounded bg-gray-50 space-y-2 text-[10px]">
+                                <div className="flex flex-wrap gap-4">
+                                  <label className="flex items-center gap-1"><input type="checkbox" checked={pdfIncludeCover} onChange={e=>setPdfIncludeCover(e.target.checked)} /> Capa</label>
+                                  <label className="flex items-center gap-1"><input type="checkbox" checked={pdfIncludeTotalsOnCover} disabled={!pdfIncludeCover} onChange={e=>setPdfIncludeTotalsOnCover(e.target.checked)} /> Totais na capa</label>
+                                  <label className="flex items-center gap-1"><input type="checkbox" checked={pdfWatermarkRepeat} onChange={e=>setPdfWatermarkRepeat(e.target.checked)} /> Repetir watermark</label>
+                                  <label className="flex items-center gap-1"><input type="checkbox" checked={pdfIncludeQr} onChange={e=>setPdfIncludeQr(e.target.checked)} /> QR Link</label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <label className="text-[10px]">Opacidade watermark</label>
+                                  <input type="range" min={0.02} max={0.3} step={0.01} value={pdfWatermarkOpacity} onChange={e=>setPdfWatermarkOpacity(parseFloat(e.target.value))} />
+                                  <span>{pdfWatermarkOpacity.toFixed(2)}</span>
+                                </div>
+                                <p className="text-gray-500">Essas opções afetam apenas a geração do PDF Direto.</p>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        {detailIncludeData && v.data && v.data.versao !== 1 && (
+                          <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">{JSON.stringify(v.data, null, 2)}</pre>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -452,6 +540,7 @@ const DietManagement: React.FC = () => {
 
                   <div className="flex gap-4 items-center">
                     <label className="flex items-center gap-1"><input type="radio" value="json" checked={revMode === "json"} onChange={() => setRevMode("json")} /> Patch JSON</label>
+                    <label className="flex items-center gap-1"><input type="radio" value="structured" checked={revMode === "structured"} onChange={() => { setRevMode("structured"); if (detail?.versions?.[0]?.data?.versao === 1) setRevStructuredData(detail.versions[0].data); }} /> Estruturado</label>
                     <label className="flex items-center gap-1"><input type="radio" value="pdf" checked={revMode === "pdf"} onChange={() => setRevMode("pdf")} /> Novo PDF</label>
                   </div>
 
@@ -478,6 +567,18 @@ const DietManagement: React.FC = () => {
                     </div>
                   )}
 
+                  {revMode === "structured" && (
+                    <div className="border rounded p-2 bg-white/60">
+                      <div className="flex items-center justify-between mb-1">
+                        <h5 className="font-semibold text-xs">Editar Dieta Estruturada</h5>
+                        {detail?.versions?.[0]?.data?.versao === 1 && (
+                          <button type="button" className="text-[10px] underline text-green-700" onClick={() => setRevStructuredData(detail.versions[0].data)}>Carregar Atual</button>
+                        )}
+                      </div>
+                      <StructuredDietBuilder value={revStructuredData} onChange={setRevStructuredData} />
+                    </div>
+                  )}
+
                   <div className="flex justify-end gap-2">
                     <Button type="button" variant="secondary" onClick={() => { setRevNotes(""); setRevPatchJson("{}"); setRevPdfBase64(""); setRevPdfName(""); }}>Limpar</Button>
                     <Button type="submit" disabled={revising}>{revising ? "Salvando..." : "Aplicar Revisão"}</Button>
@@ -498,7 +599,7 @@ const DietManagement: React.FC = () => {
    --------------------------- */
 const AdminPage: React.FC = () => {
   const { logout, getAccessToken } = useAuth();
-  const [tab, setTab] = useState<"pacientes" | "consultas" | "relatorios" | "dietas" | "notificacoes">("pacientes");
+  const [tab, setTab] = useState<"pacientes" | "consultas" | "relatorios" | "dietas" | "notificacoes" | "creditos">("pacientes");
   const [searchTerm, setSearchTerm] = useState("");
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [usersLoading, setUsersLoading] = useState(false);
@@ -594,7 +695,6 @@ const AdminPage: React.FC = () => {
           <div className="flex flex-wrap gap-2 sm:gap-3 items-center text-sm">
             <Link to="/admin/usuarios" className="text-green-700 hover:underline px-2 py-1">{t("admin.users.title")}</Link>
             <Link to="/admin/audit" className="text-green-700 hover:underline px-2 py-1">Auditoria</Link>
-            <Link to="/admin/entitlements" className="text-green-700 hover:underline px-2 py-1">Entitlements</Link>
             <Button variant="secondary" onClick={logout} className="px-3 py-1">Sair</Button>
           </div>
         </div>
@@ -650,6 +750,12 @@ const AdminPage: React.FC = () => {
           >
             Relatórios
           </button>
+          <button
+            className={`px-3 md:px-4 py-2 font-medium rounded-lg transition-colors text-sm ${tab === "creditos" ? "bg-green-600 text-white" : "text-green-600 hover:bg-green-50"}`}
+            onClick={() => setTab("creditos")}
+          >
+            Créditos
+          </button>
         </div>
 
           {/* --- PACIENTES --- */}
@@ -677,7 +783,6 @@ const AdminPage: React.FC = () => {
                   <thead className="bg-gray-50 text-gray-700">
                     <tr>
                       <th className="py-3 px-4 font-medium">Paciente</th>
-                      <th className="py-3 px-4 font-medium">Plano</th>
                       <th className="py-3 px-4 font-medium">Role</th>
                       <th className="py-3 px-4 font-medium">Criado</th>
                       <th className="py-3 px-4 font-medium">Último Login</th>
@@ -712,7 +817,6 @@ const AdminPage: React.FC = () => {
                             </div>
                           </div>
                         </td>
-                        <td className="py-3 px-4 text-gray-700">{u.plan_id || "—"}</td>
                         <td className="py-3 px-4">
                           <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-medium text-green-700 uppercase tracking-wide">{u.role}</span>
                         </td>
@@ -721,7 +825,6 @@ const AdminPage: React.FC = () => {
                         <td className="py-3 px-4 text-right">
                           <div className="flex gap-2 justify-end">
                             <Button variant="secondary" className="text-xs">Perfil</Button>
-                            <Button variant="secondary" className="text-xs">Planos</Button>
                           </div>
                         </td>
                       </tr>
@@ -824,6 +927,12 @@ const AdminPage: React.FC = () => {
             <Card className="p-6">
               <h3 className="text-lg font-medium mb-4">Relatórios e Análises</h3>
               <p className="text-gray-600">Em desenvolvimento...</p>
+            </Card>
+          )}
+          {tab === "creditos" && (
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Créditos de Consultas</h3>
+              <AdminCreditsPanel />
             </Card>
           )}
         </div>

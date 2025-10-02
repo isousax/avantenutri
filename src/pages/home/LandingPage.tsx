@@ -7,7 +7,7 @@ import "../../styles/placeholder-images.css";
 import { SEO } from "../../components/comum/SEO";
 import StatsSectionSimple from "../../components/home/StatsSectionSimple";
 import { motion, AnimatePresence } from "framer-motion";
-import Planos from "../../components/home/Planos";
+import CreditsSection from "../../components/home/CreditsSection";
 import Servicos from "../../components/home/Servicos";
 import Footer from "../../components/layout/Footer";
 import { useI18n } from '../../i18n';
@@ -221,8 +221,8 @@ const LandingPage: React.FC = () => {
       {/* Serviços Section */}
       <Servicos />
 
-      {/* Planos Section */}
-      <Planos />
+  {/* Créditos Section (substitui planos) */}
+  <CreditsSection />
 
       {/* Sobre Section */}
       <section id="sobre" className="py-20 bg-white">

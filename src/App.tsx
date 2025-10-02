@@ -1,21 +1,22 @@
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/react";
 import { Routes, Route } from "react-router-dom";
+import { Suspense, lazy } from 'react';
 import { PrivateRoute } from "./components/auth/PrivateRoute";
 import { AdminRoute } from "./components/auth/AdminRoute";
-import LandingPage from "./pages/home/LandingPage.tsx";
-import LoginPage from "./pages/login/LoginPage.tsx";
-import RegisterPage from "./pages/login/RegisterPage.tsx";
-import DashboardPage from "./pages/client/DashboardPage.tsx";
-import QuestionarioPage from "./pages/client/QuestionarioPage.tsx";
-import AdminPage from "./pages/admin/AdminPage.tsx";
-import AdminUsersPage from "./pages/admin/AdminUsersPage.tsx";
-import AdminAuditPage from "./pages/admin/AdminAuditPage.tsx";
-import AdminEntitlementsPage from "./pages/admin/AdminEntitlementsPage.tsx";
-import AdminConsultationsPage from "./pages/admin/AdminConsultationsPage";
-import AdminPlansPage from "./pages/admin/plans/AdminPlansPage";
-import AdminBillingPage from "./pages/admin/billing/AdminBillingPage";
-import AdminReportsPage from "./pages/admin/reports/AdminReportsPage";
+// Lazy-loaded (code-splitting) heavy pages
+const LandingPage = lazy(() => import('./pages/home/LandingPage.tsx'));
+const CreditsPricingPage = lazy(() => import('./pages/home/CreditsPricingPage'));
+const LoginPage = lazy(() => import('./pages/login/LoginPage.tsx'));
+const RegisterPage = lazy(() => import('./pages/login/RegisterPage.tsx'));
+const DashboardPage = lazy(() => import('./pages/client/DashboardPage.tsx'));
+const QuestionarioPage = lazy(() => import('./pages/client/QuestionarioPage.tsx'));
+const AdminPage = lazy(() => import('./pages/admin/AdminPage.tsx'));
+const AdminUsersPage = lazy(() => import('./pages/admin/AdminUsersPage.tsx'));
+const AdminAuditPage = lazy(() => import('./pages/admin/AdminAuditPage.tsx'));
+const AdminConsultationsPage = lazy(() => import('./pages/admin/AdminConsultationsPage'));
+const AdminBillingPage = lazy(() => import('./pages/admin/billing/AdminBillingPage'));
+const AdminReportsPage = lazy(() => import('./pages/admin/reports/AdminReportsPage'));
 import AdminLayout from "./layouts/AdminLayout";
 import TermosServicoPage from "./pages/legal/TermosServicoPage.tsx";
 import PoliticaPrivacidadePage from "./pages/legal/PoliticaPrivacidadePage.tsx";
@@ -36,44 +37,20 @@ import CookieBanner from "./components/comum/CookieBanner.tsx";
 import useCookieConsent from "./hooks/useCookieConsent";
 import { useEffect } from "react";
 import type { FbqFunction } from "./types/global";
-import BlogPage from "./pages/blog/BlogPage.tsx";
-import BlogPostPage from "./pages/blog/BlogPostPage.tsx";
-import BlogAdminListPage from "./pages/admin/blog/BlogAdminListPage";
-import BlogAdminEditPage from "./pages/admin/blog/BlogAdminEditPage";
-import PricingPage from "./pages/home/PricingPage.tsx";
+const BlogPage = lazy(() => import('./pages/blog/BlogPage.tsx'));
+const BlogPostPage = lazy(() => import('./pages/blog/BlogPostPage.tsx'));
+const BlogAdminListPage = lazy(() => import('./pages/admin/blog/BlogAdminListPage'));
+const BlogAdminEditPage = lazy(() => import('./pages/admin/blog/BlogAdminEditPage'));
 import BillingSuccessPage from "./pages/handle/billing/BillingSuccessPage";
 import BillingFailurePage from "./pages/handle/billing/BillingFailurePage";
 import BillingPendingPage from "./pages/handle/billing/BillingPendingPage";
-import { I18nProvider, useI18n } from './i18n';
-import { ToastProvider } from './components/ui/ToastProvider';
-import { useToast } from './components/ui/ToastProvider';
+import { I18nProvider } from './i18n';
+import { ToastProvider, useToast } from './components/ui/ToastProvider';
+import RouteFallback from './components/ui/RouteFallback';
 
-function EntitlementsToastListener() {
-  const { t } = useI18n();
-  const { push } = useToast();
-  useEffect(() => {
-    const handler = () => {
-      // Evitar toast duplicado logo após pagamento aprovado
-      let recent = false;
-      try {
-        const ts = sessionStorage.getItem('lastPaymentApprovedToast');
-        if (ts) {
-          const diff = Date.now() - Number(ts);
-          // Se já mostramos em <= 8s, não repetir
-          if (diff <= 8000) recent = true;
-        }
-      } catch { }
-      if (!recent) {
-        push({ type: 'success', message: t('billing.upgrade.success') });
-      }
-    };
-    window.addEventListener('entitlements:changed', handler as any);
-    return () => window.removeEventListener('entitlements:changed', handler as any);
-  }, [push, t]);
-  return null;
-}
 
 function GlobalToastEventBridge() {
+  // Bridge para disparar toasts via evento customizado
   const { push } = useToast();
   useEffect(() => {
     const handler = (e: Event) => {
@@ -152,13 +129,13 @@ function App() {
   return (
     <I18nProvider>
       <ToastProvider>
-        <GlobalToastEventBridge />
-        <EntitlementsToastListener />
+  <GlobalToastEventBridge />
         <div className="flex flex-col min-h-screen">
           <main>
             {/* Banner de Cookies (condicional) */}
             <CookieBanner grantConsent={grantConsent} />
 
+            <Suspense fallback={<RouteFallback /> }>
             <Routes>
               {/* Rotas públicas */}
               <Route path="/" element={<LandingPage />} />
@@ -171,6 +148,7 @@ function App() {
               <Route path="/termos" element={<TermosServicoPage />} />
               <Route path="/privacidade" element={<PoliticaPrivacidadePage />} />
               <Route path="/blog" element={<BlogPage />} />
+              <Route path="/pricing" element={<CreditsPricingPage />} />
               <Route path="/blog/:slug" element={<BlogPostPage />} />
               {/* Billing return pages */}
               <Route path="/billing/success" element={<BillingSuccessPage />} />
@@ -194,14 +172,6 @@ function App() {
                 }
               />
 
-              <Route
-                path="/planos"
-                element={
-                  <PrivateRoute>
-                    <PricingPage />
-                  </PrivateRoute>
-                }
-              />
               <Route
                 path="/billing/historico"
                 element={
@@ -264,19 +234,18 @@ function App() {
                 <Route index element={<AdminPage />} />
                 <Route path="usuarios" element={<AdminUsersPage />} />
                 <Route path="consultas" element={<AdminConsultationsPage />} />
-                <Route path="planos" element={<AdminPlansPage />} />
                 <Route path="billing" element={<AdminBillingPage />} />
                 <Route path="relatorios" element={<AdminReportsPage />} />
                 <Route path="blog" element={<BlogAdminListPage />} />
                 <Route path="blog/new" element={<BlogAdminEditPage />} />
                 <Route path="blog/edit/:id" element={<BlogAdminEditPage />} />
-                <Route path="entitlements" element={<AdminEntitlementsPage />} />
                 <Route path="audit" element={<AdminAuditPage />} />
               </Route>
 
               {/* Rota para 404*/}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </Suspense>
             <Analytics />
             <SpeedInsights />
           </main>

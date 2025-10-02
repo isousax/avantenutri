@@ -5,12 +5,21 @@ import { useConsultations } from "../../hooks/useConsultations";
 import { useI18n, formatDate } from "../../i18n";
 import React from "react";
 import StatusPill, { getStatusTone } from "../ui/StatusPill";
+import { useConsultationCreditsSummary } from "../../hooks/useConsultationCredits";
+import { API } from "../../config/api";
+import { useAuth } from "../../contexts/useAuth";
+import { useToast } from "../ui/ToastProvider";
 
 const Consultas: React.FC = () => {
   const navigate = useNavigate();
   const { items, loading, error, list, cancel } = useConsultations();
   const [cancelingId, setCancelingId] = React.useState<string | null>(null);
   const { locale, t } = useI18n();
+  const { getAccessToken } = useAuth();
+  const { data: creditsSummaryData, refetch: refetchCredits } = useConsultationCreditsSummary();
+  const [buying, setBuying] = React.useState<null | 'avaliacao_completa' | 'reavaliacao'>(null);
+  const summary = creditsSummaryData?.summary || {};
+  const { push } = useToast();
   
   const upcoming = React.useMemo(() =>
     items
@@ -32,8 +41,9 @@ const Consultas: React.FC = () => {
     setCancelingId(id);
     try {
       await cancel(id);
+      push({ type: 'success', message: t('consultations.cancel.action') });
     } catch (e: any) {
-      alert(e.message || t('consultations.cancel.error'));
+      push({ type: 'error', message: e.message || t('consultations.cancel.error') });
     } finally {
       setCancelingId(null);
     }
@@ -68,19 +78,80 @@ const Consultas: React.FC = () => {
     }
   };
 
+  async function purchaseCredit(type: 'avaliacao_completa' | 'reavaliacao') {
+    if (buying) return;
+    setBuying(type);
+    try {
+      const token = await getAccessToken();
+      if (!token) throw new Error('no_session');
+      const res = await fetch(API.BILLING_INTENT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type })
+      });
+      const data = await res.json();
+      if (!res.ok || !data?.checkout_url) {
+        push({ type: 'error', message: data.error || 'Falha ao iniciar pagamento' });
+        return;
+      }
+      window.location.href = data.checkout_url;
+    } catch (e:any) {
+      push({ type: 'error', message: e?.message || 'Erro inesperado' });
+    } finally {
+      setBuying(null);
+      refetchCredits();
+    }
+  }
+
+  function handleSchedule() {
+    // If no credit for any paid type and user tries to schedule, send them anyway (they can pick type first)
+    navigate('/agendar-consulta');
+  }
+
   return (
     <div className="space-y-6 pb-20">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <Button 
-          onClick={() => navigate('/agendar-consulta')}
-          className="flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-500/25"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-          </svg>
-          {t('consultations.schedule')}
-        </Button>
+        <div className="flex flex-wrap gap-3 items-center">
+          <div className="flex gap-2 text-xs">
+            <span className="px-2 py-1 rounded bg-green-50 text-green-700 border border-green-200">
+              Avaliação: {summary.avaliacao_completa?.available || 0}
+            </span>
+            <span className="px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
+              Reavaliação: {summary.reavaliacao?.available || 0}
+            </span>
+          </div>
+          <Button 
+            onClick={handleSchedule}
+            className="flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-500/25"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            {t('consultations.schedule')}
+          </Button>
+          <div className="flex gap-2">
+            <button
+              disabled={buying === 'avaliacao_completa'}
+              onClick={() => purchaseCredit('avaliacao_completa')}
+              className="relative text-xs px-3 py-2 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 disabled:opacity-50"
+            >
+              {buying === 'avaliacao_completa' ? t('consultations.credits.buy.loading') : t('consultations.credits.buy.avaliacao')}
+            </button>
+            <div className="relative group">
+              <button
+                disabled={buying === 'reavaliacao'}
+                onClick={() => purchaseCredit('reavaliacao')}
+                className="text-xs px-3 py-2 rounded bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 disabled:opacity-50"
+              >
+                {buying === 'reavaliacao' ? t('consultations.credits.buy.loading') : t('consultations.credits.buy.reavaliacao')}
+              </button>
+              <div className="hidden group-hover:block absolute z-20 w-64 top-full mt-2 right-0 bg-white border border-gray-200 rounded shadow-lg p-3 text-[11px] text-gray-600">
+                {t('consultations.credits.reavaliacao.rule')}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Próximas Consultas */}

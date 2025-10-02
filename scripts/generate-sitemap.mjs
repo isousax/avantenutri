@@ -44,7 +44,6 @@ function getLastModFor(fileCandidates) {
 const routes = {
   '/': { files: ['src/pages/home/LandingPage.tsx'], changefreq: 'daily', priority: 1.0 },
   '/blog': { files: ['src/pages/blog/BlogPage.tsx'], changefreq: 'daily', priority: 0.9 },
-  '/planos': { files: ['src/pages/home/PricingPage.tsx'], changefreq: 'weekly', priority: 0.8 },
   '/termos': { files: ['src/pages/legal/TermosServicoPage.tsx'], changefreq: 'yearly', priority: 0.4 },
   '/privacidade': { files: ['src/pages/legal/PoliticaPrivacidadePage.tsx'], changefreq: 'yearly', priority: 0.4 },
   '/login': { files: ['src/pages/login/LoginPage.tsx'], changefreq: 'monthly', priority: 0.2 },

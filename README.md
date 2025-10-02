@@ -67,25 +67,24 @@ export default defineConfig([
   },
 ])
 
-## Fluxo de Assinatura e Agendamento (Produto)
+## Modelo de Créditos de Consulta (Atual)
 
-Fluxo simplificado (sem downgrade):
+O antigo sistema de planos foi descontinuado. Agora o usuário compra créditos de tipos específicos de consulta:
 
-1. Usuário cria conta.
-2. Acessa área de consultas (lista vazia se nenhuma marcada).
-3. Ao tentar agendar sem capability CONSULTA_AGENDAR é redirecionado para `/planos?intent=consultation`.
-4. Página de planos mostra banner contextual explicando o motivo.
-5. Usuário seleciona plano e conclui pagamento (TransparentCheckoutForm).
-6. Após status approved disparamos `entitlements:refresh` e o usuário pode voltar para agendar.
+1. Cria conta e preenche o questionário.
+2. Vai em "Agendar Consulta".
+3. Caso não tenha crédito para o tipo selecionado (ex: `avaliacao_completa`), usa os botões de compra que iniciam o pagamento (Mercado Pago).
+4. Webhook aprova o pagamento e gera um registro em `consultation_credits` (status `available`).
+5. Ao agendar, o backend consome (`used`) um crédito correspondente ao tipo.
 
-Detalhes técnicos:
-- Hook `usePlanIntent` centraliza parsing/limpeza de `?intent`.
-- Banner é persistido (sessionStorage) quando dispensado para não reaparecer.
-- Conceito de downgrade e código legado removidos.
-- Entitlements cacheados com TTL 10min + ETag evitando loops de fetch.
+Características:
+- Endpoint público `/consultations/pricing` expõe preços dinâmicos administrados em painel.
+- Fallback de preços no backend garante continuidade caso não haja registro ativo.
+- Frontend usa React Query para cache leve (2 min) dos preços.
+- Gating simples: sem crédito disponível → CTA de compra.
 
 Próximos incrementos sugeridos:
-- Outros intents (ex: `diet`, `reports`).
-- Métricas de conversão por origem do redirecionamento.
-- Testes de integração para fluxo de upgrade + refresh de entitlements.
+- Auditoria de consumo de créditos (log detalhado).
+- Expiração configurável por tipo.
+- Cupom / desconto por campanha.
 ```

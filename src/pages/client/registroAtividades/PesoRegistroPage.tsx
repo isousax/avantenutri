@@ -59,12 +59,12 @@ const PesoRegistroPage: React.FC = () => {
     setEditWeight(w.toString()); 
   };
   
-  const saveEdit = async () => { 
-    if (!editingDate) return; 
-    const v = parseFloat(editWeight.replace(',', '.')); 
-    if (!isFinite(v) || v <= 0) return; 
-    await patch(editingDate, { weight_kg: v }); 
-    setEditingDate(null); 
+  const saveEdit = async () => {
+    if (!editingDate) return;
+    const v = parseFloat(editWeight.replace(',', '.'));
+    if (!isFinite(v) || v <= 0) return;
+    await patch({ date: editingDate, data: { weight_kg: v } });
+    setEditingDate(null);
   };
 
   const submit = async (e: React.FormEvent) => {
@@ -80,7 +80,7 @@ const PesoRegistroPage: React.FC = () => {
     try {
       const today = new Date();
       const localDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      await upsert(w, undefined, localDate);
+  await upsert({ weight_kg: w, date: localDate });
       setHasUserInput(false);
     } catch (e: any) { 
       setError(e.message || t('common.error')); 
