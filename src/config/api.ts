@@ -8,7 +8,7 @@ export const API = {
     ENV.API_AUTH_BASE || `https://login-service.avantenutri.workers.dev`,
   LOGIN: `${API_AUTH_BASE}/auth/login`,
   REFRESH: `${API_AUTH_BASE}/auth/refresh`,
-  LOGOUT: `/api/auth/logout`,
+  LOGOUT: `/api/logout/logout`,
   REGISTER: `${API_AUTH_BASE}/auth/register`,
   RESEND_VERIFICATION: `${API_AUTH_BASE}/auth/resend-verification`,
   CONFIRM_EMAIL: `${API_AUTH_BASE}/auth/confirm-verification`,
