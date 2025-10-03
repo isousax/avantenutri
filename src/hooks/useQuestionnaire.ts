@@ -54,8 +54,8 @@ export const useSaveQuestionnaire = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: input.categoria,
-          data: input.respostas,
-          is_complete: true,
+          answers: input.respostas,
+          submit: true,
         }),
       });
       return data as QuestionnaireResponse;

@@ -75,7 +75,7 @@ export function useMetasAutomaticas(): {
     };
     
     const fatorAtividade = fatoresAtividade[nivelAtividade || 'moderado'];
-    let caloriasManutencao = tmb * fatorAtividade;
+    const caloriasManutencao = tmb * fatorAtividade;
 
     // Ajustar baseado no objetivo
     let calorias = caloriasManutencao;

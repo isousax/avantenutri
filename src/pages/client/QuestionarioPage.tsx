@@ -2,13 +2,24 @@ import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
-import ProgressBar from "../../components/ui/ProgressBar";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { SEO } from "../../components/comum/SEO";
 import { useI18n } from "../../i18n";
 import { useSaveQuestionnaire } from "../../hooks/useQuestionnaire";
+import {
+  ArrowLeft,
+  Baby,
+  Heart,
+  User,
+  Activity,
+  ChevronRight,
+  CheckCircle,
+  Star,
+  Award,
+  Zap,
+} from "lucide-react";
 
-// Tipos
+// Tipos (mantidos iguais)
 type CategoriaType = "infantil" | "gestante" | "adulto" | "esportiva";
 
 interface Pergunta {
@@ -25,54 +36,59 @@ interface Pergunta {
 interface Categoria {
   label: string;
   value: CategoriaType;
-  icon: string;
+  icon: React.ReactNode;
   description: string;
   color: string;
   borderColor: string;
   activeColor: string;
+  gradient: string;
 }
 
-// Categorias
+// Categorias com ícones modernos
 const categorias: Categoria[] = [
   {
     label: "Nutrição Infantil",
     value: "infantil",
-    icon: "👶",
+    icon: <Baby size={24} />,
     description: "Para crianças de 0 a 12 anos",
     color: "from-blue-50 to-blue-100",
     borderColor: "border-blue-200",
     activeColor: "border-blue-500 bg-blue-50",
+    gradient: "from-blue-500 to-cyan-500",
   },
   {
     label: "Nutrição na Gestação",
     value: "gestante",
-    icon: "🤰",
+    icon: <Heart size={24} />,
     description: "Acompanhamento pré e pós-parto",
     color: "from-pink-50 to-pink-100",
     borderColor: "border-pink-200",
     activeColor: "border-pink-500 bg-pink-50",
+    gradient: "from-pink-500 to-rose-500",
   },
   {
     label: "Nutrição Adulto/Idoso",
     value: "adulto",
-    icon: "👩‍💼",
+    icon: <User size={24} />,
     description: "Para adultos e melhor idade",
     color: "from-green-50 to-green-100",
     borderColor: "border-green-200",
     activeColor: "border-green-500 bg-green-50",
+    gradient: "from-green-500 to-emerald-500",
   },
   {
     label: "Nutrição Esportiva",
     value: "esportiva",
-    icon: "🏃‍♀️",
+    icon: <Activity size={24} />,
     description: "Otimização de performance",
     color: "from-orange-50 to-orange-100",
     borderColor: "border-orange-200",
     activeColor: "border-orange-500 bg-orange-50",
+    gradient: "from-orange-500 to-red-500",
   },
 ];
 
-// Perguntas por categoria
+// Perguntas por categoria (mantidas iguais)
 const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   infantil: [
     {
@@ -87,6 +103,13 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
       pergunta: "Peso atual (kg)",
       tipo: "numero",
       icon: "⚖️",
+    },
+    {
+      id: "sexo",
+      pergunta: "Sexo",
+      tipo: "select",
+      icon: "🚻",
+      opcoes: ["Feminino", "Masculino"],
     },
     { id: "altura", pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
@@ -116,6 +139,7 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   ],
   gestante: [
     { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    { id: "profissao", pergunta: "Profissão", tipo: "texto", icon: "💼" },
     {
       id: "tempo_gestacao",
       pergunta: "Tempo de gestação (semanas)",
@@ -145,7 +169,7 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
     },
     {
       id: "problemas_gestacao",
-      pergunta: "Teve algum problema de saúde durante a gestação?",
+      pergunta: "Teve complicações na gestação?",
       tipo: "select",
       icon: "🏥",
       expansivel: true,
@@ -169,6 +193,13 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   ],
   adulto: [
     { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    {
+      id: "sexo",
+      pergunta: "Sexo",
+      tipo: "select",
+      icon: "🚻",
+      opcoes: ["Feminino", "Masculino"],
+    },
     { id: "profissao", pergunta: "Profissão", tipo: "texto", icon: "💼" },
     { id: "peso", pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
     { id: "altura", pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
@@ -213,6 +244,14 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   ],
   esportiva: [
     { id: "idade", pergunta: "Idade", tipo: "numero", icon: "🎂" },
+    {
+      id: "sexo",
+      pergunta: "Sexo",
+      tipo: "select",
+      icon: "🚻",
+      opcoes: ["Feminino", "Masculino"],
+    },
+    { id: "profissao", pergunta: "Profissão", tipo: "texto", icon: "💼" },
     { id: "esporte", pergunta: "Esporte praticado", tipo: "texto", icon: "⚽" },
     {
       id: "frequencia_treinos",
@@ -250,7 +289,7 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
   ],
 };
 
-const etapas = ["", "", ""];
+const etapas = ["Categoria", "Informações", "Confirmação"];
 
 const QuestionarioPage: React.FC = () => {
   const navigate = useNavigate();
@@ -258,6 +297,7 @@ const QuestionarioPage: React.FC = () => {
   const { questionarioData, updateQuestionario } = useQuestionario();
   const { step, categoria, respostas } = questionarioData;
   const [erros, setErros] = useState<Record<string, string>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const saveQuestionnaire = useSaveQuestionnaire();
 
   useEffect(() => {
@@ -283,13 +323,28 @@ const QuestionarioPage: React.FC = () => {
   };
 
   const handleNext = () => {
+    if (step === 1 && categoria) {
+      const perguntas = perguntasPorCategoria[categoria as CategoriaType];
+      if (currentQuestionIndex < perguntas.length - 1) {
+        setCurrentQuestionIndex(currentQuestionIndex + 1);
+        return;
+      }
+    }
+
     if (validarEtapa(step)) {
       updateQuestionario({ step: Math.min(step + 1, etapas.length - 1) });
+      setCurrentQuestionIndex(0);
     }
   };
 
   const handleBack = () => {
+    if (step === 1 && currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(currentQuestionIndex - 1);
+      return;
+    }
+
     updateQuestionario({ step: Math.max(step - 1, 0) });
+    setCurrentQuestionIndex(0);
   };
 
   const handleInputChange = (campo: string, valor: string) => {
@@ -300,28 +355,171 @@ const QuestionarioPage: React.FC = () => {
   const handleSubmit = async () => {
     if (!validarEtapa(step) || !categoria) return;
 
-    console.log("Respostas: ", respostas);
+    const perguntasValidas = perguntasPorCategoria[categoria as CategoriaType];
+    const respostasFiltradas: Record<string, string> = {};
+
+    perguntasValidas.forEach((p) => {
+      if (respostas[p.id]) {
+        respostasFiltradas[p.id] = respostas[p.id];
+      }
+      if (p.expansivel && respostas[`${p.id}_detalhe`]) {
+        respostasFiltradas[`${p.id}_detalhe`] = respostas[`${p.id}_detalhe`];
+      }
+    });
 
     try {
       await saveQuestionnaire.mutateAsync({
         categoria,
-        respostas,
+        respostas: respostasFiltradas,
       });
 
-      // Limpar dados locais após salvar com sucesso
       updateQuestionario({ step: etapas.length - 1 });
 
-      // Exibir sucesso
-      console.log("Questionário salvo com sucesso!");
-
-      // Opcional: redirecionar para dashboard após alguns segundos
       setTimeout(() => {
         navigate("/dashboard");
       }, 3000);
     } catch (error) {
       console.error("Erro ao salvar questionário:", error);
-      // Aqui você poderia mostrar uma mensagem de erro para o usuário
     }
+  };
+
+  // Componente de pergunta individual
+  const RenderPergunta = ({ pergunta }: { pergunta: Pergunta }) => {
+    const progresso = categoria
+      ? ((currentQuestionIndex + 1) /
+          perguntasPorCategoria[categoria as CategoriaType].length) *
+        100
+      : 0;
+
+    return (
+      <div className="space-y-6">
+        {/* Cabeçalho da pergunta */}
+        <div className="text-center mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            {/* Ícone */}
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+              <span className="text-white text-lg">{pergunta.icon}</span>
+            </div>
+
+            {/* Texto */}
+            <div className="flex-1 min-w-0">
+              <h2 className="font-bold text-gray-900 text-left break-words leading-snug">
+                {pergunta.pergunta}
+              </h2>
+              <p className="text-gray-600 text-[11px] mt-1 flex items-center justify-start">
+                Pergunta {currentQuestionIndex + 1} de{" "}
+                {perguntasPorCategoria[categoria as CategoriaType].length}
+              </p>
+            </div>
+          </div>
+
+          {/* Barra de progresso da pergunta */}
+          <div className="max-w-md mx-auto">
+            <div className="flex justify-end text-xs text-gray-600 mb-2">
+              <span>{Math.round(progresso)}%</span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-2">
+              <div
+                className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                style={{ width: `${progresso}%` }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Campo de entrada */}
+        <div className="space-y-4">
+          {pergunta.tipo === "texto" && (
+            <input
+              className="w-full px-4 py-4 border-2 rounded-xl text-lg flex pr-10 bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20"
+              value={respostas[pergunta.id] || ""}
+              onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
+              placeholder={`Digite ${pergunta.pergunta.toLowerCase()}`}
+              autoFocus
+            />
+          )}
+
+          {pergunta.tipo === "numero" && (
+            <input
+              type="number"
+              className="w-full px-4 py-4 border-2 rounded-xl text-lg flex pr-10 bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 text-center"
+              value={respostas[pergunta.id] || ""}
+              onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
+              placeholder={`Digite ${pergunta.pergunta.toLowerCase()}`}
+              autoFocus
+            />
+          )}
+
+          {pergunta.tipo === "select" && (
+            <div className="space-y-3">
+              <select
+                className="w-full px-4 py-4 border-2 rounded-xl text-lg flex pr-10 bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20"
+                value={respostas[pergunta.id] || ""}
+                onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
+                autoFocus
+              >
+                <option value="">Selecione uma opção</option>
+                {pergunta.opcoes?.map((o: string, i: number) => (
+                  <option key={i} value={o}>
+                    {o}
+                  </option>
+                ))}
+              </select>
+
+              {pergunta.expansivel &&
+                ["Sim - Outras", "Outros", "Sim"].includes(
+                  respostas[pergunta.id]
+                ) && (
+                  <input
+                    className="w-full px-4 py-4 border-2 rounded-xl text-lg flex pr-10 bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20"
+                    value={respostas[`${pergunta.id}_detalhe`] || ""}
+                    onChange={(e) =>
+                      handleInputChange(
+                        `${pergunta.id}_detalhe`,
+                        e.target.value
+                      )
+                    }
+                    placeholder={
+                      pergunta.placeholderExt || "Por favor, especifique"
+                    }
+                    autoFocus
+                  />
+                )}
+            </div>
+          )}
+
+          {pergunta.tipo === "textarea" && (
+            <textarea
+              rows={4}
+              className="w-full px-4 py-4 border-2 border-gray-200 rounded-xl resize-none focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 text-lg"
+              placeholder={`${pergunta.pergunta.toLowerCase()}`}
+              value={respostas[pergunta.id] || ""}
+              onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
+              autoFocus
+            />
+          )}
+
+          {erros[pergunta.id] && (
+            <div className="flex items-center gap-2 text-red-500 text-sm p-3 bg-red-50 rounded-lg border border-red-200">
+              <Zap size={16} />
+              {erros[pergunta.id]}
+            </div>
+          )}
+        </div>
+
+        {/* Dica motivacional */}
+        <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
+          <div className="flex items-center gap-3">
+            <Star size={20} className="text-blue-500 flex-shrink-0" />
+            <p className="text-blue-700 text-xs">
+              {currentQuestionIndex === 0
+                ? "Ótimo começo! Suas informações nos ajudarão a personalizar sua experiência."
+                : "Continue assim! Isso nos permite criar uma experiência feita sob medida para você."}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
   };
 
   // Render por etapa
@@ -331,17 +529,21 @@ const QuestionarioPage: React.FC = () => {
     conteudo = (
       <div className="space-y-8">
         <div className="text-center mb-6">
-          <p className="text-gray-600 text-lg">
-            Selecione a categoria que melhor se adequa às suas necessidades
+          <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
+            Como podemos te ajudar?
+          </h2>
+          <p className="text-gray-600 text-xs sm:text-sm">
+            Escolha a categoria que melhor se adequa às suas necessidades
           </p>
         </div>
+
         <div className="grid gap-4 md:gap-6">
           {categorias.map((cat) => (
             <div
               key={cat.value}
-              className={`p-5 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 ${
+              className={`p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 group ${
                 categoria === cat.value
-                  ? `${cat.activeColor} shadow-lg scale-105`
+                  ? `${cat.activeColor} shadow-lg scale-105 border-2`
                   : `${cat.borderColor} ${cat.color} hover:shadow-md`
               }`}
               onClick={() =>
@@ -349,213 +551,167 @@ const QuestionarioPage: React.FC = () => {
               }
             >
               <div className="flex items-center gap-4">
-                <div className="p-3 rounded-xl bg-white shadow-sm">
-                  <span className="text-2xl">{cat.icon}</span>
+                <div
+                  className={`p-3 rounded-xl bg-gradient-to-br ${cat.gradient} shadow-lg group-hover:shadow-xl transition-shadow`}
+                >
+                  {cat.icon}
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-bold text-lg text-gray-800">
+                  <h3 className="font-bold sm:text-lg text-gray-800">
                     {cat.label}
                   </h3>
-                  <p className="text-gray-600 text-sm">{cat.description}</p>
+                  <p className="text-gray-600 text-xs">{cat.description}</p>
                 </div>
                 <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
                     categoria === cat.value
-                      ? "bg-green-500 border-green-500"
-                      : "border-gray-300"
+                      ? "bg-green-500 border-green-500 scale-110"
+                      : "border-gray-300 group-hover:border-gray-400"
                   }`}
                 >
                   {categoria === cat.value && (
-                    <svg
-                      className="w-3 h-3 text-white"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
+                    <CheckCircle className="w-3 h-3 text-white" />
                   )}
                 </div>
               </div>
             </div>
           ))}
         </div>
+
         <div className="flex gap-3 pt-6">
           <Button
-            onClick={handleBack}
             variant="secondary"
-            className="flex-1 py-4 border-gray-300 hover:border-gray-400"
+            className="flex-1 border-none p-0 text-sm hover:bg-transparent cursor-default"
+            disabled
           >
-            Voltar
+            <span
+              onClick={() => navigate("/dashboard")}
+              className="cursor-pointer"
+            >
+              Voltar
+            </span>
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
+            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25 flex items-center justify-center gap-2"
             disabled={!categoria}
           >
             Continuar
+            <ChevronRight size={20} />
           </Button>
         </div>
       </div>
     );
   } else if (step === 1 && categoria) {
     const perguntas = perguntasPorCategoria[categoria as CategoriaType] || [];
+    const perguntaAtual = perguntas[currentQuestionIndex];
+
     conteudo = (
-      <div className="space-y-8">
-        <div className="text-center mb-6">
-          <p className="text-gray-600 text-lg">Conte-nos mais</p>
-        </div>
-        <div className="space-y-6">
-          {perguntas.map((p: Pergunta, idx: number) => (
-            <div
-              key={idx}
-              className="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm"
-            >
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 mb-3">
-                {p.icon && <span className="text-lg">{p.icon}</span>}
-                {p.pergunta}
-                <span className="text-red-500 ml-1">*</span>
-              </label>
-              {p.tipo === "texto" && (
-                <input
-                  className={`w-full px-4 py-3 border-2 rounded-xl ${
-                    erros[p.pergunta]
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                  value={respostas[p.id] || ""}
-                  onChange={(e) => handleInputChange(p.id, e.target.value)}
-                  placeholder={`Digite ${p.pergunta.toLowerCase()}`}
-                />
-              )}
-              {p.tipo === "numero" && (
-                <input
-                  type="number"
-                  className={`w-full px-4 py-3 border-2 rounded-xl ${
-                    erros[p.pergunta]
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                  value={respostas[p.id] || ""}
-                  onChange={(e) => handleInputChange(p.id, e.target.value)}
-                  placeholder={`Digite ${p.pergunta.toLowerCase()}`}
-                />
-              )}
-              {p.tipo === "select" && (
-                <div className="space-y-3">
-                  <select
-                    className={`w-full px-4 py-3 border-2 rounded-xl ${
-                      erros[p.pergunta]
-                        ? "border-red-500 bg-red-50"
-                        : "border-gray-200"
-                    }`}
-                    value={respostas[p.id] || ""}
-                    onChange={(e) => handleInputChange(p.id, e.target.value)}
-                  >
-                    <option value="">Selecione uma opção</option>
-                    {p.opcoes?.map((o: string, i: number) => (
-                      <option key={i} value={o}>
-                        {o}
-                      </option>
-                    ))}
-                  </select>
-                  {p.expansivel &&
-                    ["Sim - Outras", "Outros", "Sim"].includes(
-                      respostas[p.id]
-                    ) && (
-                      <input
-                        value={respostas[`${p.id}_detalhe`] || ""}
-                        onChange={(e) =>
-                          handleInputChange(`${p.id}_detalhe`, e.target.value)
-                        }
-                        placeholder={
-                          p.placeholderExt || "Por favor, especifique"
-                        }
-                      />
-                    )}
-                </div>
-              )}
-              {p.tipo === "textarea" && (
-                <textarea
-                  rows={4}
-                  className={`w-full px-4 py-3 border-2 rounded-xl resize-none ${
-                    erros[p.pergunta]
-                      ? "border-red-500 bg-red-50"
-                      : "border-gray-200"
-                  }`}
-                  placeholder={`${p.pergunta.toLowerCase()}`}
-                  value={respostas[p.id] || ""}
-                  onChange={(e) => handleInputChange(p.id, e.target.value)}
-                />
-              )}
-              {erros[p.pergunta] && (
-                <p className="text-red-500 text-sm mt-2">
-                  ⚠️ {erros[p.pergunta]}
-                </p>
-              )}
-            </div>
-          ))}
-        </div>
+      <div className="space-y-6">
+        <RenderPergunta pergunta={perguntaAtual} />
+
         <div className="flex gap-3 pt-6">
           <Button
             onClick={handleBack}
             variant="secondary"
-            className="flex-1 py-4 border-gray-300 hover:border-gray-400"
+            className="flex-1 border-none p-10 text-sm hover:bg-transparent cursor-default"
           >
-            Voltar
+            {currentQuestionIndex === 0 ? "Voltar" : "Anterior"}
           </Button>
           <Button
             onClick={handleNext}
-            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
+            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25 flex items-center justify-center gap-2"
+            disabled={!respostas[perguntaAtual.id]?.trim()}
           >
-            Continuar
+            {currentQuestionIndex === perguntas.length - 1
+              ? "Revisar"
+              : "Próxima"}
+            <ChevronRight size={20} />
           </Button>
         </div>
       </div>
     );
   } else if (step === 2) {
-    // Resumo final
     const perguntas = categoria
       ? perguntasPorCategoria[categoria as CategoriaType]
       : [];
+
+    const categoriaSelecionada = categorias.find(
+      (cat) => cat.value === categoria
+    );
+
     conteudo = (
       <div className="space-y-8">
         <div className="text-center mb-6">
+          <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <Award size={32} className="text-white" />
+          </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
-            Tudo Pronto!
+            Perfeito! ✨
           </h2>
-          <p className="text-gray-600 text-lg">
-            Confira suas respostas antes de enviar
-          </p>
+          <p className="text-gray-600 text-sm">Confirme suas informações</p>
         </div>
-        <div className="bg-white rounded-2xl p-6 shadow-sm space-y-4 border border-gray-200">
-          {perguntas.map((p: Pergunta, idx: number) => (
-            <div key={idx} className="flex justify-between">
-              <span className="font-medium text-gray-700">{p.id}:</span>
-              <span className="text-gray-900">
-                {respostas[p.id] || "—"}
-              </span>
+
+        {/* Card de resumo */}
+        <Card className="bg-gradient-to-br from-blue-50 to-purple-50 border-0">
+          <div className="p-1">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                {categoriaSelecionada?.icon}
+              </div>
+              <div className="min-w-0">
+                <h3 className="font-bold text-gray-900 text-lg">
+                  {categoriaSelecionada?.label}
+                </h3>
+              </div>
             </div>
-          ))}
-        </div>
-        <div className="flex gap-3 pt-6">
+
+            <div className="grid gap-4">
+              {perguntas.map((p: Pergunta, idx: number) => (
+                <div
+                  key={idx}
+                  className="flex items-center justify-between p-2 bg-white/60 rounded-lg border border-white"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="text-lg">{p.icon}</span>
+                    <span className="font-medium text-gray-700 text-xs">
+                      {p.pergunta}
+                    </span>
+                  </div>
+                  <span className="text-gray-900 font-semibold text-xs text-right">
+                    {respostas[p.id] || "—"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </Card>
+
+        <div className="flex gap-3 pt-4">
           <Button
             onClick={handleBack}
             variant="secondary"
-            className="flex-1 py-4 border-gray-300 hover:border-gray-400"
+            className="flex-1 py-3 border-gray-300 hover:border-gray-400"
             disabled={saveQuestionnaire.isPending}
           >
-            Voltar
+            Editar
           </Button>
           <Button
             onClick={handleSubmit}
-            className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25"
+            className="flex-1 py-3 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 text-white shadow-lg shadow-green-500/25 flex items-center justify-center gap-2"
             disabled={saveQuestionnaire.isPending}
           >
-            {saveQuestionnaire.isPending ? "Salvando..." : "Salvar"}
+            {saveQuestionnaire.isPending ? (
+              <>
+                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                Salvando...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={20} />
+                Salvar
+              </>
+            )}
           </Button>
         </div>
       </div>
@@ -563,38 +719,48 @@ const QuestionarioPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-purple-50 safe-area-bottom">
       <SEO
         title={t("questionario.seo.title")}
         description={t("questionario.seo.desc")}
       />
-      <div className="max-w-2xl mx-auto">
-        <div className="text-center mb-8">
-          <p className="text-2xl font-bold bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent mb-3">
-            Vamos criar juntos o plano perfeito para sua saúde
-          </p>
-        </div>
 
-        <Card className="w-full p-6 md:p-8 shadow-xl border-0 bg-white/90 backdrop-blur-sm">
-          <div className="mb-8">
-            <ProgressBar
-              value={step + 1}
-              max={etapas.length}
-              labels={etapas}
-              currentStep={step}
-            />
+      {/* Header moderno */}
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
+        <div className="max-w-2xl mx-auto px-4 py-4">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => navigate(-1)}
+              className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
+              aria-label="Voltar"
+            >
+              <ArrowLeft size={20} className="text-gray-700" />
+            </button>
+
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-gray-900">
+                Questionário de Saúde
+              </h1>
+              <p className="text-xs text-gray-500">
+                Etapa {step + 1} de {etapas.length} • {etapas[step]}
+              </p>
+            </div>
           </div>
-          <div className="mt-8 animate-fade-in">{conteudo}</div>
+        </div>
+      </div>
+
+      <div className="max-w-2xl mx-auto px-4 py-6">
+        {/* Conteúdo principal */}
+        <Card className="w-full p-6 md:p-8 shadow-xl border-0 bg-white/90 backdrop-blur-sm">
+          <div className="animate-fade-in">{conteudo}</div>
         </Card>
 
-        {!saveQuestionnaire.isPending && (
-          <div className="text-center mt-8">
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="text-green-600 hover:text-green-800 font-medium flex items-center justify-center gap-2 mx-auto transition-colors"
-            >
-              Voltar para o início
-            </button>
+        {/* Mensagem de incentivo */}
+        {!saveQuestionnaire.isPending && step !== 2 && (
+          <div className="text-center mt-6">
+            <p className="text-xs text-gray-500">
+              Leva menos de 2 minutos • Suas informações estão seguras
+            </p>
           </div>
         )}
       </div>
