@@ -18,6 +18,16 @@ export interface DietAdherence {
   };
 }
 
+interface MealDay {
+  date: string;
+  count: number;
+}
+
+interface WaterDay {
+  date: string;
+  total_ml: number;
+}
+
 export function useDietAdherence(days = 7): {
   adherence: DietAdherence | null;
   loading: boolean;
@@ -27,17 +37,17 @@ export function useDietAdherence(days = 7): {
   const waterData = useWaterData(days);
   const weightData = useWeightData(days);
   
-  const summaryDays = mealData.summary?.days || [];
-  
   const mealsLoading = mealData.loading;
   const waterLoading = waterData.loading;
   const weightLoading = weightData.loading;
   
-  const mealsError = mealData.error as any as string | null;
+  const mealsError = mealData.error instanceof Error ? mealData.error.message : typeof mealData.error === 'string' ? mealData.error : null;
   const [adherence, setAdherence] = useState<DietAdherence | null>(null);
 
   const calculateAdherence = useCallback(() => {
-    if (!summaryDays || summaryDays.length === 0) {
+    const summaryDays = mealData.summary?.days || [];
+    
+    if (summaryDays.length === 0) {
       setAdherence(null);
       return;
     }
@@ -47,10 +57,10 @@ export function useDietAdherence(days = 7): {
     
     // ===== COMPONENTE 1: REGISTROS DE REFEIÇÕES =====
     // Dias que tiveram pelo menos uma refeição registrada
-    const daysCovered = summaryDays.filter(day => day.count > 0).length;
+    const daysCovered = summaryDays.filter((day: MealDay) => day.count > 0).length;
     
     // Média de refeições por dia (considerando apenas dias com registros)
-    const totalMeals = summaryDays.reduce((sum, day) => sum + day.count, 0);
+    const totalMeals = summaryDays.reduce((sum: number, day: MealDay) => sum + day.count, 0);
     const avgMealsPerDay = daysCovered > 0 ? totalMeals / daysCovered : 0;
     
     // Cobertura de dias (% de dias com pelo menos 1 refeição)
@@ -69,7 +79,7 @@ export function useDietAdherence(days = 7): {
       const waterGoal = waterData.dailyGoalCups * (waterData.cupSize || 250); // Meta em ml
       
       // Calcular % de cumprimento da meta de água por dia
-      const waterPercentages = waterData.summaryDays.map((day: any) => {
+      const waterPercentages = waterData.summaryDays.map((day: WaterDay) => {
         const achieved = day.total_ml || 0;
         return Math.min(100, (achieved / waterGoal) * 100);
       });
@@ -82,7 +92,7 @@ export function useDietAdherence(days = 7): {
     
     // ===== COMPONENTE 3: CONSISTÊNCIA GERAL =====
     // Considerar pesagens como indicador de engajamento
-    const weightTrackingDays = weightData.logs ? weightData.logs.length : 0;
+    const weightTrackingDays = weightData.logs?.length ?? 0;
     const weightConsistency = Math.min(100, (weightTrackingDays / Math.max(totalDays, 7)) * 100);
     
     // ===== CÁLCULO FINAL =====
@@ -111,11 +121,20 @@ export function useDietAdherence(days = 7): {
         consistency: Math.round(weightConsistency),
       },
     });
-  }, [summaryDays, days, waterData, weightData]);
+  }, [
+    days,
+    mealData.summary?.days,
+    waterData.dailyGoalCups,
+    waterData.summaryDays,
+    waterData.cupSize,
+    weightData.logs?.length
+  ]);
 
   useEffect(() => {
-    calculateAdherence();
-  }, [calculateAdherence]);
+    if (!mealsLoading && !waterLoading && !weightLoading) {
+      calculateAdherence();
+    }
+  }, [calculateAdherence, mealsLoading, waterLoading, weightLoading]);
 
   return {
     adherence,
