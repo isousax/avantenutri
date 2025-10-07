@@ -1082,7 +1082,11 @@ const DashboardPage: React.FC = () => {
                                 : "bg-amber-50 border-amber-200 text-amber-600 group-hover:bg-amber-100"
                             }`}
                           >
-                            {action.icon}
+                            {action.iconComponent ? (
+                              <action.iconComponent className="w-6 h-6" />
+                            ) : (
+                              <span className="text-xl">{action.icon}</span>
+                            )}
                           </div>
                           <div className="flex-1 min-w-0">
                             <h4 className="font-bold text-gray-900 text-sm leading-tight mb-1 line-clamp-2">

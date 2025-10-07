@@ -25,8 +25,9 @@ export function useBillingHistory() {
     queryKey: ['billing','payments'],
     queryFn: async () => {
       const r = await authenticatedFetch(API.BILLING_PAYMENTS);
-      // authenticatedFetch já faz json(); adaptamos shape
-      return r as PaymentsResponse;
+      const data: PaymentsResponse = await r.json().catch(()=>({}));
+      if (!r.ok) throw new Error(data.error || 'Falha ao carregar pagamentos');
+      return data;
     },
     select: (data) => data.payments || [],
     staleTime: 1000 * 60 * 5, // 5 min evita refetch agressivo ao navegar

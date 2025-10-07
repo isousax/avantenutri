@@ -26,13 +26,12 @@ const Perfil: React.FC = () => {
     phone?: string | undefined;
   }>({});
 
-  console.log("Telefone: ", phone)
-
   useEffect(() => {
     if (user) {
       setDisplayName(user.display_name || "");
       setFullName(user.full_name || "");
-      setPhone(user.phone || "");
+      // Format phone for local display (keeps original normalization for submit)
+      setPhone(user.phone ? formatPhoneLocal(user.phone) : "");
       originalRef.current = {
         display_name: user.display_name || "",
         full_name: user.full_name || "",
@@ -40,6 +39,8 @@ const Perfil: React.FC = () => {
       };
     }
   }, [user]);
+
+  // Note: phone is provided by AuthProvider; no token decode needed here.
 
   // Deriva flag de mudança (dirty) para habilitar / desabilitar botão de salvar
   const isDirty = (() => {
@@ -243,7 +244,11 @@ const Perfil: React.FC = () => {
               return;
             }
 
-            const payload: any = {};
+            const payload: Partial<{
+              display_name: string;
+              full_name: string;
+              phone?: string | null;
+            }> = {};
             if (trimmedDisplay !== originalRef.current.display_name)
               payload.display_name = trimmedDisplay;
             if (trimmedFull !== originalRef.current.full_name)

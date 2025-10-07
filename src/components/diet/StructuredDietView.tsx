@@ -24,7 +24,7 @@ const StructuredDietView: React.FC<StructuredDietViewProps> = ({ data, compact }
           <div className="divide-y">
             {meal.itens.map(item => {
               const alimento = ALIMENTOS.find(a => a.id === item.alimentoId);
-              const nut = alimento ? calcularNutricao(alimento, item.quantidade) : null;
+              const nut = alimento ? calcularNutricao(alimento, item.quantidade, alimento.porcaoPadrao) : null;
               return (
                 <div key={item.id} className="px-2 py-1 text-[11px] flex flex-col gap-0.5">
                   <div className="flex justify-between gap-2">

@@ -1,9 +1,10 @@
 import React, { useMemo, useState } from "react";
+import type { TranslationKey } from '../../../types/i18n';
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
-import { useI18n, formatDate as fmtDate } from "../../../i18n";
+import { useI18n } from "../../../i18n";
 import { useConsultationCreditsSummary } from "../../../hooks/useConsultationCredits";
 import { useConsultationPricing } from "../../../hooks/useConsultationPricing";
 import { useAuth } from "../../../contexts";
@@ -29,16 +30,16 @@ const AgendarConsultaPage: React.FC = () => {
   const { push } = useToast();
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    tipoConsulta: "avaliacao_completa",
+    tipoConsulta: "avaliacao_completa" as TipoConsulta,
     data: "",
     horario: "",
     urgencia: "normal",
   });
   const { authenticatedFetch, user } = useAuth();
-  const { create, items, loading, error, list } = useConsultations();
+  const { create } = useConsultations();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const { locale, t } = useI18n();
+  const { t } = useI18n();
 
   const [etapa, setEtapa] = useState(1);
 
@@ -46,7 +47,25 @@ const AgendarConsultaPage: React.FC = () => {
   const { data: questionnaireStatus } = useQuestionnaireStatus();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
 
-  const tiposConsulta = [
+  function getErrorMessage(err: unknown) {
+    if (!err) return '';
+    if (typeof err === 'string') return err;
+    if (typeof err === 'object' && err !== null && 'message' in err) return String((err as { message?: unknown }).message || '');
+    return String(err);
+  }
+
+  // explicit union for consulta types
+  type TipoConsulta = 'avaliacao_completa' | 'reavaliacao';
+
+  const tiposConsulta: ReadonlyArray<{
+    value: TipoConsulta;
+    labelKey: TranslationKey;
+    descKey: TranslationKey;
+    durationKey: TranslationKey;
+    priceKey: TranslationKey;
+    icon: React.ComponentType<Record<string, unknown>>;
+    color: string;
+  }> = [
     {
       value: "avaliacao_completa",
       labelKey: 'consultations.schedule.type.avaliacao_completa.label',
@@ -65,7 +84,7 @@ const AgendarConsultaPage: React.FC = () => {
       icon: Heart,
       color: "from-purple-500 to-pink-500"
     },
-  ] as const;
+  ];
 
   const { data: creditsSummary } = useConsultationCreditsSummary();
   const { data: pricingData } = useConsultationPricing();
@@ -126,8 +145,8 @@ const AgendarConsultaPage: React.FC = () => {
       await create({ scheduledAt: dataIso, type: formData.tipoConsulta, urgency: formData.urgencia });
       push({ type: 'success', message: t('consultations.status.scheduled') });
       navigate("/dashboard");
-    } catch (e: any) {
-      const raw = (e?.message || '') as string;
+    } catch (e: unknown) {
+  const raw = getErrorMessage(e);
       let mapped: string | null = null;
       if (raw.includes('slot_taken')) mapped = t('consultations.error.slotTaken');
       else if (raw.includes('blocked_slot')) mapped = t('consultations.error.blocked');
@@ -146,26 +165,26 @@ const AgendarConsultaPage: React.FC = () => {
     await processBooking();
   };
 
-  const purchaseCredit = async (type: 'avaliacao_completa' | 'reavaliacao') => {
+  const purchaseCredit = async (type: TipoConsulta) => {
     try {
-      const data: any = await authenticatedFetch('/billing/intent', { 
+      const data = await authenticatedFetch('/billing/intent', { 
         method: 'POST', 
         headers: { 'Content-Type': 'application/json' }, 
         body: JSON.stringify({ type, display_name: user?.display_name }) 
-      });
+      }) as { checkout_url?: string; error?: string };
       
       if (!data?.checkout_url) {
         push({ type: 'error', message: data?.error || 'Falha ao iniciar pagamento'});
         return;
       }
       window.location.href = data.checkout_url;
-    } catch (e: any) {
-      push({ type: 'error', message: e?.message || 'Erro inesperado'});
+    } catch (err: unknown) {
+  const msg = getErrorMessage(err);
+  push({ type: 'error', message: msg || 'Erro inesperado'});
     }
   };
 
   const renderEtapa1 = () => {
-    const selectedTipo = tiposConsulta.find(t => t.value === formData.tipoConsulta);
     
     return (
       <div className="space-y-6">
@@ -185,7 +204,6 @@ const AgendarConsultaPage: React.FC = () => {
             const needsCredit = tipo.value === 'avaliacao_completa' || tipo.value === 'reavaliacao';
             const availableCredits = creditsSummary?.summary?.[tipo.value]?.available || 0;
             const hasCredits = needsCredit && availableCredits > 0;
-            const lacksCredits = needsCredit && availableCredits <= 0;
 
             return (
               <Card 
@@ -206,18 +224,18 @@ const AgendarConsultaPage: React.FC = () => {
                     <div className="flex items-start justify-between mb-2">
                       <div>
                         <h3 className="font-bold text-gray-900 text-lg">
-                          {t(tipo.labelKey as any)}
+                          {t(tipo.labelKey)}
                         </h3>
                         <p className="text-gray-600 text-sm mt-1">
-                          {t(tipo.descKey as any)}
+                          {t(tipo.descKey)}
                         </p>
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-green-600">
-                          {priceMap[tipo.value] || t(tipo.priceKey as any)}
+                          {priceMap[tipo.value] || t(tipo.priceKey)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {t(tipo.durationKey as any)}
+                          {t(tipo.durationKey)}
                         </div>
                       </div>
                     </div>
@@ -314,18 +332,18 @@ const AgendarConsultaPage: React.FC = () => {
               </div>
               <div className="flex-1">
                 <h3 className="font-bold text-gray-900 text-lg">
-                  {t(selectedTipo?.labelKey as any)}
+                  {t(selectedTipo?.labelKey as TranslationKey)}
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  {t(selectedTipo?.descKey as any)}
+                  {t(selectedTipo?.descKey as TranslationKey)}
                 </p>
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-green-600">
-                  {priceMap[formData.tipoConsulta] || t(selectedTipo?.priceKey as any)}
+                  {priceMap[formData.tipoConsulta] || t(selectedTipo?.priceKey as TranslationKey)}
                 </div>
                 <div className="text-sm text-gray-500">
-                  {t(selectedTipo?.durationKey as any)}
+                  {t(selectedTipo?.durationKey as TranslationKey)}
                 </div>
               </div>
             </div>

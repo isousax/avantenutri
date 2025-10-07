@@ -20,17 +20,14 @@ import {
   Settings, 
   Check, 
   X, 
-  Calendar,
   Target,
   BarChart3,
   Clock,
-  Search,
   Scale,
   Utensils,
   Edit3,
   Trash2,
   TrendingUp,
-  PieChart,
   History
 } from 'lucide-react';
 import { formatDateSafe } from '../../../utils/formatDate';
@@ -50,7 +47,6 @@ const RefeicaoRegistroPage: React.FC = () => {
   const patch = mealBase.patch;
   const remove = mealBase.remove;
   const setGoals = mealBase.setGoals;
-  const days = mealBase.days;
   const { t, locale } = useI18n();
   
   // Estados para metas
@@ -170,7 +166,8 @@ const RefeicaoRegistroPage: React.FC = () => {
   };
   
   const adicionarAlimento = (alimento: Alimento, quantidade: number) => {
-    const nutricao = calcularNutricao(alimento, quantidade);
+    // Pass the alimento's standard portion so the calculator can compute per-portion values
+    const nutricao = calcularNutricao(alimento, quantidade, alimento.porcaoPadrao);
     setAlimentosSelecionados(prev => [...prev, { alimento, quantidade, nutricao }]);
   };
   

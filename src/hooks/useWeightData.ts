@@ -60,7 +60,26 @@ export function useWeightData(days = 30) {
   });
 
   const invalidate = () => {
-    qc.invalidateQueries({ queryKey: ['weight'] });
+    // Invalidate all queries that start with the 'weight' root key regardless of days
+    qc.invalidateQueries({ predicate: (q) => Array.isArray(q.queryKey) && (q.queryKey as unknown as any[])[0] === 'weight' });
+    // Refetch each unique matching queryKey once (including inactive queries)
+    try {
+      const all = qc.getQueryCache().getAll();
+      const seen = new Set<string>();
+      for (const q of all) {
+        const k = q.queryKey;
+        if (Array.isArray(k) && (k as unknown as any[])[0] === 'weight') {
+          const keyStr = JSON.stringify(k);
+          if (!seen.has(keyStr)) {
+            seen.add(keyStr);
+            // refetch by explicit key (ensures single call per key)
+            qc.refetchQueries({ queryKey: k as any });
+          }
+        }
+      }
+    } catch {
+      // ignore errors and rely on predicate fallback
+    }
   };
 
   const upsertMutation = useMutation({
@@ -73,22 +92,57 @@ export function useWeightData(days = 30) {
       if (!r.ok) throw new Error(data.error || 'Erro ao registrar peso');
       return data;
     },
-      onMutate: async (payload) => {
+  onMutate: async (payload) => {
         await qc.cancelQueries({ queryKey: ['weight'] });
-        const prevLogs = qc.getQueryData<any>(weightLogsKey(days));
-        const prevSummary = qc.getQueryData<any>(weightSummaryKey(days));
+  const prevLogs = qc.getQueryData<{ logs: WeightLog[]; range?: { from:string; to:string } } | undefined>(weightLogsKey(days));
+  const prevSummary = qc.getQueryData<SummaryResponse | undefined>(weightSummaryKey(days));
         const optimisticId = `optimistic-${Date.now()}`;
         const today = new Date();
         const pad = (n:number)=> String(n).padStart(2,'0');
         const log_date = `${today.getUTCFullYear()}-${pad(today.getUTCMonth()+1)}-${pad(today.getUTCDate())}`;
         const newLog = { id: optimisticId, log_date, weight_kg: payload.weight_kg, note: payload.note || null, created_at: today.toISOString(), updated_at: today.toISOString() };
         if (prevLogs?.logs) {
-          qc.setQueryData(weightLogsKey(days), { ...prevLogs, logs: [...prevLogs.logs.filter((l:any)=>!l.id.startsWith('optimistic-')), newLog] });
+          qc.setQueryData(weightLogsKey(days), { ...prevLogs, logs: [...prevLogs.logs.filter((l)=>!l.id.startsWith('optimistic-')), newLog] });
         }
         if (prevSummary?.stats?.latest) {
           qc.setQueryData(weightSummaryKey(days), { ...prevSummary, stats: { ...prevSummary.stats, latest: { date: log_date, weight_kg: payload.weight_kg } } });
         }
         return { prevLogs, prevSummary };
+      },
+      onSuccess: (res: unknown) => {
+        try {
+          // Try to extract a created log from common response shapes
+          const r = res as Record<string, any> | null;
+          const created = r && (r.result || (Array.isArray(r.results) && r.results[0]) || r.data || r.log || r);
+          if (created && created.id) {
+            // Replace optimistic entry in logs
+            const cur = qc.getQueryData<{ logs: WeightLog[]; range?: { from: string; to: string } } | undefined>(weightLogsKey(days));
+            if (cur?.logs) {
+              const withoutOptimistic = cur.logs.filter((l) => !String(l.id).startsWith('optimistic-'));
+              // avoid duplicates
+              const exists = withoutOptimistic.some((l) => l.id === created.id);
+              const newLogs = exists ? withoutOptimistic : [...withoutOptimistic, created as WeightLog];
+              qc.setQueryData(weightLogsKey(days), { ...cur, logs: newLogs });
+            }
+
+            // Update summary latest if present
+            const sum = qc.getQueryData<SummaryResponse | undefined>(weightSummaryKey(days));
+            if (sum?.stats) {
+              // normalize date string
+              const createdDate = created.log_date ?? created.date ?? (created.created_at ? created.created_at.slice(0,10) : undefined);
+              const weightVal = created.weight_kg ?? created.weight ?? created.weightKg;
+              const updatedStats = { ...sum.stats, latest: { date: createdDate || sum.stats.latest.date, weight_kg: weightVal ?? sum.stats.latest.weight_kg } } as SummaryStats;
+              qc.setQueryData(weightSummaryKey(days), { ...sum, stats: updatedStats });
+            }
+            return;
+          }
+        } catch {
+          // ignore and fallback to invalidate
+        }
+        // fallback: invalidate to ensure fresh data
+        invalidate();
+        // also attempt explicit refetch of the common keys (best-effort)
+  try { qc.refetchQueries({ queryKey: weightSummaryKey(days) }); qc.refetchQueries({ queryKey: weightLogsKey(days) }); } catch { /* ignore */ };
       },
       onError: (_err, _vars, ctx) => {
         if (ctx?.prevLogs) qc.setQueryData(weightLogsKey(days), ctx.prevLogs);
@@ -116,7 +170,7 @@ export function useWeightData(days = 30) {
     },
     onMutate: async (newGoal) => {
       await qc.cancelQueries({ queryKey: ['weight'] });
-      const prevSummary = qc.getQueryData<any>(weightSummaryKey(days));
+  const prevSummary = qc.getQueryData<SummaryResponse | undefined>(weightSummaryKey(days));
       if (prevSummary?.stats) {
         qc.setQueryData(weightSummaryKey(days), { ...prevSummary, stats: { ...prevSummary.stats, weight_goal_kg: newGoal } });
       }

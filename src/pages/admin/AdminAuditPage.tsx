@@ -29,9 +29,20 @@ interface RoleAuditRow {
   changed_at: string;
 }
 
-type AuditRow = PasswordAuditRow | RevokedAuditRow | RoleAuditRow;
+interface CreditsAuditRow {
+  id: number;
+  admin_id: string;
+  user_id: string;
+  type: string;
+  delta: number;
+  reason?: string | null;
+  consumed_ids_json?: string | null;
+  created_at: string;
+}
 
-type Tab = "password" | "revoked" | "role";
+type AuditRow = PasswordAuditRow | RevokedAuditRow | RoleAuditRow | CreditsAuditRow;
+
+type Tab = "password" | "revoked" | "role" | "credits";
 
 interface AuditApiResponse {
   results: AuditRow[];
@@ -58,7 +69,7 @@ const AdminAuditPage: React.FC = () => {
     setError(null);
     try {
       const params = new URLSearchParams({
-        type: tab,
+        type: tab === 'credits' ? 'credits_adjust' : tab,
         page: String(page),
         pageSize: String(pageSize),
       });
@@ -104,6 +115,7 @@ const AdminAuditPage: React.FC = () => {
         "reason",
         "changed_at",
       ],
+      credits: ["admin_id", "user_id", "type", "delta", "reason", "created_at"],
     };
     const cols = headerMap[tab];
     const csv = [cols.join(",")]
@@ -162,10 +174,11 @@ const AdminAuditPage: React.FC = () => {
       <div className="flex flex-wrap gap-2 overflow-x-auto">
         {(
           [
-            ["password", "Trocas de Senha"],
-            ["revoked", "Tokens Revogados"],
-            ["role", "Mudanças de Acesso"],
-          ] as [Tab, string][]
+              ["password", "Trocas de Senha"],
+              ["revoked", "Tokens Revogados"],
+              ["role", "Mudanças de Acesso"],
+              ["credits", "Ajuste de Créditos"],
+            ] as [Tab, string][]
         ).map(([code, label]) => (
           <button
             key={code}
@@ -264,6 +277,16 @@ const AdminAuditPage: React.FC = () => {
                   <th className="p-2">Data / Hora</th>
                 </>
               )}
+              {tab === "credits" && (
+                <>
+                  <th className="p-2">Admin</th>
+                  <th className="p-2">Usuário</th>
+                  <th className="p-2">Tipo</th>
+                  <th className="p-2">Delta</th>
+                  <th className="p-2">Motivo</th>
+                  <th className="p-2">Data / Hora</th>
+                </>
+              )}
             </tr>
           </thead>
           <tbody>
@@ -332,6 +355,20 @@ const AdminAuditPage: React.FC = () => {
                         </td>
                       </>
                     )}
+                    {tab === "credits" &&
+                      "admin_id" in r &&
+                      "user_id" in r &&
+                      "delta" in r &&
+                      "type" in r && (
+                        <>
+                          <td className="p-2">{(r as any).admin_id}</td>
+                          <td className="p-2">{(r as any).user_id}</td>
+                          <td className="p-2">{(r as any).type}</td>
+                          <td className="p-2">{(r as any).delta}</td>
+                          <td className="p-2">{(r as any).reason}</td>
+                          <td className="p-2">{(r as any).created_at}</td>
+                        </>
+                      )}
                 </tr>
               ))}
             {!loading && rows.length === 0 && (

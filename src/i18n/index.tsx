@@ -317,11 +317,11 @@ const translations: Record<Locale, Record<string,string>> = {
   'consultations.error.notAvailable': 'Horário indisponível conforme as regras de agenda.',
   // Global / generic SEO
   'seo.brand': 'Avante Nutri',
-  'seo.default.title': 'Avante Nutri | Nutrição Personalizada',
+  'seo.default.title': 'Nutrição Personalizada | Avante Nutri',
   'seo.default.desc': 'Acompanhamento nutricional personalizado, planos alimentares individualizados, consultas online via créditos e suporte profissional para transformação da sua saúde.',
   // Landing
-  'landing.seo.title': 'Avante Nutri | Alimente-se Bem, Viva Melhor!',
-  'landing.seo.desc': 'Transforme sua saúde com acompanhamento nutricional personalizado, planos alimentares exclusivos e consultas online com créditos.',
+  'landing.seo.title': 'Consulta com Nutricionista Online – Dieta Personalizada Sem Sair de Casa',
+  'landing.seo.desc': 'Cuide da sua saúde com nutricionista online. Planos alimentares exclusivos, acompanhamento individual e 100% online.',
   // Pricing / plans (patient area pricing page)
   'pricing.seo.title': 'Preços de Consultas | Avante Nutri',
   'pricing.seo.desc': 'Veja os preços das consultas nutricionais e compre créditos.',
@@ -991,8 +991,8 @@ const translations: Record<Locale, Record<string,string>> = {
     'seo.default.title': 'Avante Nutri | Personalized Nutrition',
   'seo.default.desc': 'Personalized nutritional coaching, tailored meal plans, credit-based online consultations and professional support to transform your health.',
     // Landing
-    'landing.seo.title': 'Avante Nutri | Eat Well, Live Better!',
-  'landing.seo.desc': 'Transform your health with personalized nutritional coaching, exclusive meal plans and credit-based online consultations.',
+    'landing.seo.title': 'Online Nutritionist Consultation – Personalized Diet Without Leaving Home',
+    'landing.seo.desc': 'Take care of your health with an online nutritionist. Exclusive meal plans, individual support, and 100% online service.',
     // Pricing
     'pricing.seo.title': 'Consultation Pricing | Avante Nutri',
     'pricing.seo.desc': 'View consultation prices and purchase credits.',

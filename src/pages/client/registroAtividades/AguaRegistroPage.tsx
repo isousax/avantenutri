@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -15,15 +15,12 @@ import {
   Trophy,
   TrendingUp,
   Calendar,
-  ChevronDown,
   Droplets,
   GlassWater,
   Settings,
   Check,
   X,
   Zap,
-  Flame,
-  Clock,
   Activity
 } from 'lucide-react';
 

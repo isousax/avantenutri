@@ -296,7 +296,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 role: normalizeRole(p.role),
                 full_name: (p.full_name ?? p.name ?? "") as string,
                 display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
-                phone: (p.phone ?? "") as string,
+                phone: (p.phone ?? p.phone_number ?? p.tel ?? "") as string,
               };
               setUser(derived);
               saveUserToStorage(derived, rememberMe);
@@ -498,6 +498,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           role: normalizeRole(payload.role),
           full_name: (payload.full_name ?? payload.name ?? "") as string,
           display_name: (payload.display_name ?? payload.full_name ?? payload.name ?? "") as string,
+          phone: (payload.phone ?? payload.phone_number ?? payload.tel ?? "") as string,
         };
         setUser(derived);
         // detecta rememberMe pela existência no sessionStorage (espelho) – se não existir assume rememberMe=true
@@ -555,6 +556,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     me.name ||
                     derived.full_name) as string,
                   display_name: (me.display_name ?? me.full_name ?? me.name ?? derived.display_name ?? "") as string,
+                  phone: (me.phone ?? me.phone_number ?? me.tel ?? derived.phone ?? "") as string,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
@@ -786,6 +788,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             user?.full_name ||
             "") as string,
           display_name: (data.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
+          phone: (data.phone ?? user?.phone ?? "") as string,
         };
         const changed = JSON.stringify(updated) !== JSON.stringify(user);
         if (changed) {
@@ -1125,6 +1128,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   role: normalizeRole(p.role),
                   full_name: (p.full_name ?? p.name ?? "") as string,
                   display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
+                  phone: (p.phone ?? p.phone_number ?? p.tel ?? "") as string,
                 });
               }
               releaseRefreshLock();
@@ -1354,7 +1358,7 @@ async function acquireRefreshLock(): Promise<boolean> {
     }
     const newLock = {
       id:
-        (window as any)._avTabId || "tab" + Math.random().toString(36).slice(2),
+        (window as unknown as { _avTabId?: string })._avTabId || "tab" + Math.random().toString(36).slice(2),
       ts: now,
     };
     localStorage.setItem(REFRESH_LOCK_KEY, JSON.stringify(newLock));
