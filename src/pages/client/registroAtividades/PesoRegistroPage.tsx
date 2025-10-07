@@ -12,8 +12,8 @@ import { usePermissions } from '../../../hooks/usePermissions';
 import { CAPABILITIES } from '../../../types/capabilities';
 import { useI18n, formatNumber } from '../../../i18n';
 import { formatDateSafe } from '../../../utils/formatDate';
-import { ArrowLeft, Target, Plus, Check, X, Calendar } from '../../../components/icons';
-import { TrendingUp, BarChart3, Sparkles, Scale, Edit3, History, Zap } from 'lucide-react';
+import { ArrowLeft, Target, Plus, Check, X } from '../../../components/icons';
+import { TrendingUp, BarChart3, Sparkles, Scale, Edit3, History } from 'lucide-react';
 import StatusPill, { getStatusTone } from '../../../components/ui/StatusPill';
 import { shouldShowSkeleton } from '../../../utils/loadingHelpers';
 
