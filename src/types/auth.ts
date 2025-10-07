@@ -7,6 +7,7 @@ export type User = {
   photoUrl?: string;
   phone?: string;
   birthDate?: string;
+  height?: number; // altura em centímetros
   weight?: number;
   targetWeight?: number;
   calorieGoal?: number;

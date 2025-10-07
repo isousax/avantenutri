@@ -41,16 +41,22 @@ export const useWaterLogsQuery = (days = 7) => {
     queryKey: ['water-logs', days],
     queryFn: async () => {
       const end = new Date();
-      const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
-      start.setUTCDate(start.getUTCDate() - (days - 1));
+      const start = new Date();
+      start.setDate(start.getDate() - (days - 1));
       const pad = (n: number) => String(n).padStart(2, '0');
-      const fmt = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+      const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       const fromStr = fmt(start);
       const toStr = fmt(end);
 
       const endpoint = API.WATER_LOGS;
       const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao carregar água');
@@ -75,7 +81,13 @@ export const useWaterSummaryQuery = (days = 7) => {
     queryFn: async (): Promise<SummaryResponse> => {
       const endpoint = API.WATER_SUMMARY;
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao carregar resumo de água');
@@ -105,7 +117,13 @@ export const useWaterLogs = (days = 7) => {
         body: JSON.stringify({ amount_ml }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao registrar água');
       }
@@ -126,7 +144,12 @@ export const useWaterLogs = (days = 7) => {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          throw new Error('Erro ao excluir');
+        }
         throw new Error(data.error || 'Erro ao excluir');
       }
 
@@ -145,7 +168,11 @@ export const useWaterLogs = (days = 7) => {
   const error = logsQuery.error || summaryQuery.error;
 
   // Calcular dados para hoje
-  const today = new Date().toISOString().split('T')[0];
+  const today = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  })();
   const todayStats = summary?.days?.find(day => day.date === today);
   const totalToday = todayStats?.total_ml || 0;
   const dailyGoalMl = summary?.stats?.goal_ml || 2000;

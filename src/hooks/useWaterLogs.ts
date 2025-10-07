@@ -34,9 +34,9 @@ export function useWaterLogs(initialDays = 7) {
     try {
       const end = new Date();
       const start = new Date();
-      start.setUTCDate(start.getUTCDate() - (days - 1));
+      start.setDate(start.getDate() - (days - 1));
       const pad = (n:number)=> String(n).padStart(2,'0');
-      const fmt = (d:Date)=> `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+      const fmt = (d:Date)=> `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
       const fromStr = fmt(start); const toStr = fmt(end);
       const cacheKey = `water:${fromStr}:${toStr}`;
       const cacheSummaryKey = `water:summary:${days}`;
@@ -99,7 +99,7 @@ export function useWaterLogs(initialDays = 7) {
   const today = (()=> {
     const pad = (n:number)=> String(n).padStart(2,'0');
     const d = new Date();
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   })();
   const totalToday = summary?.stats?.today.total_ml ?? logs.filter(l => l.log_date === today).reduce((s,l)=> s + l.amount_ml, 0);
   const avg = summary?.stats?.avg ?? 0;

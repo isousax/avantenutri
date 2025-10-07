@@ -6,8 +6,6 @@ import { useI18n, formatDate } from "../../i18n";
 import React from "react";
 import StatusPill, { getStatusTone } from "../ui/StatusPill";
 import { useConsultationCreditsSummary } from "../../hooks/useConsultationCredits";
-import { API } from "../../config/api";
-import { useAuth } from "../../contexts/useAuth";
 import { useToast } from "../ui/ToastProvider";
 
 const Consultas: React.FC = () => {
@@ -15,9 +13,7 @@ const Consultas: React.FC = () => {
   const { items, loading, error, list, cancel } = useConsultations();
   const [cancelingId, setCancelingId] = React.useState<string | null>(null);
   const { locale, t } = useI18n();
-  const { getAccessToken } = useAuth();
-  const { data: creditsSummaryData, refetch: refetchCredits } = useConsultationCreditsSummary();
-  const [buying, setBuying] = React.useState<null | 'avaliacao_completa' | 'reavaliacao'>(null);
+  const { data: creditsSummaryData } = useConsultationCreditsSummary();
   const summary = creditsSummaryData?.summary || {};
   const { push } = useToast();
   
@@ -78,31 +74,6 @@ const Consultas: React.FC = () => {
     }
   };
 
-  async function purchaseCredit(type: 'avaliacao_completa' | 'reavaliacao') {
-    if (buying) return;
-    setBuying(type);
-    try {
-      const token = await getAccessToken();
-      if (!token) throw new Error('no_session');
-      const res = await fetch(API.BILLING_INTENT, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ type })
-      });
-      const data = await res.json();
-      if (!res.ok || !data?.checkout_url) {
-        push({ type: 'error', message: data.error || 'Falha ao iniciar pagamento' });
-        return;
-      }
-      window.location.href = data.checkout_url;
-    } catch (e:any) {
-      push({ type: 'error', message: e?.message || 'Erro inesperado' });
-    } finally {
-      setBuying(null);
-      refetchCredits();
-    }
-  }
-
   function handleSchedule() {
     // If no credit for any paid type and user tries to schedule, send them anyway (they can pick type first)
     navigate('/agendar-consulta');
@@ -130,27 +101,6 @@ const Consultas: React.FC = () => {
             </svg>
             {t('consultations.schedule')}
           </Button>
-          <div className="flex gap-2">
-            <button
-              disabled={buying === 'avaliacao_completa'}
-              onClick={() => purchaseCredit('avaliacao_completa')}
-              className="relative text-xs px-3 py-2 rounded bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 disabled:opacity-50"
-            >
-              {buying === 'avaliacao_completa' ? t('consultations.credits.buy.loading') : t('consultations.credits.buy.avaliacao')}
-            </button>
-            <div className="relative group">
-              <button
-                disabled={buying === 'reavaliacao'}
-                onClick={() => purchaseCredit('reavaliacao')}
-                className="text-xs px-3 py-2 rounded bg-purple-50 hover:bg-purple-100 border border-purple-200 text-purple-700 disabled:opacity-50"
-              >
-                {buying === 'reavaliacao' ? t('consultations.credits.buy.loading') : t('consultations.credits.buy.reavaliacao')}
-              </button>
-              <div className="hidden group-hover:block absolute z-20 w-64 top-full mt-2 right-0 bg-white border border-gray-200 rounded shadow-lg p-3 text-[11px] text-gray-600">
-                {t('consultations.credits.reavaliacao.rule')}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
 

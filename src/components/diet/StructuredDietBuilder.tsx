@@ -49,6 +49,7 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
   onToggleAlternatives,
 }) => {
   const [busca, setBusca] = useState("");
+  const [selectedMealKey, setSelectedMealKey] = useState<string>("cafe_manha"); // Nova state para controlar qual refeição está selecionada
   const resultados = useMemo(
     () => buscarAlimentos(busca).slice(0, 30),
     [busca]
@@ -387,6 +388,33 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
           </div>
         </div>
       )}
+      
+      {/* Seletor de refeição para adicionar alimentos */}
+      <div className="border rounded p-3 bg-blue-50">
+        <label className="block text-sm font-medium text-blue-900 mb-2">
+          Adicionar alimentos para:
+        </label>
+        <div className="flex flex-wrap gap-2">
+          {data.meals.map((meal) => (
+            <button
+              key={meal.key}
+              type="button"
+              onClick={() => setSelectedMealKey(meal.key)}
+              className={`px-3 py-1 rounded text-sm transition-colors ${
+                selectedMealKey === meal.key
+                  ? "bg-blue-600 text-white"
+                  : "bg-white text-blue-600 border border-blue-300 hover:bg-blue-100"
+              }`}
+            >
+              {meal.titulo}
+            </button>
+          ))}
+        </div>
+        <div className="text-xs text-blue-700 mt-1">
+          ⚡ Dica: Selecione a refeição acima antes de buscar alimentos
+        </div>
+      </div>
+      
       <div>
         <input
           placeholder="Buscar alimento..."
@@ -394,13 +422,16 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
           onChange={(e) => setBusca(e.target.value)}
           className="w-full border rounded px-2 py-1 text-sm"
         />
+        <div className="text-xs text-gray-600 mt-1">
+          Selecionando para: <strong>{data.meals.find(m => m.key === selectedMealKey)?.titulo}</strong>
+        </div>
         {busca && (
           <div className="max-h-40 mt-1 overflow-y-auto border rounded bg-white/70 text-xs divide-y">
             {resultados.map((a) => (
               <button
                 key={a.id}
                 type="button"
-                onClick={() => addItem("cafe_manha", a.id)}
+                onClick={() => addItem(selectedMealKey as MealBlock["key"], a.id)}
                 className="w-full text-left px-2 py-1 hover:bg-emerald-50"
               >
                 {a.emoji} {a.nome}{" "}
@@ -487,48 +518,90 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
                         className="mt-1 w-full border rounded px-1 py-0.5 text-[10px] resize-none"
                         rows={2}
                       />
-                      {hasAlternativas && (
-                        <div className="mt-1 text-[10px] text-amber-700">
-                          Alternativas:{" "}
-                          {item.alternativas!.map((alt) => {
-                            const a = ALIMENTOS.find(
-                              (x) => x.id === alt.alimentoId
-                            );
-                            return (
-                              <button
-                                key={alt.alimentoId}
-                                type="button"
-                                onClick={() =>
-                                  removeAlternative(
-                                    meal.key,
-                                    item.id,
-                                    alt.alimentoId
-                                  )
-                                }
-                                className="mr-1 underline hover:text-red-600"
-                              >
-                                {a?.emoji} {a?.nome}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      )}
-                      {expandedMeal === meal.key && (
-                        <div className="mt-1 flex flex-wrap gap-1">
-                          {resultados.slice(0, 8).map((r) => (
-                            <button
-                              key={r.id}
-                              type="button"
-                              onClick={() =>
-                                addAlternative(meal.key, item.id, r.id)
+                      
+                      {/* Seção de Alternativas Melhorada */}
+                      <div className="mt-2 border-t pt-2">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-medium text-gray-700">
+                            Opções de Substituição ({item.alternativas?.length || 0})
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (expandedMeal === meal.key) {
+                                setExpandedMeal(null);
+                              } else {
+                                setExpandedMeal(meal.key);
                               }
-                              className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] hover:bg-amber-200"
-                            >
-                              Alt: {r.emoji} {r.nome}
-                            </button>
-                          ))}
+                            }}
+                            className="text-[10px] text-blue-600 hover:underline"
+                          >
+                            {expandedMeal === meal.key ? "Ocultar" : "Adicionar"}
+                          </button>
                         </div>
-                      )}
+                        
+                        {hasAlternativas && (
+                          <div className="space-y-1 mb-2">
+                            {item.alternativas!.map((alt, altIndex) => {
+                              const alimento = ALIMENTOS.find(a => a.id === alt.alimentoId);
+                              return (
+                                <div key={alt.alimentoId} className="flex items-center gap-2 text-[10px] bg-amber-50 rounded px-2 py-1">
+                                  <div className="flex-1">
+                                    <span className="font-medium">
+                                      {alimento?.emoji} {alimento?.nome}
+                                    </span>
+                                    <span className="text-gray-500 ml-1">
+                                      {alt.quantidade}g
+                                    </span>
+                                  </div>
+                                  <input
+                                    type="number"
+                                    value={alt.quantidade}
+                                    onChange={(e) => {
+                                      const newAlts = [...(item.alternativas || [])];
+                                      newAlts[altIndex] = { ...alt, quantidade: Number(e.target.value) || 0 };
+                                      updateItem(meal.key, item.id, { alternativas: newAlts });
+                                    }}
+                                    className="w-12 border rounded px-1 py-0.5 text-[10px]"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAlternative(meal.key, item.id, alt.alimentoId)}
+                                    className="text-red-600 hover:text-red-800"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                        
+                        {expandedMeal === meal.key && (
+                          <div className="border rounded p-2 bg-blue-50">
+                            <div className="text-[10px] text-blue-700 mb-1 font-medium">
+                              Clique para adicionar como alternativa:
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              {resultados.slice(0, 12).map((r) => (
+                                <button
+                                  key={r.id}
+                                  type="button"
+                                  onClick={() => addAlternative(meal.key, item.id, r.id)}
+                                  className="px-2 py-1 bg-white border border-blue-200 text-blue-700 rounded text-[10px] hover:bg-blue-100 transition-colors"
+                                >
+                                  {r.emoji} {r.nome}
+                                </button>
+                              ))}
+                              {resultados.length === 0 && busca && (
+                                <div className="text-[10px] text-gray-500 italic">
+                                  Digite acima para buscar alimentos...
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="w-24 flex flex-col items-end gap-1">
                       <input

@@ -30,7 +30,14 @@ export function useDietPlans() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      const data = await resp.json();
+      
+      let data;
+      try {
+        data = await resp.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       if (!resp.ok) throw new Error(data.error || 'Falha ao atualizar');
       // Invalidate lists & detail
       queryClient.invalidateQueries({ queryKey: ['diet-plans'] });

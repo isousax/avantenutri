@@ -19,11 +19,15 @@ const Perfil: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [height, setHeight] = useState<number | "">("");
   // Guarda valores originais para detectar mudanças e permitir reset
   const originalRef = useRef<{
     display_name?: string;
     full_name?: string;
     phone?: string | undefined;
+    birthDate?: string | undefined;
+    height?: number | null;
   }>({});
 
   useEffect(() => {
@@ -32,10 +36,14 @@ const Perfil: React.FC = () => {
       setFullName(user.full_name || "");
       // Format phone for local display (keeps original normalization for submit)
       setPhone(user.phone ? formatPhoneLocal(user.phone) : "");
+      setBirthDate(user.birthDate || "");
+      setHeight(user.height || "");
       originalRef.current = {
         display_name: user.display_name || "",
         full_name: user.full_name || "",
         phone: user.phone || "",
+        birthDate: user.birthDate || "",
+        height: user.height || null,
       };
     }
   }, [user]);
@@ -48,10 +56,14 @@ const Perfil: React.FC = () => {
     const od = originalRef.current.display_name || "";
     const of = originalRef.current.full_name || "";
     const op = originalRef.current.phone || "";
+    const ob = originalRef.current.birthDate || "";
+    const oh = originalRef.current.height || null;
     return (
       displayName.trim() !== od.trim() ||
       fullName.trim() !== of.trim() ||
-      phone.trim() !== op.trim()
+      phone.trim() !== op.trim() ||
+      birthDate.trim() !== ob.trim() ||
+      height !== oh
     );
   })();
 
@@ -248,6 +260,8 @@ const Perfil: React.FC = () => {
               display_name: string;
               full_name: string;
               phone?: string | null;
+              birth_date?: string | null;
+              height?: number | null;
             }> = {};
             if (trimmedDisplay !== originalRef.current.display_name)
               payload.display_name = trimmedDisplay;
@@ -267,6 +281,14 @@ const Perfil: React.FC = () => {
               } else {
                 payload.phone = normalizePhone(phone.trim());
               }
+            }
+
+            if (birthDate !== originalRef.current.birthDate) {
+              payload.birth_date = birthDate || null;
+            }
+
+            if (height !== originalRef.current.height) {
+              payload.height = height === "" ? null : height;
             }
 
             if (Object.keys(payload).length === 0) {
@@ -403,6 +425,54 @@ const Perfil: React.FC = () => {
                 inputMode="tel"
                 maxLength={25}
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Data de Nascimento
+                {user?.birthDate && (
+                  <span className="text-xs text-gray-500 ml-2">
+                    (não pode ser alterada)
+                  </span>
+                )}
+              </label>
+              <input
+                type="date"
+                value={birthDate || ""}
+                onChange={(e) => setBirthDate(e.target.value)}
+                disabled={!!user?.birthDate}
+                className={`flex w-full px-4 py-3 rounded-xl border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 ${
+                  user?.birthDate ? "bg-gray-100 cursor-not-allowed" : ""
+                }`}
+                min="1900-01-01"
+                max={new Date().toISOString().split('T')[0]}
+              />
+              {user?.birthDate && (
+                <p className="text-xs text-gray-500 mt-1">
+                  Data já definida e não pode ser alterada
+                </p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Altura (cm)
+              </label>
+              <input
+                type="number"
+                value={height}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setHeight(value === "" ? "" : parseInt(value, 10));
+                }}
+                className="flex w-full px-4 py-3 rounded-xl border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20"
+                placeholder="Ex: 175"
+                min="50"
+                max="300"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Altura em centímetros (50-300 cm)
+              </p>
             </div>
           </div>
 

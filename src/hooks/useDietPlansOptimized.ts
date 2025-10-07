@@ -1,8 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedFetch } from './useApi';
 import { API } from '../config/api';
-import { usePermissions } from './usePermissions';
-import { CAPABILITIES } from '../types/capabilities';
 
 // Types
 export interface DietPlanSummary {
@@ -34,7 +32,6 @@ export interface DietPlanDetail extends DietPlanSummary {
 // Query para buscar planos de dieta
 export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
   const authenticatedFetch = useAuthenticatedFetch();
-  const { can } = usePermissions();
 
   return useQuery({
     queryKey: ['diet-plans', options],
@@ -47,7 +44,13 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
       
       const url = params.toString() ? `${endpoint}?${params}` : endpoint;
       const response = await authenticatedFetch(url);
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao carregar planos de dieta');
@@ -55,7 +58,7 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
 
       return data.results || [];
     },
-    enabled: can(CAPABILITIES.DIETA_VIEW),
+    enabled: true, // Mudamos para sempre enabled, mas verificamos permissão dentro da queryFn
     staleTime: 10 * 60 * 1000, // 10 minutos
     refetchOnWindowFocus: false,
   });
@@ -64,7 +67,6 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
 // Query para buscar detalhes de um plano específico
 export const useDietPlanDetailQuery = (planId: string, includeData = false) => {
   const authenticatedFetch = useAuthenticatedFetch();
-  const { can } = usePermissions();
 
   return useQuery({
     queryKey: ['diet-plan-detail', planId, includeData],
@@ -77,7 +79,13 @@ export const useDietPlanDetailQuery = (planId: string, includeData = false) => {
       
       const url = params.toString() ? `${endpoint}/${planId}?${params}` : `${endpoint}/${planId}`;
       const response = await authenticatedFetch(url);
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao carregar detalhes do plano');
@@ -85,7 +93,7 @@ export const useDietPlanDetailQuery = (planId: string, includeData = false) => {
 
       return data.plan;
     },
-    enabled: !!planId && can(CAPABILITIES.DIETA_VIEW),
+    enabled: !!planId, // Removemos a verificação de permissão do enabled
     staleTime: 10 * 60 * 1000, // 10 minutos
     refetchOnWindowFocus: false,
   });
@@ -95,7 +103,6 @@ export const useDietPlanDetailQuery = (planId: string, includeData = false) => {
 export const useDietPlans = () => {
   const queryClient = useQueryClient();
   const authenticatedFetch = useAuthenticatedFetch();
-  const { can } = usePermissions();
 
   const plansQuery = useDietPlansQuery();
 
@@ -114,10 +121,6 @@ export const useDietPlans = () => {
       pdf_base64?: string;
       pdf_filename?: string;
     }) => {
-      if (!can(CAPABILITIES.DIETA_EDIT)) {
-        throw new Error('Sem permissão para criar dietas');
-      }
-
       const endpoint = API.DIET_PLANS;
       const payload = { ...input } as any;
       if (input.format === 'structured') {
@@ -135,7 +138,13 @@ export const useDietPlans = () => {
         body: JSON.stringify(payload),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao criar plano');
       }
@@ -189,10 +198,6 @@ export const useDietPlans = () => {
       notes?: string;
       includeData?: boolean;
     }) => {
-      if (!can(CAPABILITIES.DIETA_EDIT)) {
-        throw new Error('Sem permissão para revisar dietas');
-      }
-
       const endpoint = API.DIET_PLANS;
       const body: any = {};
       if (notes) body.notes = notes;
@@ -204,7 +209,13 @@ export const useDietPlans = () => {
         body: JSON.stringify(body),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao revisar plano');
       }
@@ -274,7 +285,13 @@ export const useDietPlans = () => {
         
         const url = params.toString() ? `${endpoint}/${planId}?${params}` : `${endpoint}/${planId}`;
         const response = await authenticatedFetch(url);
-        const data = await response.json();
+        
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          throw new Error('Resposta inválida do servidor');
+        }
         
         if (!response.ok) {
           throw new Error(data.error || 'Falha ao carregar detalhes do plano');

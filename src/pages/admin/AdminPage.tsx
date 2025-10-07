@@ -338,8 +338,8 @@ const DietManagement: React.FC = () => {
 
       {/* Create modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-lg p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-2 md:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-lg w-full max-w-6xl my-4 p-4 md:p-6 space-y-4 max-h-[95vh] overflow-y-auto">
             <h2 className="text-lg font-semibold">Criar Dieta</h2>
             <form onSubmit={handleCreate} className="space-y-4 text-xs">
               <div>

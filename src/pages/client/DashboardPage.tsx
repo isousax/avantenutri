@@ -632,12 +632,11 @@ const DashboardPage: React.FC = () => {
   const goal = weightAgg.goal;
   // progressPercent era usado para trend visual; removido ao padronizar LoadingState
 
-  // Questionário para altura e IMC
+  // Altura para IMC - usar perfil como prioridade, questionário como fallback
   const { questionarioData } = useQuestionario();
   const heightCmRaw = questionarioData?.respostas?.["Altura (cm)"];
-  const heightCm = heightCmRaw
-    ? parseFloat(heightCmRaw.replace(",", "."))
-    : undefined;
+  const heightCm = user?.height || // Prioridade: perfil do usuário
+    (heightCmRaw ? parseFloat(heightCmRaw.replace(",", ".")) : undefined); // Fallback: questionário
 
   // Todos podem visualizar dietas (flag removida por não ser usada diretamente)
   const canEditDiets = false; // Pacientes não editam dietas, apenas admin
@@ -1253,20 +1252,25 @@ const DashboardPage: React.FC = () => {
                         adherence ? (
                           <span className="inline-flex items-center gap-1">
                             {adherence.daysCovered}/{adherence.totalDays} dias
-                            com registros
+                            com registros • 💧{adherence.waterAdherence}% água
                             <Tooltip
                               content={
                                 <div className="text-left leading-snug">
                                   <div className="font-semibold mb-1">
-                                    Fórmula
+                                    Fórmula Inteligente
                                   </div>
                                   <div>
-                                    50% (dias com registro / total dias)
+                                    60% Refeições (cobertura + consistência)
                                   </div>
-                                  <div>+ 50% (média refeições/dia / 4)</div>
-                                  <div className="mt-1 text-[10px] text-gray-300">
-                                    Alvo padrão: 4 refeições/dia
-                                  </div>
+                                  <div>+ 25% Hidratação (meta de água)</div>
+                                  <div>+ 15% Engajamento (pesagens)</div>
+                                  {adherence?.components && (
+                                    <div className="mt-2 text-[10px] text-gray-300 space-y-1">
+                                      <div>Refeições: {adherence.components.meals}%</div>
+                                      <div>Hidratação: {adherence.components.water}%</div>
+                                      <div>Engajamento: {adherence.components.consistency}%</div>
+                                    </div>
+                                  )}
                                 </div>
                               }
                             >

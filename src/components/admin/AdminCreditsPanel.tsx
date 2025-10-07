@@ -13,6 +13,26 @@ const AdminCreditsPanel: React.FC = () => {
   const [delta, setDelta] = useState(1);
   const [type, setType] = useState<'avaliacao_completa'|'reavaliacao'>('avaliacao_completa');
   const [reason, setReason] = useState('Ajuste manual');
+  const [adjustError, setAdjustError] = useState<string|null>(null);
+
+  const handleAdjustSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAdjustError(null);
+    
+    adjust.mutate(
+      { userId: selected!, type, delta, reason },
+      {
+        onSuccess: () => {
+          setSelected(null);
+          setDelta(1);
+          setReason('Ajuste manual');
+        },
+        onError: (error) => {
+          setAdjustError(error.message);
+        }
+      }
+    );
+  };
 
   const rows = (data?.rows||[]).filter(r => !filter || r.email?.toLowerCase().includes(filter.toLowerCase()) || r.name?.toLowerCase().includes(filter.toLowerCase()));
 
@@ -23,7 +43,20 @@ const AdminCreditsPanel: React.FC = () => {
         {adjust.isPending && <span className="text-xs text-amber-600 animate-pulse">Salvando ajuste...</span>}
       </div>
       {isLoading && <div className="text-sm text-gray-500">Carregando créditos...</div>}
-      {error && <div className="text-sm text-red-600">Erro ao carregar.</div>}
+      {error && (
+        <div className="border border-red-200 bg-red-50 rounded p-3">
+          <div className="text-sm text-red-600 font-medium">Erro ao carregar dados de créditos</div>
+          <div className="text-xs text-red-500 mt-1">
+            {error.message || 'Erro desconhecido. Tente recarregar a página.'}
+          </div>
+          <button 
+            onClick={() => window.location.reload()} 
+            className="text-xs text-red-700 underline hover:text-red-800 mt-2"
+          >
+            Recarregar página
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto border rounded bg-white/70">
         <table className="min-w-full text-xs">
           <thead className="bg-gray-100 text-[11px] uppercase tracking-wide text-gray-600">
@@ -63,11 +96,18 @@ const AdminCreditsPanel: React.FC = () => {
       </div>
 
       {selected && (
-        <form className="border rounded p-3 bg-white/80 space-y-2 max-w-md" onSubmit={e=>{e.preventDefault(); adjust.mutate({ userId: selected, type, delta, reason }); }}>
+        <form className="border rounded p-3 bg-white/80 space-y-2 max-w-md" onSubmit={handleAdjustSubmit}>
           <div className="flex justify-between items-center">
             <h4 className="font-semibold text-sm">Ajustar Créditos</h4>
-            <button type="button" onClick={()=>setSelected(null)} className="text-[11px] text-gray-500 hover:underline">Fechar</button>
+            <button type="button" onClick={()=>{setSelected(null); setAdjustError(null);}} className="text-[11px] text-gray-500 hover:underline">Fechar</button>
           </div>
+          
+          {adjustError && (
+            <div className="bg-red-50 border border-red-200 rounded p-2">
+              <div className="text-xs text-red-600">{adjustError}</div>
+            </div>
+          )}
+          
           <div className="grid grid-cols-2 gap-2 text-xs">
             <label className="space-y-1">
               <span className="block font-medium">Tipo</span>
@@ -86,7 +126,13 @@ const AdminCreditsPanel: React.FC = () => {
             </label>
           </div>
           <div className="flex justify-end gap-2">
-            <button type="submit" disabled={adjust.isPending} className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1 rounded disabled:opacity-50">Aplicar</button>
+            <button 
+              type="submit" 
+              disabled={adjust.isPending} 
+              className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs px-3 py-1 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {adjust.isPending ? 'Aplicando...' : 'Aplicar'}
+            </button>
           </div>
           {adjust.error && <div className="text-[11px] text-red-600">Erro ao ajustar.</div>}
         </form>

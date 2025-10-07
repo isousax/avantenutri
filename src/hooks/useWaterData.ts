@@ -48,10 +48,10 @@ const waterSummaryKey = (days: number) =>
 function buildRange(days: number) {
   const end = new Date();
   const start = new Date();
-  start.setUTCDate(start.getUTCDate() - (days - 1));
+  start.setDate(start.getDate() - (days - 1));
   const pad = (n: number) => String(n).padStart(2, "0");
   const fmt = (d: Date) =>
-    `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   return { from: fmt(start), to: fmt(end) };
 }
 
@@ -104,8 +104,8 @@ export function useWaterData(days = 7) {
     try {
       const pad = (n: number) => String(n).padStart(2, "0");
       const d = new Date();
-      const today = `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
-        d.getUTCDate()
+      const today = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+        d.getDate()
       )}`;
 
       const logsRangeTo = logsQuery.data?.range?.to;
@@ -155,9 +155,9 @@ export function useWaterData(days = 7) {
       const optimisticId = `optimistic-${Date.now()}`;
       const now = new Date();
       const pad = (n: number) => String(n).padStart(2, "0");
-      const log_date = `${now.getUTCFullYear()}-${pad(
-        now.getUTCMonth() + 1
-      )}-${pad(now.getUTCDate())}`;
+      const log_date = `${now.getFullYear()}-${pad(
+        now.getMonth() + 1
+      )}-${pad(now.getDate())}`;
       const newLog = {
         id: optimisticId,
         log_date,
@@ -225,8 +225,8 @@ export function useWaterData(days = 7) {
   const today = (() => {
     const pad = (n: number) => String(n).padStart(2, "0");
     const d = new Date();
-    return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
-      d.getUTCDate()
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+      d.getDate()
     )}`;
   })();
   const totalToday =
@@ -275,11 +275,11 @@ export function prefetchWaterData(
   const range = (() => {
     const end = new Date();
     const start = new Date();
-    start.setUTCDate(start.getUTCDate() - (days - 1));
+    start.setDate(start.getDate() - (days - 1));
     const pad = (n: number) => String(n).padStart(2, "0");
     const fmt = (d: Date) =>
-      `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
-        d.getUTCDate()
+      `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+        d.getDate()
       )}`;
     return { from: fmt(start), to: fmt(end) };
   })();

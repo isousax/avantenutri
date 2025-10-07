@@ -14,10 +14,10 @@ const mealSummaryKey = (days:number) => ['meals','summary',{days}] as const;
 
 function buildRange(days:number) {
   const end = new Date();
-  const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
-  start.setUTCDate(start.getUTCDate() - (days - 1));
+  const start = new Date();
+  start.setDate(start.getDate() - (days - 1));
   const pad = (n:number)=> String(n).padStart(2,'0');
-  const fmt = (d:Date)=> `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+  const fmt = (d:Date)=> `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   return { from: fmt(start), to: fmt(end) };
 }
 
@@ -74,7 +74,7 @@ export function useMealData(days = 7) {
         const optimisticId = `optimistic-${Date.now()}`;
         const dt = input.datetime ? new Date(input.datetime) : new Date();
         const pad = (n:number)=> String(n).padStart(2,'0');
-        const log_date = `${dt.getUTCFullYear()}-${pad(dt.getUTCMonth()+1)}-${pad(dt.getUTCDate())}`;
+        const log_date = `${dt.getFullYear()}-${pad(dt.getMonth()+1)}-${pad(dt.getDate())}`;
         const newLog: MealLog = { id: optimisticId, log_datetime: dt.toISOString(), log_date, meal_type: input.meal_type, description: input.description || '', calories: input.calories || null, protein_g: input.protein_g || null, carbs_g: input.carbs_g || null, fat_g: input.fat_g || null, created_at: dt.toISOString(), updated_at: dt.toISOString() };
         if (prevLogs?.logs) qc.setQueryData(mealLogsKey(days), { ...prevLogs, logs: [...prevLogs.logs.filter((l:any)=>!l.id.startsWith('optimistic-')), newLog] });
         if (prevSummary?.days) {
@@ -186,7 +186,7 @@ export function useMealData(days = 7) {
 
   const summary = summaryQuery.data;
   const goals = summary?.goals || { calories: null, protein_g: null, carbs_g: null, fat_g: null };
-  const todayStr = (()=> { const d=new Date(); const pad=(n:number)=> String(n).padStart(2,'0'); return `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`; })();
+  const todayStr = (()=> { const d=new Date(); const pad=(n:number)=> String(n).padStart(2,'0'); return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; })();
   const todayAgg = (summary?.days||[]).find(d => d.date === todayStr);
   const progress = todayAgg && goals ? {
     calories: goals.calories ? Math.min(100, Math.round((todayAgg.calories / goals.calories)*100)) : null,
@@ -217,10 +217,10 @@ export function useMealData(days = 7) {
 export function prefetchMealData(qc: ReturnType<typeof useQueryClient>, days = 7, fetcher: (input: RequestInfo, init?: RequestInit)=>Promise<Response>) {
   const range = (()=>{
     const end = new Date();
-    const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
-    start.setUTCDate(start.getUTCDate() - (days - 1));
+    const start = new Date();
+    start.setDate(start.getDate() - (days - 1));
     const pad = (n:number)=> String(n).padStart(2,'0');
-    const fmt = (d:Date)=> `${d.getUTCFullYear()}-${pad(d.getUTCMonth()+1)}-${pad(d.getUTCDate())}`;
+    const fmt = (d:Date)=> `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
     return { from: fmt(start), to: fmt(end) };
   })();
   qc.prefetchQuery({

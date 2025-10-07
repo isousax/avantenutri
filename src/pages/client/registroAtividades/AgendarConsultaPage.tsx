@@ -19,12 +19,94 @@ import {
   CreditCard,
   AlertCircle,
   CheckCircle2,
-  Zap,
   Star,
   Heart,
   Shield,
   Video
 } from "lucide-react";
+
+// Componente para slots disponíveis
+interface AvailableSlotsProps {
+  date: string;
+  selectedTime: string;
+  onTimeSelect: (time: string) => void;
+}
+
+const AvailableSlots: React.FC<AvailableSlotsProps> = ({ date, selectedTime, onTimeSelect }) => {
+  const [slots, setSlots] = useState<Array<{ start: string; end: string; taken: boolean }>>([]);
+  const [loading, setLoading] = useState(false);
+  const { authenticatedFetch } = useAuth();
+
+  React.useEffect(() => {
+    if (!date) return;
+    
+    const loadSlots = async () => {
+      setLoading(true);
+      try {
+        const response = await authenticatedFetch(`/consultations/available?from=${date}&to=${date}`);
+        const data = await response.json();
+        
+        if (data.days && data.days[0]) {
+          setSlots(data.days[0].slots || []);
+        } else {
+          setSlots([]);
+        }
+      } catch (error) {
+        console.error('Erro ao carregar slots:', error);
+        setSlots([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadSlots();
+  }, [date, authenticatedFetch]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-4">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (slots.length === 0) {
+    return (
+      <div className="text-center py-4 text-gray-500">
+        <Clock size={24} className="mx-auto mb-2" />
+        <p>Nenhum horário disponível para esta data</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
+      {slots.map((slot, index) => {
+        const timeString = slot.start.split('T')[1].substring(0, 5);
+        const isSelected = selectedTime === timeString;
+        const isAvailable = !slot.taken;
+        
+        return (
+          <button
+            key={index}
+            type="button"
+            disabled={!isAvailable}
+            onClick={() => isAvailable && onTimeSelect(timeString)}
+            className={`p-3 rounded-lg border text-sm font-medium transition-all ${
+              isSelected
+                ? 'border-blue-500 bg-blue-500 text-white'
+                : isAvailable
+                ? 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
+                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {timeString}
+          </button>
+        );
+      })}
+    </div>
+  );
+};
 
 const AgendarConsultaPage: React.FC = () => {
   const { push } = useToast();
@@ -33,7 +115,6 @@ const AgendarConsultaPage: React.FC = () => {
     tipoConsulta: "avaliacao_completa" as TipoConsulta,
     data: "",
     horario: "",
-    urgencia: "normal",
   });
   const { authenticatedFetch, user } = useAuth();
   const { create } = useConsultations();
@@ -46,6 +127,7 @@ const AgendarConsultaPage: React.FC = () => {
   // Questionnaire modal state
   const { data: questionnaireStatus } = useQuestionnaireStatus();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
+  const [showCreditModal, setShowCreditModal] = useState(false);
 
   function getErrorMessage(err: unknown) {
     if (!err) return '';
@@ -88,6 +170,30 @@ const AgendarConsultaPage: React.FC = () => {
 
   const { data: creditsSummary } = useConsultationCreditsSummary();
   const { data: pricingData } = useConsultationPricing();
+  const { items: consultationHistory } = useConsultations();
+  
+  // Verificar elegibilidade para reavaliação
+  const canUseReavaliacao = useMemo(() => {
+    if (!consultationHistory || consultationHistory.length === 0) return false;
+    
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
+    
+    // Verificar qualquer consulta nos últimos 12 meses
+    const hasRecentConsultation = consultationHistory.some(consultation => {
+      const consultationDate = new Date(consultation.scheduled_at);
+      return consultationDate >= twelveMonthsAgo && consultation.status === 'completed';
+    });
+    
+    // Verificar reavaliação nos últimos 6 meses
+    const hasRecentReavaliacao = consultationHistory.some(consultation => {
+      const consultationDate = new Date(consultation.scheduled_at);
+      return consultation.type === 'reavaliacao' && consultationDate >= sixMonthsAgo && consultation.status === 'completed';
+    });
+    
+    return hasRecentConsultation || hasRecentReavaliacao;
+  }, [consultationHistory]);
   
   const priceMap = useMemo(() => {
     const map: Record<string,string> = {};
@@ -104,6 +210,15 @@ const AgendarConsultaPage: React.FC = () => {
     e.preventDefault();
 
     if (etapa === 1) {
+      // Verificar se usuário tem créditos antes de avançar
+      const needsCredit = formData.tipoConsulta === 'avaliacao_completa' || formData.tipoConsulta === 'reavaliacao';
+      const availableCredits = creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
+      
+      if (needsCredit && availableCredits <= 0) {
+        setShowCreditModal(true);
+        return;
+      }
+      
       setEtapa(2);
       return;
     }
@@ -142,7 +257,7 @@ const AgendarConsultaPage: React.FC = () => {
         return { dataIso: new Date(date + "T" + time + ":00Z").toISOString() };
       })();
       
-      await create({ scheduledAt: dataIso, type: formData.tipoConsulta, urgency: formData.urgencia });
+      await create({ scheduledAt: dataIso, type: formData.tipoConsulta });
       push({ type: 'success', message: t('consultations.status.scheduled') });
       navigate("/dashboard");
     } catch (e: unknown) {
@@ -204,44 +319,65 @@ const AgendarConsultaPage: React.FC = () => {
             const needsCredit = tipo.value === 'avaliacao_completa' || tipo.value === 'reavaliacao';
             const availableCredits = creditsSummary?.summary?.[tipo.value]?.available || 0;
             const hasCredits = needsCredit && availableCredits > 0;
+            const isReavaliacao = tipo.value === 'reavaliacao';
+            const isEligible = !isReavaliacao || canUseReavaliacao;
+            const isDisabled = !isEligible;
 
             return (
               <Card 
                 key={tipo.value}
-                className={`p-5 border-2 cursor-pointer transition-all duration-300 hover:shadow-lg ${
-                  formData.tipoConsulta === tipo.value
-                    ? "border-blue-500 bg-blue-50 shadow-md"
-                    : "border-gray-200 hover:border-blue-300"
+                className={`p-5 border-2 transition-all duration-300 ${
+                  isDisabled 
+                    ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" 
+                    : `cursor-pointer hover:shadow-lg ${
+                        formData.tipoConsulta === tipo.value
+                          ? "border-blue-500 bg-blue-50 shadow-md"
+                          : "border-gray-200 hover:border-blue-300"
+                      }`
                 }`}
-                onClick={() => setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }))}
+                onClick={() => {
+                  if (!isDisabled) {
+                    setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }));
+                  }
+                }}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 bg-gradient-to-br ${tipo.color} rounded-xl flex items-center justify-center flex-shrink-0`}>
+                  <div className={`w-12 h-12 bg-gradient-to-br ${tipo.color} rounded-xl flex items-center justify-center flex-shrink-0 ${
+                    isDisabled ? 'opacity-50' : ''
+                  }`}>
                     <TipoIcon size={24} className="text-white" />
                   </div>
                   
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className="font-bold text-gray-900 text-lg">
+                        <h3 className={`font-bold text-lg ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
                           {t(tipo.labelKey)}
                         </h3>
-                        <p className="text-gray-600 text-sm mt-1">
+                        <p className={`text-sm mt-1 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
                           {t(tipo.descKey)}
                         </p>
                       </div>
                       <div className="text-right">
-                        <div className="text-lg font-bold text-green-600">
+                        <div className={`text-lg font-bold ${isDisabled ? 'text-gray-400' : 'text-green-600'}`}>
                           {priceMap[tipo.value] || t(tipo.priceKey)}
                         </div>
-                        <div className="text-sm text-gray-500">
+                        <div className={`text-sm ${isDisabled ? 'text-gray-400' : 'text-gray-500'}`}>
                           {t(tipo.durationKey)}
                         </div>
                       </div>
                     </div>
 
+                    {/* Aviso de não elegibilidade para reavaliação */}
+                    {isReavaliacao && !isEligible && (
+                      <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-sm bg-yellow-50 text-yellow-700 border border-yellow-200">
+                        <AlertCircle size={16} />
+                        <span>Não elegível - {t('consultations.credits.reavaliacao.rule')}</span>
+                      </div>
+                    )}
+
                     {/* Status de Créditos */}
-                    {needsCredit && (
+                    {needsCredit && isEligible && (
                       <div className={`flex items-center gap-2 mt-3 p-2 rounded-lg text-sm ${
                         hasCredits 
                           ? 'bg-green-50 text-green-700 border border-green-200' 
@@ -262,7 +398,7 @@ const AgendarConsultaPage: React.FC = () => {
                     )}
 
                     {/* Regra de Reavaliação */}
-                    {tipo.value === 'reavaliacao' && (
+                    {tipo.value === 'reavaliacao' && isEligible && (
                       <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border">
                         {t('consultations.credits.reavaliacao.rule')}
                       </div>
@@ -272,28 +408,6 @@ const AgendarConsultaPage: React.FC = () => {
               </Card>
             );
           })}
-        </div>
-
-        {/* Botões de Compra de Créditos */}
-        <div className="flex gap-3 pt-2">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => purchaseCredit('avaliacao_completa')}
-            className="flex-1 flex items-center justify-center gap-2"
-          >
-            <CreditCard size={16} />
-            Comprar Avaliação
-          </Button>
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={() => purchaseCredit('reavaliacao')}
-            className="flex-1 flex items-center justify-center gap-2"
-          >
-            <CreditCard size={16} />
-            Comprar Reavaliação
-          </Button>
         </div>
       </div>
     );
@@ -367,38 +481,40 @@ const AgendarConsultaPage: React.FC = () => {
           </div>
         </Card>
 
-        {/* Nível de Urgência */}
+        {/* Seleção de Data e Horário */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-3">
             <div className="flex items-center gap-2">
-              <Zap size={16} className="text-orange-500" />
-              Nível de Urgência
+              <Calendar size={16} className="text-blue-500" />
+              Selecione Data e Horário
             </div>
           </label>
-          <div className="grid grid-cols-3 gap-3">
-            {[
-              { value: "baixa", label: t('consultations.schedule.urgency.low'), color: "green", icon: Clock },
-              { value: "normal", label: t('consultations.schedule.urgency.normal'), color: "blue", icon: Calendar },
-              { value: "alta", label: t('consultations.schedule.urgency.high'), color: "red", icon: AlertCircle },
-            ].map((nivel) => {
-              const NivelIcon = nivel.icon;
-              return (
-                <button
-                  key={nivel.value}
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, urgencia: nivel.value }))}
-                  className={`p-4 rounded-xl border-2 transition-all flex flex-col items-center gap-2 ${
-                    formData.urgencia === nivel.value
-                      ? `border-${nivel.color}-500 bg-${nivel.color}-50 text-${nivel.color}-700`
-                      : "border-gray-200 hover:border-gray-300 text-gray-600"
-                  }`}
-                >
-                  <NivelIcon size={20} />
-                  <span className="text-sm font-medium">{nivel.label}</span>
-                </button>
-              );
-            })}
+          
+          {/* Seletor de Data */}
+          <div className="mb-4">
+            <input
+              type="date"
+              value={formData.data}
+              onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value, horario: '' }))}
+              min={new Date().toISOString().split('T')[0]}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              required
+            />
           </div>
+
+          {/* Seletor de Horário */}
+          {formData.data && (
+            <div>
+              <label className="block text-sm font-medium text-gray-600 mb-2">
+                Horários disponíveis para {new Date(formData.data).toLocaleDateString('pt-BR')}
+              </label>
+              <AvailableSlots 
+                date={formData.data}
+                selectedTime={formData.horario}
+                onTimeSelect={(time) => setFormData(prev => ({ ...prev, horario: time }))}
+              />
+            </div>
+          )}
         </div>
 
         {/* Informações Adicionais */}
@@ -509,7 +625,8 @@ const AgendarConsultaPage: React.FC = () => {
                   </Button>
                   <Button 
                     type="submit" 
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700 cursor-not-allowed"
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
+                    disabled={etapa === 2 && (!formData.data || !formData.horario)}
                   >
                     Continuar
                   </Button>
@@ -547,6 +664,53 @@ const AgendarConsultaPage: React.FC = () => {
         onConfirm={handleQuestionnaireConfirm}
         hasQuestionnaire={questionnaireStatus?.has_data || false}
       />
+
+      {/* Credits Purchase Modal */}
+      {showCreditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <CreditCard size={32} className="text-red-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Créditos Insuficientes</h3>
+              <p className="text-gray-600">
+                Você precisa de créditos para agendar uma {formData.tipoConsulta === 'avaliacao_completa' ? 'avaliação completa' : 'reavaliação'}.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <Button
+                onClick={() => purchaseCredit('avaliacao_completa')}
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600"
+              >
+                <CreditCard size={16} />
+                Comprar Avaliação Completa
+              </Button>
+              
+              {canUseReavaliacao && (
+                <Button
+                  onClick={() => purchaseCredit('reavaliacao')}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600"
+                >
+                  <CreditCard size={16} />
+                  Comprar Reavaliação
+                </Button>
+              )}
+            </div>
+
+            <div className="mt-6 pt-4 border-t">
+              <Button
+                variant="secondary"
+                onClick={() => setShowCreditModal(false)}
+                className="w-full"
+              >
+                Fechar
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

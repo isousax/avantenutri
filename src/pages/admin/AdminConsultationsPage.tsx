@@ -88,13 +88,42 @@ const AdminConsultationsPage: React.FC = () => {
   const loadConsultations = async () => {
     try {
       setLoading(true); setError(null);
+      
+      // Validação client-side das datas
+      if (from && !/^\d{4}-\d{2}-\d{2}$/.test(from)) {
+        setError('Data "De" deve estar no formato YYYY-MM-DD');
+        return;
+      }
+      if (to && !/^\d{4}-\d{2}-\d{2}$/.test(to)) {
+        setError('Data "Até" deve estar no formato YYYY-MM-DD');
+        return;
+      }
+      if (from && to && from > to) {
+        setError('Data "De" deve ser anterior ou igual à data "Até"');
+        return;
+      }
+      
       const qs = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
       if (status) qs.set('status', status);
       if (userId) qs.set('user_id', userId);
       if (from) qs.set('from', from);
       if (to) qs.set('to', to);
       const r = await authenticatedFetch(`${API.ADMIN_CONSULTATIONS}?${qs.toString()}`);
-  if (!r.ok) throw new Error(t('admin.consultations.error.load'));
+      
+      if (!r.ok) {
+        // Tratamento específico para HTTP 400
+        if (r.status === 400) {
+          try {
+            const errorData = await r.json();
+            setError(`Erro de validação: ${errorData.error || 'Parâmetros inválidos'}`);
+          } catch {
+            setError('Erro de validação: Parâmetros inválidos');
+          }
+          return;
+        }
+        throw new Error(t('admin.consultations.error.load'));
+      }
+      
       const data = await r.json();
       setItems(data.results || []);
       if (typeof data.total === 'number') setTotal(data.total);
@@ -222,8 +251,37 @@ const AdminConsultationsPage: React.FC = () => {
           <option value="completed">{t('admin.consultations.status.completed')}</option>
         </select>
         <input value={userId} onChange={(e)=>setUserId(e.target.value)} placeholder="user_id" className="border px-2 py-1 rounded text-sm" />
-        <input type="date" value={from} onChange={(e)=>setFrom(e.target.value)} className="border px-2 py-1 rounded text-sm" />
-        <input type="date" value={to} onChange={(e)=>setTo(e.target.value)} className="border px-2 py-1 rounded text-sm" />
+        <div className="flex flex-col">
+          <input 
+            type="date" 
+            value={from} 
+            onChange={(e)=>setFrom(e.target.value)} 
+            className={`border px-2 py-1 rounded text-sm ${
+              from && to && from > to ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            }`}
+            placeholder="Data inicial"
+            title="Data inicial (YYYY-MM-DD)"
+          />
+          <label className="text-xs text-gray-500 mt-1">De</label>
+        </div>
+        <div className="flex flex-col">
+          <input 
+            type="date" 
+            value={to} 
+            onChange={(e)=>setTo(e.target.value)} 
+            className={`border px-2 py-1 rounded text-sm ${
+              from && to && from > to ? 'border-red-500 bg-red-50' : 'border-gray-300'
+            }`}
+            placeholder="Data final"
+            title="Data final (YYYY-MM-DD)"
+          />
+          <label className="text-xs text-gray-500 mt-1">Até</label>
+        </div>
+        {from && to && from > to && (
+          <div className="text-red-600 text-xs mt-1">
+            Data inicial deve ser anterior à final
+          </div>
+        )}
         <Button type="submit" className="text-sm px-3 py-1">{t('admin.consultations.filter')}</Button>
         {(status||userId||from||to) && <Button type="button" variant="secondary" onClick={()=>{ setStatus(''); setUserId(''); setFrom(''); setTo(''); setPage(1); void loadConsultations(); }} className="text-sm px-3 py-1">{t('admin.consultations.clear')}</Button>}
         <Button type="button" variant="secondary" onClick={exportCsv} className="text-sm px-3 py-1">{t('admin.consultations.export.csv')}</Button>

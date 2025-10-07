@@ -67,7 +67,13 @@ export const useMealLogsQuery = (days = 7) => {
 
       const endpoint = API.MEAL_LOGS;
       const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao carregar refeições');
@@ -92,7 +98,13 @@ export const useMealSummaryQuery = (days = 7) => {
     queryFn: async (): Promise<SummaryResponse> => {
       const endpoint = API.MEAL_SUMMARY;
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
-      const data = await response.json();
+      
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
       
       if (!response.ok) {
         throw new Error(data.error || 'Falha ao carregar resumo de refeições');
@@ -130,7 +142,13 @@ export const useMealLogs = (days = 7) => {
         body: JSON.stringify(input),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       if (!response.ok) {
         throw new Error(data.error || 'Erro ao registrar');
       }
@@ -164,7 +182,13 @@ export const useMealLogs = (days = 7) => {
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
+      let result;
+      try {
+        result = await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
+      
       if (!response.ok) {
         throw new Error(result.error || 'Erro ao atualizar');
       }
@@ -185,7 +209,12 @@ export const useMealLogs = (days = 7) => {
       });
 
       if (!response.ok) {
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (e) {
+          throw new Error('Erro ao excluir');
+        }
         throw new Error(data.error || 'Erro ao excluir');
       }
 

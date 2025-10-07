@@ -72,7 +72,12 @@ export function useNotifications(onlyUnread = false, limit = 20, offset = 0) {
         } catch {/* ignore */}
         throw new Error(`Failed to fetch notifications (${response.status})${detail ? ': ' + detail : ''}`);
       }
-      return response.json();
+      
+      try {
+        return await response.json();
+      } catch (e) {
+        throw new Error('Resposta inválida do servidor');
+      }
     },
     enabled: !!user,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -118,11 +123,38 @@ export function useSendNotification() {
       });
       
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to send notification');
+        // Tratamento específico para diferentes códigos de status
+        if (response.status === 500) {
+          console.error('Server error sending notification:', response.status);
+          throw new Error('Erro interno do servidor. Tente novamente em alguns instantes.');
+        }
+        
+        if (response.status === 400) {
+          try {
+            const error = await response.json();
+            throw new Error(error.error || 'Dados da notificação inválidos');
+          } catch (jsonError) {
+            throw new Error('Dados da notificação inválidos');
+          }
+        }
+        
+        if (response.status === 401 || response.status === 403) {
+          throw new Error('Sem permissão para enviar notificações');
+        }
+        
+        try {
+          const error = await response.json();
+          throw new Error(error.error || `Erro ${response.status}: ${response.statusText}`);
+        } catch (jsonError) {
+          throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
       }
       
-      return response.json();
+      try {
+        return await response.json();
+      } catch (jsonError) {
+        throw new Error('Resposta inválida do servidor');
+      }
     },
   });
 }
