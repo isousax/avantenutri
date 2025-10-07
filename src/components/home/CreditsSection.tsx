@@ -22,7 +22,7 @@ const CreditsSection: React.FC = () => {
     features: string[];
     cta?: string;
     ctaVariant?: 'primary' | 'outline';
-    type?: 'avaliacao' | 'reavaliacao';
+    type?: 'avaliacao' | 'reavaliacao' | 'only_diet';
   }> = [
     {
       id: 'free',
@@ -50,6 +50,21 @@ const CreditsSection: React.FC = () => {
       cta: t('consultations.credits.buy.avaliacao'),
       ctaVariant: 'primary',
       type: 'avaliacao'
+    },
+    {
+      id: 'only_diet',
+      title: t('home.credits.only_diet.title'),
+      subtitle: t('home.credits.only_diet.subtitle'),
+      desc: t('home.credits.only_diet.desc'),
+      features: [
+        'home.credits.only_diet.f1',
+        'home.credits.only_diet.f2',
+        'home.credits.only_diet.f3',
+        'home.credits.only_diet.f4'
+      ].map(k => t(k as any)),
+      cta: t('consultations.credits.buy.only_diet'),
+      ctaVariant: 'outline',
+      type: 'only_diet'
     },
     {
       id: 'reavaliacao',

@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/useAuth';
 
 export interface ConsultationCredit {
   id: string;
-  type: 'avaliacao_completa' | 'reavaliacao';
+  type: 'avaliacao_completa' | 'reavaliacao' | 'only_diet';
   status: 'available' | 'used' | 'expired';
   payment_id?: string;
   consultation_id?: string;

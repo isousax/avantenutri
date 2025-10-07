@@ -3,7 +3,7 @@ import { API } from '../config/api';
 import { useEffect, useRef } from 'react';
 
 export interface ConsultationPricingEntry {
-  type: 'avaliacao_completa' | 'reavaliacao' | string;
+  type: 'avaliacao_completa' | 'reavaliacao' | 'only_diet' | string;
   amount_cents: number;
   currency: string;
   updated_at?: string;

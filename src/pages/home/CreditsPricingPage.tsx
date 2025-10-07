@@ -27,11 +27,11 @@ const CreditsPricingPage: React.FC = () => {
   };
 
   // Lógica de "desconto" artificial baseada no preço atual
-  // Estratégia: mostrar preço riscado = preço_atual * fator (ex: 1.15 avaliação, 1.12 reavaliação)
+  // Estratégia: mostrar preço riscado = preço_atual * fator (ex: 1.15 avaliação, 1.12 reavaliação, 1.10 only_diet)
   // Render apenas quando dados carregados para evitar flash inconsistente.
   const fakeOriginal = (type: string, currentCents?: number): number | undefined => {
     if (!currentCents) return undefined;
-    const factor = type === 'avaliacao_completa' ? 1.15 : 1.12;
+    const factor = type === 'avaliacao_completa' ? 1.15 : type === 'only_diet' ? 1.10 : 1.12;
     return Math.round(currentCents * factor);
   };
 
@@ -49,7 +49,7 @@ const CreditsPricingPage: React.FC = () => {
           <span className="text-gray-500">Última atualização: {new Date(data.pricing[0]?.updated_at || Date.now()).toLocaleString('pt-BR')}</span>
         )}
       </div>
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid lg:grid-cols-3 md:grid-cols-2 gap-6">
   <Card className={`p-6 flex flex-col relative transition-all duration-300 border rounded-xl ${pricingMap['avaliacao_completa'] ? 'border-green-200 shadow-sm' : 'border-gray-200'} ${pricingMap['avaliacao_completa']?.amount_cents ? 'after:absolute after:inset-0 after:rounded-xl after:pointer-events-none after:border after:border-green-300/40 motion-safe:after:animate-[pulse_3s_ease-in-out_infinite]' : ''}`}>        
           <h2 className="text-xl font-semibold text-green-800 mb-1">{t('home.credits.avaliacao.title')}</h2>
           <p className="text-sm text-green-600 mb-4">{t('home.credits.avaliacao.subtitle')}</p>
@@ -85,6 +85,43 @@ const CreditsPricingPage: React.FC = () => {
             <Button className="w-full">{t('consultations.credits.buy.avaliacao')}</Button>
           </Link>
         </Card>
+        
+  <Card className={`p-6 flex flex-col relative transition-all duration-300 border rounded-xl ${pricingMap['only_diet'] ? 'border-blue-200 shadow-sm' : 'border-gray-200'} ${pricingMap['only_diet']?.amount_cents ? 'after:absolute after:inset-0 after:rounded-xl after:pointer-events-none after:border after:border-blue-300/40 motion-safe:after:animate-[pulse_3s_ease-in-out_infinite]' : ''}`}>        
+          <h2 className="text-xl font-semibold text-green-800 mb-1">{t('home.credits.only_diet.title')}</h2>
+          <p className="text-sm text-green-600 mb-4">{t('home.credits.only_diet.subtitle')}</p>
+          <div className="mb-4">
+            {isLoading ? (
+              <Skeleton className="h-6 w-20" />
+            ) : (
+              <div className="flex items-center gap-3 flex-wrap">
+                {(() => { const orig = fakeOriginal('only_diet', pricingMap['only_diet']?.amount_cents); const curr = pricingMap['only_diet']?.amount_cents; if (orig && curr) { const pct = Math.round(((orig - curr) / orig) * 100); return (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs line-through text-gray-400">{format(orig, pricingMap['only_diet']?.currency)}</span>
+                    <span className="text-[10px] font-semibold text-blue-700 bg-blue-50 border border-blue-200 px-1.5 py-0.5 rounded">{t('home.credits.promo.percent',{percent:pct})}</span>
+                  </div>
+                ); } return null; })()}
+                <span className="inline-block bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full shadow-sm">
+                  {format(pricingMap['only_diet']?.amount_cents, pricingMap['only_diet']?.currency)}
+                </span>
+                {fakeOriginal('only_diet', pricingMap['only_diet']?.amount_cents) && (
+                  <Tooltip content={t('home.credits.promo.tooltip')}>
+                    <span className="text-[10px] uppercase tracking-wide text-blue-600 font-medium cursor-help">{t('home.credits.promo.label')}</span>
+                  </Tooltip>
+                )}
+              </div>
+            )}
+          </div>
+          <ul className="text-sm text-gray-700 space-y-2 mb-6">
+            <li>• {t('home.credits.only_diet.f1')}</li>
+            <li>• {t('home.credits.only_diet.f2')}</li>
+            <li>• {t('home.credits.only_diet.f3')}</li>
+            <li>• {t('home.credits.only_diet.f4')}</li>
+          </ul>
+          <Link to="/agendar-consulta" className="mt-auto">
+            <Button variant="secondary" className="w-full">{t('consultations.credits.buy.only_diet')}</Button>
+          </Link>
+        </Card>
+
   <Card className={`p-6 flex flex-col relative transition-all duration-300 border rounded-xl ${pricingMap['reavaliacao'] ? 'border-emerald-200 shadow-sm' : 'border-gray-200'} ${pricingMap['reavaliacao']?.amount_cents ? 'after:absolute after:inset-0 after:rounded-xl after:pointer-events-none after:border after:border-emerald-300/40 motion-safe:after:animate-[pulse_3s_ease-in-out_infinite]' : ''}`}>        
           <h2 className="text-xl font-semibold text-green-800 mb-1">{t('home.credits.reavaliacao.title')}</h2>
           <p className="text-sm text-green-600 mb-4">{t('home.credits.reavaliacao.subtitle')}</p>

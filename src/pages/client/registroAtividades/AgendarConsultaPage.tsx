@@ -210,6 +210,12 @@ const AgendarConsultaPage: React.FC = () => {
     e.preventDefault();
 
     if (etapa === 1) {
+      // Verificar se tipo de consulta foi selecionado
+      if (!formData.tipoConsulta) {
+        push({ type: 'error', message: 'Por favor, selecione um tipo de consulta.' });
+        return;
+      }
+
       // Verificar se usuário tem créditos antes de avançar
       const needsCredit = formData.tipoConsulta === 'avaliacao_completa' || formData.tipoConsulta === 'reavaliacao';
       const availableCredits = creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
@@ -220,6 +226,12 @@ const AgendarConsultaPage: React.FC = () => {
       }
       
       setEtapa(2);
+      return;
+    }
+
+    // Etapa 2 - verificar se data e horário foram selecionados
+    if (!formData.data || !formData.horario) {
+      push({ type: 'error', message: 'Por favor, selecione uma data e horário para sua consulta.' });
       return;
     }
 
@@ -626,7 +638,10 @@ const AgendarConsultaPage: React.FC = () => {
                   <Button 
                     type="submit" 
                     className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
-                    disabled={etapa === 2 && (!formData.data || !formData.horario)}
+                    disabled={
+                      (etapa === 1 && !formData.tipoConsulta) ||
+                      (etapa === 2 && (!formData.data || !formData.horario))
+                    }
                   >
                     Continuar
                   </Button>

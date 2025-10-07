@@ -62,6 +62,8 @@ export const API = {
   BILLING_PAY: `${API_AUTH_BASE}/billing/pay`, // POST process payment
   BILLING_STATUS: `${API_AUTH_BASE}/billing/status`, // GET payment status
   BILLING_PAYMENTS: `${API_AUTH_BASE}/billing/payments`, // GET list user payments
+  billingPaymentDetails: (id: string) => `${API_AUTH_BASE}/billing/payments/${id}/details`, // GET payment details
+  billingPaymentReceipt: (id: string) => `${API_AUTH_BASE}/billing/payments/${id}/receipt`, // GET download receipt
   CONSULTATION_CREDITS: `${API_AUTH_BASE}/consultations/credits`, // GET list credits
   CONSULTATION_CREDITS_SUMMARY: `${API_AUTH_BASE}/consultations/credits/summary`, // GET credits summary
   CONSULTATION_PRICING_PUBLIC: `${API_AUTH_BASE}/consultations/pricing`, // Public pricing list

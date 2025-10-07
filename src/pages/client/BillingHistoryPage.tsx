@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { useI18n } from '../../i18n';
 import { SEO } from '../../components/comum/SEO';
 import { ArrowLeft, Calendar } from '../../components/icons';
@@ -11,6 +11,8 @@ import { shouldShowSkeleton } from '../../utils/loadingHelpers';
 import Button from '../../components/ui/Button';
 import { useNavigate } from 'react-router-dom';
 import { useBillingHistory } from '../../hooks/useBillingHistory';
+import { useDownloadReceipt } from '../../hooks/useDownloadReceipt';
+import { PaymentDetailsModal } from '../../components/billing/PaymentDetailsModal';
 
 export default function BillingHistoryPage(){
   const { locale, t } = useI18n();
@@ -18,7 +20,25 @@ export default function BillingHistoryPage(){
   // const { push } = useToast();
   const navigate = useNavigate();
   const { payments, loading, error, refetch, isFetching } = useBillingHistory();
+  const { downloadReceipt } = useDownloadReceipt();
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
   const load = useCallback(()=> { refetch(); }, [refetch]);
+
+  const handleViewDetails = (paymentId: string) => {
+    setSelectedPaymentId(paymentId);
+    setIsModalOpen(true);
+  };
+
+  const handleDownloadReceipt = (paymentId: string) => {
+    downloadReceipt(paymentId);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedPaymentId(null);
+  };
 
   function fmtCurrency(cents:number){
     return new Intl.NumberFormat(locale==='pt'?'pt-BR':'en-US', { 
@@ -254,12 +274,15 @@ export default function BillingHistoryPage(){
                         <button 
                           className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                           title="Ver detalhes"
+                          onClick={() => handleViewDetails(payment.id)}
                         >
                           <Eye size={16} />
                         </button>
                         <button 
                           className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                           title="Baixar recibo"
+                          onClick={() => handleDownloadReceipt(payment.id)}
+                          disabled={!['approved', 'completed', 'paid'].includes(payment.status.toLowerCase())}
                         >
                           <Download size={16} />
                         </button>
@@ -336,6 +359,13 @@ export default function BillingHistoryPage(){
             </div>
           </div>
         </Card>
+
+        {/* Modal de Detalhes */}
+        <PaymentDetailsModal
+          paymentId={selectedPaymentId}
+          isOpen={isModalOpen}
+          onClose={closeModal}
+        />
       </div>
     </div>
   );
