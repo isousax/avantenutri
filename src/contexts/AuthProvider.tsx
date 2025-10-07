@@ -504,18 +504,20 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         // detecta rememberMe pela existência no sessionStorage (espelho) – se não existir assume rememberMe=true
         const sessionAccess = sessionStorage.getItem(STORAGE_ACCESS_KEY);
         const rememberFlag = !sessionAccess; // se não há espelho, é uma sessão persistente (rememberMe)
-        saveUserToStorage(derived, rememberFlag);
 
         if (isLeaderRef.current && refresh) {
           scheduleRefreshLeader(access, refresh, expiresAtIso, rememberFlag);
         }
-        // Chamada de sincronização não bloqueante
+
+        // Chamada de sincronização não bloqueante: tenta obter /me e só então persiste o usuário
         try {
-          void fetch(API.ME, {
-            method: "GET",
-            headers: { Authorization: `Bearer ${access}` },
-          })
-            .then(async (r) => {
+          void (async () => {
+            try {
+              const r = await fetch(API.ME, {
+                method: "GET",
+                headers: { Authorization: `Bearer ${access}` },
+              });
+
               if (!r.ok) {
                 if (r.status === 401) {
                   const payload = await (async () => {
@@ -538,8 +540,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     }
                   }
                 }
+                // Persist derived user as fallback quando /me falhar
+                try {
+                  saveUserToStorage(derived, rememberFlag);
+                } catch (syncErr) { console.warn('[AuthProvider] /me sync parse failed', syncErr); }
                 return;
               }
+
               const me = await (async () => {
                 try {
                   return await r.json();
@@ -547,24 +554,41 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   return null;
                 }
               })();
+
               if (me && typeof me === "object") {
                 const updated: User = {
                   id: (me.id || me.user_id || derived.id) as string,
                   email: (me.email || derived.email) as string,
                   role: normalizeRole(me.role || derived.role),
-                  full_name: (me.full_name ||
-                    me.name ||
-                    derived.full_name) as string,
-                  display_name: (me.display_name ?? me.full_name ?? me.name ?? derived.display_name ?? "") as string,
+                  full_name: (me.full_name || me.name || derived.full_name) as string,
+                  // Prefer the token-derived/user display_name if /me doesn't provide one
+                  display_name: (me.display_name ?? derived.display_name ?? me.full_name ?? me.name ?? "") as string,
                   phone: (me.phone ?? me.phone_number ?? me.tel ?? derived.phone ?? "") as string,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
+                return;
               }
-            })
-            .catch(() => {});
-        } catch (err) {
-          console.warn("[AuthProvider] sync failed", err);
+
+              // se /me não retornou objeto válido, persiste derived como fallback
+              saveUserToStorage(derived, rememberFlag);
+            } catch (networkErr) {
+              // Em caso de erro de rede, persiste derived como fallback
+              console.warn('[AuthProvider] /me sync failed', networkErr);
+              try {
+                saveUserToStorage(derived, rememberFlag);
+              } catch (saveErr) {
+                console.warn('[AuthProvider] failed to save derived user', saveErr);
+              }
+            }
+          })();
+        } catch (outerErr) {
+          console.warn("[AuthProvider] sync failed", outerErr);
+          try {
+            saveUserToStorage(derived, rememberFlag);
+          } catch (saveErr) {
+            console.warn('[AuthProvider] failed to save derived user', saveErr);
+          }
         }
         return;
       }
@@ -777,17 +801,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           return null;
         }
       })();
-      if (data && typeof data === "object") {
+          if (data && typeof data === "object") {
         // Atualiza user se houver diferenças relevantes
         const updated: User = {
           id: (data.id || data.user_id || user?.id || "") as string,
           email: (data.email || user?.email || "") as string,
           role: normalizeRole((data.role || user?.role) as string),
-          full_name: (data.full_name ||
-            data.name ||
-            user?.full_name ||
-            "") as string,
-          display_name: (data.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
+          full_name: (data.full_name || data.name || user?.full_name || "") as string,
+          // keep existing user.display_name when /me doesn't provide display_name
+          display_name: (data.display_name ?? user?.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
           phone: (data.phone ?? user?.phone ?? "") as string,
         };
         const changed = JSON.stringify(updated) !== JSON.stringify(user);
@@ -975,7 +997,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     full_name: (meData.full_name ||
                       meData.name ||
                       userObj.full_name) as string,
-                    display_name: (meData.display_name ?? meData.full_name ?? meData.name ?? userObj.full_name) as string,
+                    display_name: (meData.display_name ?? userObj.display_name ?? meData.full_name ?? meData.name ?? userObj.full_name) as string,
                     phone: (meData.phone ?? userObj.phone ?? "") as string,
                   } as User;
                   setUser(updated);

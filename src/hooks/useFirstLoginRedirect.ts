@@ -18,7 +18,7 @@ export function useFirstLoginRedirect() {
     if (shouldRedirect) {
       // Show dismissible prompt for questionnaire
       const shouldRedirectToQuestionnaire = window.confirm(
-        'Bem-vindo(a)! Para uma melhor experiência, recomendamos que você complete o questionário inicial. Isso nos ajudará a personalizar seu atendimento.\n\nDeseja preencher agora?'
+        'Bem-vindo(aa)! Para uma melhor experiência, recomendamos que você complete o questionário inicial. Isso nos ajudará a personalizar seu atendimento.\n\nDeseja preencher agora?'
       );
 
       if (shouldRedirectToQuestionnaire) {
