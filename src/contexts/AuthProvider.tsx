@@ -1345,6 +1345,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             merged,
             !sessionStorage.getItem(STORAGE_ACCESS_KEY)
           );
+          // Ensure server canonical /me is fetched and persisted (in case backend changed display_name stored in users table)
+          try {
+            void contextValue.syncUser?.();
+          } catch (err) {
+            console.warn('[AuthProvider] syncUser after updateProfile failed', err);
+          }
         }
         return { ok: true, updated: updatedPartial } as const;
       } catch {
