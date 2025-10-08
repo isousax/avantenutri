@@ -343,7 +343,7 @@ const AdminLayout: React.FC = () => {
               <span className="hidden lg:inline">{t('admin.layout.searchGo')}</span>
               <kbd className="text-[10px] px-1 py-0.5 bg-gray-100 rounded border">Ctrl+K</kbd>
             </button>
-            <Link to="/dashboard" className="text-xs text-gray-500 hover:text-green-700 hidden sm:inline">{t('admin.layout.backToApp')}</Link>
+            <Link to="/dashboard" className="text-xs text-gray-500 hover:text-green-700 ">{t('admin.layout.backToApp')}</Link>
           </div>
         </header>
         <main className="p-3 md:p-4 lg:p-6 flex-1 overflow-y-auto">
