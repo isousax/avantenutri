@@ -529,7 +529,7 @@ const AgendarConsultaPage: React.FC = () => {
 
         {/* Resumo da Consulta Selecionada */}
         <Card className="p-5 bg-gradient-to-r from-blue-50 to-purple-50 border-0">
-          <div className="flex items-start gap-4 mb-4">
+          <div className="flex items-center gap-4 mb-4">
             <div
               className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${selectedTipo?.color} rounded-xl flex items-center justify-center flex-shrink-0`}
             >
@@ -539,15 +539,6 @@ const AgendarConsultaPage: React.FC = () => {
               <h3 className="font-bold text-gray-900 sm:text-lg">
                 {t(selectedTipo?.labelKey as TranslationKey)}
               </h3>
-            </div>
-            <div className="text-right">
-              <div className="sm:text-lg font-bold text-green-600">
-                {priceMap[formData.tipoConsulta] ||
-                  t(selectedTipo?.priceKey as TranslationKey)}
-              </div>
-              <div className="text-xs text-gray-500">
-                {t(selectedTipo?.durationKey as TranslationKey)}
-              </div>
             </div>
           </div>
 
@@ -684,26 +675,15 @@ const AgendarConsultaPage: React.FC = () => {
             {etapa === 1 ? renderEtapa1() : renderEtapa2()}
 
             {/* Botões de Navegação */}
-            <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200">
+            <div className="flex flex-col items-center gap-3 pt-6 mt-6 border-t border-gray-200">
               {etapa === 2 ? (
                 <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    noFocus
-                    noBorder
-                    noBackground
-                    onClick={() => setEtapa(1)}
-                    className="flex-1"
-                  >
-                    Voltar
-                  </Button>
                   <Button
                     type="submit"
                     noBackground
                     noBorder
                     noFocus
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700 focus:outline-none"
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700 focus:outline-none"
                     disabled={submitting}
                   >
                     {submitting ? (
@@ -715,26 +695,23 @@ const AgendarConsultaPage: React.FC = () => {
                       "Confirmar Agendamento"
                     )}
                   </Button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEtapa(1)}
+                    className="p-0 m-0 bg-transparent text-sm font-medium text-green-700 hover:text-green-900 hover:scale-105 focus:outline-none"
+                  >
+                    Voltar
+                  </button>
                 </>
               ) : (
                 <>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    noFocus
-                    noBorder
-                    noBackground
-                    onClick={() => navigate("/dashboard")}
-                    className="flex-1"
-                  >
-                    Cancelar
-                  </Button>
                   <Button
                     type="submit"
                     noBackground
                     noBorder
                     noFocus
-                    className="flex-1 text-white hover:text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
+                    className="w-full text-white hover:text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
                     disabled={
                       (etapa === 1 && !formData.tipoConsulta) ||
                       (etapa === 2 && (!formData.data || !formData.horario))
