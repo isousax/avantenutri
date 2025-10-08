@@ -1225,9 +1225,6 @@ const DashboardPage: React.FC = () => {
                               </span>
                             </>
                           }
-                          valueMeta={
-                            dailyGoalMl ? `/ ${dailyGoalMl} ml` : undefined
-                          }
                           description={
                             parts.length ? parts.join(" • ") : "Sem meta"
                           }

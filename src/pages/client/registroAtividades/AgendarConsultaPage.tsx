@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import type { TranslationKey } from '../../../types/i18n';
+import type { TranslationKey } from "../../../types/i18n";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -22,8 +22,9 @@ import {
   Star,
   Heart,
   Shield,
-  Video
+  Video,
 } from "lucide-react";
+import { API } from "../../../config/api";
 
 // Componente para slots disponíveis
 interface AvailableSlotsProps {
@@ -32,27 +33,35 @@ interface AvailableSlotsProps {
   onTimeSelect: (time: string) => void;
 }
 
-const AvailableSlots: React.FC<AvailableSlotsProps> = ({ date, selectedTime, onTimeSelect }) => {
-  const [slots, setSlots] = useState<Array<{ start: string; end: string; taken: boolean }>>([]);
+const AvailableSlots: React.FC<AvailableSlotsProps> = ({
+  date,
+  selectedTime,
+  onTimeSelect,
+}) => {
+  const [slots, setSlots] = useState<
+    Array<{ start: string; end: string; taken: boolean }>
+  >([]);
   const [loading, setLoading] = useState(false);
   const { authenticatedFetch } = useAuth();
 
   React.useEffect(() => {
     if (!date) return;
-    
+
     const loadSlots = async () => {
       setLoading(true);
       try {
-        const response = await authenticatedFetch(`/consultations/available?from=${date}&to=${date}`);
+        const response = await authenticatedFetch(
+          `${API.CONSULTATION_AVAILABLE_SLOTS}?from=${date}&to=${date}`
+        );
         const data = await response.json();
-        
+
         if (data.days && data.days[0]) {
           setSlots(data.days[0].slots || []);
         } else {
           setSlots([]);
         }
       } catch (error) {
-        console.error('Erro ao carregar slots:', error);
+        console.error("Erro ao carregar slots:", error);
         setSlots([]);
       } finally {
         setLoading(false);
@@ -82,10 +91,10 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({ date, selectedTime, onT
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
       {slots.map((slot, index) => {
-        const timeString = slot.start.split('T')[1].substring(0, 5);
+        const timeString = slot.start.split("T")[1].substring(0, 5);
         const isSelected = selectedTime === timeString;
         const isAvailable = !slot.taken;
-        
+
         return (
           <button
             key={index}
@@ -94,10 +103,10 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({ date, selectedTime, onT
             onClick={() => isAvailable && onTimeSelect(timeString)}
             className={`p-3 rounded-lg border text-sm font-medium transition-all ${
               isSelected
-                ? 'border-blue-500 bg-blue-500 text-white'
+                ? "border-blue-500 bg-blue-500 text-white"
                 : isAvailable
-                ? 'border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50'
-                : 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
+                : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
           >
             {timeString}
@@ -130,14 +139,15 @@ const AgendarConsultaPage: React.FC = () => {
   const [showCreditModal, setShowCreditModal] = useState(false);
 
   function getErrorMessage(err: unknown) {
-    if (!err) return '';
-    if (typeof err === 'string') return err;
-    if (typeof err === 'object' && err !== null && 'message' in err) return String((err as { message?: unknown }).message || '');
+    if (!err) return "";
+    if (typeof err === "string") return err;
+    if (typeof err === "object" && err !== null && "message" in err)
+      return String((err as { message?: unknown }).message || "");
     return String(err);
   }
 
   // explicit union for consulta types
-  type TipoConsulta = 'avaliacao_completa' | 'reavaliacao';
+  type TipoConsulta = "avaliacao_completa" | "reavaliacao";
 
   const tiposConsulta: ReadonlyArray<{
     value: TipoConsulta;
@@ -149,54 +159,72 @@ const AgendarConsultaPage: React.FC = () => {
   }> = [
     {
       value: "avaliacao_completa",
-      labelKey: 'consultations.schedule.type.avaliacao_completa.label',
-      durationKey: 'consultations.schedule.type.avaliacao_completa.duration',
-      priceKey: 'consultations.schedule.type.avaliacao_completa.price',
+      labelKey: "consultations.schedule.type.avaliacao_completa.label",
+      durationKey: "consultations.schedule.type.avaliacao_completa.duration",
+      priceKey: "consultations.schedule.type.avaliacao_completa.price",
       icon: Star,
-      color: "from-blue-500 to-cyan-500"
+      color: "from-blue-500 to-cyan-500",
     },
     {
       value: "reavaliacao",
-      labelKey: 'consultations.schedule.type.reavaliacao.label',
-      durationKey: 'consultations.schedule.type.reavaliacao.duration',
-      priceKey: 'consultations.schedule.type.reavaliacao.price',
+      labelKey: "consultations.schedule.type.reavaliacao.label",
+      durationKey: "consultations.schedule.type.reavaliacao.duration",
+      priceKey: "consultations.schedule.type.reavaliacao.price",
       icon: Heart,
-      color: "from-purple-500 to-pink-500"
+      color: "from-purple-500 to-pink-500",
     },
   ];
 
   const { data: creditsSummary } = useConsultationCreditsSummary();
   const { data: pricingData } = useConsultationPricing();
   const { items: consultationHistory } = useConsultations();
-  
+
   // Verificar elegibilidade para reavaliação
   const canUseReavaliacao = useMemo(() => {
     if (!consultationHistory || consultationHistory.length === 0) return false;
-    
+
     const now = new Date();
-    const twelveMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 12, now.getDate());
-    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate());
-    
+    const twelveMonthsAgo = new Date(
+      now.getFullYear(),
+      now.getMonth() - 12,
+      now.getDate()
+    );
+    const sixMonthsAgo = new Date(
+      now.getFullYear(),
+      now.getMonth() - 6,
+      now.getDate()
+    );
+
     // Verificar qualquer consulta nos últimos 12 meses
-    const hasRecentConsultation = consultationHistory.some(consultation => {
+    const hasRecentConsultation = consultationHistory.some((consultation) => {
       const consultationDate = new Date(consultation.scheduled_at);
-      return consultationDate >= twelveMonthsAgo && consultation.status === 'completed';
+      return (
+        consultationDate >= twelveMonthsAgo &&
+        consultation.status === "completed"
+      );
     });
-    
+
     // Verificar reavaliação nos últimos 6 meses
-    const hasRecentReavaliacao = consultationHistory.some(consultation => {
+    const hasRecentReavaliacao = consultationHistory.some((consultation) => {
       const consultationDate = new Date(consultation.scheduled_at);
-      return consultation.type === 'reavaliacao' && consultationDate >= sixMonthsAgo && consultation.status === 'completed';
+      return (
+        consultation.type === "reavaliacao" &&
+        consultationDate >= sixMonthsAgo &&
+        consultation.status === "completed"
+      );
     });
-    
+
     return hasRecentConsultation || hasRecentReavaliacao;
   }, [consultationHistory]);
-  
+
   const priceMap = useMemo(() => {
-    const map: Record<string,string> = {};
+    const map: Record<string, string> = {};
     if (pricingData?.pricing) {
       for (const p of pricingData.pricing) {
-        const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: p.currency || 'BRL' });
+        const formatter = new Intl.NumberFormat("pt-BR", {
+          style: "currency",
+          currency: p.currency || "BRL",
+        });
         map[p.type] = formatter.format(p.amount_cents / 100);
       }
     }
@@ -209,26 +237,35 @@ const AgendarConsultaPage: React.FC = () => {
     if (etapa === 1) {
       // Verificar se tipo de consulta foi selecionado
       if (!formData.tipoConsulta) {
-        push({ type: 'error', message: 'Por favor, selecione um tipo de consulta.' });
+        push({
+          type: "error",
+          message: "Por favor, selecione um tipo de consulta.",
+        });
         return;
       }
 
       // Verificar se usuário tem créditos antes de avançar
-      const needsCredit = formData.tipoConsulta === 'avaliacao_completa' || formData.tipoConsulta === 'reavaliacao';
-      const availableCredits = creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
-      
+      const needsCredit =
+        formData.tipoConsulta === "avaliacao_completa" ||
+        formData.tipoConsulta === "reavaliacao";
+      const availableCredits =
+        creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
+
       if (needsCredit && availableCredits <= 0) {
         setShowCreditModal(true);
         return;
       }
-      
+
       setEtapa(2);
       return;
     }
 
     // Etapa 2 - verificar se data e horário foram selecionados
     if (!formData.data || !formData.horario) {
-      push({ type: 'error', message: 'Por favor, selecione uma data e horário para sua consulta.' });
+      push({
+        type: "error",
+        message: "Por favor, selecione uma data e horário para sua consulta.",
+      });
       return;
     }
 
@@ -244,13 +281,20 @@ const AgendarConsultaPage: React.FC = () => {
   const processBooking = async () => {
     setSubmitting(true);
     setSubmitError(null);
-    
+
     try {
       // Credit check
-      if (formData.tipoConsulta === 'avaliacao_completa' || formData.tipoConsulta === 'reavaliacao') {
-        const available = creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
+      if (
+        formData.tipoConsulta === "avaliacao_completa" ||
+        formData.tipoConsulta === "reavaliacao"
+      ) {
+        const available =
+          creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
         if (available <= 0) {
-          push({ type: 'error', message: t('consultations.credits.required.cta') });
+          push({
+            type: "error",
+            message: t("consultations.credits.required.cta"),
+          });
           return;
         }
       }
@@ -265,20 +309,25 @@ const AgendarConsultaPage: React.FC = () => {
         }
         return { dataIso: new Date(date + "T" + time + ":00Z").toISOString() };
       })();
-      
+
       await create({ scheduledAt: dataIso, type: formData.tipoConsulta });
-      push({ type: 'success', message: t('consultations.status.scheduled') });
+      push({ type: "success", message: t("consultations.status.scheduled") });
       navigate("/dashboard");
     } catch (e: unknown) {
-  const raw = getErrorMessage(e);
+      const raw = getErrorMessage(e);
       let mapped: string | null = null;
-      if (raw.includes('slot_taken')) mapped = t('consultations.error.slotTaken');
-      else if (raw.includes('blocked_slot')) mapped = t('consultations.error.blocked');
-      else if (raw.includes('slot_not_available')) mapped = t('consultations.error.notAvailable');
-      else if (raw.includes('questionnaire_required')) mapped = 'É necessário completar o questionário antes de agendar uma consulta.';
-      const finalMsg = mapped || t('consultations.schedule.error');
+      if (raw.includes("slot_taken"))
+        mapped = t("consultations.error.slotTaken");
+      else if (raw.includes("blocked_slot"))
+        mapped = t("consultations.error.blocked");
+      else if (raw.includes("slot_not_available"))
+        mapped = t("consultations.error.notAvailable");
+      else if (raw.includes("questionnaire_required"))
+        mapped =
+          "É necessário completar o questionário antes de agendar uma consulta.";
+      const finalMsg = mapped || t("consultations.schedule.error");
       setSubmitError(finalMsg);
-      push({ type: 'error', message: finalMsg });
+      push({ type: "error", message: finalMsg });
     } finally {
       setSubmitting(false);
     }
@@ -291,25 +340,27 @@ const AgendarConsultaPage: React.FC = () => {
 
   const purchaseCredit = async (type: TipoConsulta) => {
     try {
-      const data = await authenticatedFetch('/billing/intent', { 
-        method: 'POST', 
-        headers: { 'Content-Type': 'application/json' }, 
-        body: JSON.stringify({ type, display_name: user?.display_name }) 
-      }) as { checkout_url?: string; error?: string };
-      
+      const data = (await authenticatedFetch("/billing/intent", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ type, display_name: user?.display_name }),
+      })) as { checkout_url?: string; error?: string };
+
       if (!data?.checkout_url) {
-        push({ type: 'error', message: data?.error || 'Falha ao iniciar pagamento'});
+        push({
+          type: "error",
+          message: data?.error || "Falha ao iniciar pagamento",
+        });
         return;
       }
       window.location.href = data.checkout_url;
     } catch (err: unknown) {
-  const msg = getErrorMessage(err);
-  push({ type: 'error', message: msg || 'Erro inesperado'});
+      const msg = getErrorMessage(err);
+      push({ type: "error", message: msg || "Erro inesperado" });
     }
   };
 
   const renderEtapa1 = () => {
-    
     return (
       <div className="space-y-6">
         {/* Header da Etapa */}
@@ -317,26 +368,31 @@ const AgendarConsultaPage: React.FC = () => {
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Calendar size={28} className="text-white" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Escolha o Tipo de Consulta</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Escolha o Tipo de Consulta
+          </h2>
         </div>
 
         {/* Cards de Tipo de Consulta */}
         <div className="grid gap-4">
           {tiposConsulta.map((tipo) => {
             const TipoIcon = tipo.icon;
-            const needsCredit = tipo.value === 'avaliacao_completa' || tipo.value === 'reavaliacao';
-            const availableCredits = creditsSummary?.summary?.[tipo.value]?.available || 0;
+            const needsCredit =
+              tipo.value === "avaliacao_completa" ||
+              tipo.value === "reavaliacao";
+            const availableCredits =
+              creditsSummary?.summary?.[tipo.value]?.available || 0;
             const hasCredits = needsCredit && availableCredits > 0;
-            const isReavaliacao = tipo.value === 'reavaliacao';
+            const isReavaliacao = tipo.value === "reavaliacao";
             const isEligible = !isReavaliacao || canUseReavaliacao;
             const isDisabled = !isEligible;
 
             return (
-              <Card 
+              <Card
                 key={tipo.value}
                 className={`p-5 border-2 transition-all duration-300 ${
-                  isDisabled 
-                    ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed" 
+                  isDisabled
+                    ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
                     : `cursor-pointer hover:shadow-lg ${
                         formData.tipoConsulta === tipo.value
                           ? "border-blue-500 bg-blue-50 shadow-md"
@@ -345,29 +401,48 @@ const AgendarConsultaPage: React.FC = () => {
                 }`}
                 onClick={() => {
                   if (!isDisabled) {
-                    setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }));
+                    setFormData((prev) => ({
+                      ...prev,
+                      tipoConsulta: tipo.value,
+                    }));
                   }
                 }}
               >
                 <div className="flex items-start gap-4">
-                  <div className={`w-12 h-12 bg-gradient-to-br ${tipo.color} rounded-xl flex items-center justify-center flex-shrink-0 ${
-                    isDisabled ? 'opacity-50' : ''
-                  }`}>
-                    <TipoIcon size={24} className="text-white" />
+                  <div
+                    className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${
+                      tipo.color
+                    } rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      isDisabled ? "opacity-50" : ""
+                    }`}
+                  >
+                    <TipoIcon size={26} className="text-white" />
                   </div>
-                  
+
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between mb-2">
                       <div>
-                        <h3 className={`font-bold text-lg ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
+                        <h3
+                          className={`font-bold sm:text-lg ${
+                            isDisabled ? "text-gray-400" : "text-gray-900"
+                          }`}
+                        >
                           {t(tipo.labelKey)}
                         </h3>
                       </div>
                       <div className="text-right">
-                        <div className={`text-lg font-bold ${isDisabled ? 'text-gray-400' : 'text-green-600'}`}>
+                        <div
+                          className={`font-bold sm:text-lg ${
+                            isDisabled ? "text-gray-400" : "text-green-600"
+                          }`}
+                        >
                           {priceMap[tipo.value] || t(tipo.priceKey)}
                         </div>
-                        <div className={`text-sm ${isDisabled ? 'text-gray-400' : 'text-gray-500'}`}>
+                        <div
+                          className={`text-xs ${
+                            isDisabled ? "text-gray-400" : "text-gray-500"
+                          }`}
+                        >
                           {t(tipo.durationKey)}
                         </div>
                       </div>
@@ -375,23 +450,30 @@ const AgendarConsultaPage: React.FC = () => {
 
                     {/* Aviso de não elegibilidade para reavaliação */}
                     {isReavaliacao && !isEligible && (
-                      <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-sm bg-yellow-50 text-yellow-700 border border-yellow-200">
+                      <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-[11px] sm:text-sm bg-yellow-50 text-yellow-700 border border-yellow-200">
                         <AlertCircle size={16} />
-                        <span>Não elegível - {t('consultations.credits.reavaliacao.rule')}</span>
+                        <span>
+                          Não elegível -{" "}
+                          {t("consultations.credits.reavaliacao.rule")}
+                        </span>
                       </div>
                     )}
 
                     {/* Status de Créditos */}
                     {needsCredit && isEligible && (
-                      <div className={`flex items-center gap-2 mt-3 p-2 rounded-lg text-xs ${
-                        hasCredits 
-                          ? 'bg-green-50 text-green-700 border border-green-200' 
-                          : 'bg-red-50 text-red-700 border border-red-200'
-                      }`}>
+                      <div
+                        className={`flex items-center gap-2 mt-3 p-2 rounded-lg text-xs ${
+                          hasCredits
+                            ? "bg-green-50 text-green-700 border border-green-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}
+                      >
                         {hasCredits ? (
                           <>
                             <CheckCircle2 size={16} />
-                            <span>{availableCredits} crédito(s) disponível(s)</span>
+                            <span>
+                              {availableCredits} crédito(s) disponível(s)
+                            </span>
                           </>
                         ) : (
                           <>
@@ -403,9 +485,9 @@ const AgendarConsultaPage: React.FC = () => {
                     )}
 
                     {/* Regra de Reavaliação */}
-                    {tipo.value === 'reavaliacao' && isEligible && (
+                    {tipo.value === "reavaliacao" && isEligible && (
                       <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-                        {t('consultations.credits.reavaliacao.rule')}
+                        {t("consultations.credits.reavaliacao.rule")}
                       </div>
                     )}
                   </div>
@@ -419,7 +501,9 @@ const AgendarConsultaPage: React.FC = () => {
   };
 
   const renderEtapa2 = () => {
-    const selectedTipo = tiposConsulta.find(t => t.value === formData.tipoConsulta);
+    const selectedTipo = tiposConsulta.find(
+      (t) => t.value === formData.tipoConsulta
+    );
     const TipoIcon = selectedTipo?.icon || Star;
 
     return (
@@ -429,8 +513,9 @@ const AgendarConsultaPage: React.FC = () => {
           <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
             <Clock size={28} className="text-white" />
           </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Detalhes do Agendamento</h2>
-          <p className="text-gray-600">Complete as informações para finalizar seu agendamento</p>
+          <h2 className="text-xl font-bold text-gray-900 mb-2">
+            Detalhes do Agendamento
+          </h2>
         </div>
 
         {submitError && (
@@ -443,44 +528,52 @@ const AgendarConsultaPage: React.FC = () => {
         )}
 
         {/* Resumo da Consulta Selecionada */}
-        <Card className="bg-gradient-to-r from-blue-50 to-purple-50 border-0">
-          <div className="p-5">
-            <div className="flex items-center gap-4 mb-4">
-              <div className={`w-12 h-12 bg-gradient-to-br ${selectedTipo?.color} rounded-xl flex items-center justify-center`}>
-                <TipoIcon size={24} className="text-white" />
+        <Card className="p-5 bg-gradient-to-r from-blue-50 to-purple-50 border-0">
+          <div className="flex items-start gap-4 mb-4">
+            <div
+              className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${selectedTipo?.color} rounded-xl flex items-center justify-center flex-shrink-0`}
+            >
+              <TipoIcon size={24} className="text-white" />
+            </div>
+            <div className="flex-1 min-w-0  ">
+              <h3 className="font-bold text-gray-900 sm:text-lg">
+                {t(selectedTipo?.labelKey as TranslationKey)}
+              </h3>
+            </div>
+            <div className="text-right">
+              <div className="sm:text-lg font-bold text-green-600">
+                {priceMap[formData.tipoConsulta] ||
+                  t(selectedTipo?.priceKey as TranslationKey)}
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-gray-900 text-lg">
-                  {t(selectedTipo?.labelKey as TranslationKey)}
-                </h3>
-              </div>
-              <div className="text-right">
-                <div className="text-lg font-bold text-green-600">
-                  {priceMap[formData.tipoConsulta] || t(selectedTipo?.priceKey as TranslationKey)}
-                </div>
-                <div className="text-sm text-gray-500">
-                  {t(selectedTipo?.durationKey as TranslationKey)}
-                </div>
+              <div className="text-xs text-gray-500">
+                {t(selectedTipo?.durationKey as TranslationKey)}
               </div>
             </div>
+          </div>
 
-            {/* Status de Créditos */}
-            {(formData.tipoConsulta === 'avaliacao_completa' || formData.tipoConsulta === 'reavaliacao') && (
-              <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
-                <div className="flex items-center gap-2">
-                  <CreditCard size={16} className="text-blue-500" />
-                  <span className="text-sm font-medium text-gray-700">Créditos disponíveis:</span>
-                </div>
-                <span className={`font-bold ${
-                  (creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0) > 0 
-                    ? 'text-green-600' 
-                    : 'text-red-600'
-                }`}>
-                  {creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0}
+          {/* Status de Créditos */}
+          {(formData.tipoConsulta === "avaliacao_completa" ||
+            formData.tipoConsulta === "reavaliacao") && (
+            <div className="flex items-center justify-between p-3 bg-white rounded-lg border">
+              <div className="flex items-center gap-2">
+                <CreditCard size={16} className="text-blue-500" />
+                <span className="text-sm font-medium text-gray-700">
+                  Créditos disponíveis:
                 </span>
               </div>
-            )}
-          </div>
+              <span
+                className={`font-bold ${
+                  (creditsSummary?.summary?.[formData.tipoConsulta]
+                    ?.available || 0) > 0
+                    ? "text-green-600"
+                    : "text-red-600"
+                }`}
+              >
+                {creditsSummary?.summary?.[formData.tipoConsulta]?.available ||
+                  0}
+              </span>
+            </div>
+          )}
         </Card>
 
         {/* Seleção de Data e Horário */}
@@ -491,15 +584,21 @@ const AgendarConsultaPage: React.FC = () => {
               Selecione Data e Horário
             </div>
           </label>
-          
+
           {/* Seletor de Data */}
           <div className="mb-4">
             <input
               type="date"
               value={formData.data}
-              onChange={(e) => setFormData(prev => ({ ...prev, data: e.target.value, horario: '' }))}
-              min={new Date().toISOString().split('T')[0]}
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              onChange={(e) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  data: e.target.value,
+                  horario: "",
+                }))
+              }
+              min={new Date().toISOString().split("T")[0]}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:outline-none"
               required
             />
           </div>
@@ -507,13 +606,12 @@ const AgendarConsultaPage: React.FC = () => {
           {/* Seletor de Horário */}
           {formData.data && (
             <div>
-              <label className="block text-sm font-medium text-gray-600 mb-2">
-                Horários disponíveis para {new Date(formData.data).toLocaleDateString('pt-BR')}
-              </label>
-              <AvailableSlots 
+              <AvailableSlots
                 date={formData.data}
                 selectedTime={formData.horario}
-                onTimeSelect={(time) => setFormData(prev => ({ ...prev, horario: time }))}
+                onTimeSelect={(time) =>
+                  setFormData((prev) => ({ ...prev, horario: time }))
+                }
               />
             </div>
           )}
@@ -526,18 +624,18 @@ const AgendarConsultaPage: React.FC = () => {
               <Video size={18} />
               Informações da Consulta
             </h4>
-            <div className="space-y-2 text-sm text-green-700">
+            <div className="space-y-2 text-xs text-green-700">
               <div className="flex items-center gap-2">
                 <Shield size={14} />
-                <span>Consulta 100% online e segura</span>
+                <span>Consulta 100% online</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={14} />
-                <span>Link de acesso enviado por email</span>
+                <span>Link enviado por e-mail</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar size={14} />
-                <span>Reagendamento gratuito com 24h de antecedência</span>
+                <span>Reagendamento com 48h de antecedência</span>
               </div>
             </div>
           </div>
@@ -549,8 +647,8 @@ const AgendarConsultaPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 safe-area-bottom">
       <SEO
-        title={t('consultations.schedule.seo.title')}
-        description={t('consultations.schedule.seo.desc')}
+        title={t("consultations.schedule.seo.title")}
+        description={t("consultations.schedule.seo.desc")}
       />
 
       {/* Header */}
@@ -564,14 +662,12 @@ const AgendarConsultaPage: React.FC = () => {
             >
               <ArrowLeft size={20} className="text-gray-700" />
             </button>
-            
+
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900">
                 Agendar Consulta
               </h1>
-              <p className="text-xs text-gray-500">
-                Etapa {etapa} de 2
-              </p>
+              <p className="text-xs text-gray-500">Etapa {etapa} de 2</p>
             </div>
 
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
@@ -582,12 +678,11 @@ const AgendarConsultaPage: React.FC = () => {
       </div>
 
       <div className="max-w-2xl mx-auto px-4 py-6">
-        
         {/* Formulário Principal */}
         <Card className="p-6 shadow-xl border-0 bg-white/90 backdrop-blur-sm">
           <form onSubmit={handleSubmit}>
             {etapa === 1 ? renderEtapa1() : renderEtapa2()}
-            
+
             {/* Botões de Navegação */}
             <div className="flex gap-3 pt-6 mt-6 border-t border-gray-200">
               {etapa === 2 ? (
@@ -595,14 +690,20 @@ const AgendarConsultaPage: React.FC = () => {
                   <Button
                     type="button"
                     variant="secondary"
+                    noFocus
+                    noBorder
+                    noBackground
                     onClick={() => setEtapa(1)}
                     className="flex-1"
                   >
                     Voltar
                   </Button>
-                  <Button 
-                    type="submit" 
-                    className="flex-1 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                  <Button
+                    type="submit"
+                    noBackground
+                    noBorder
+                    noFocus
+                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700 focus:outline-none"
                     disabled={submitting}
                   >
                     {submitting ? (
@@ -611,7 +712,7 @@ const AgendarConsultaPage: React.FC = () => {
                         Agendando...
                       </div>
                     ) : (
-                      'Confirmar Agendamento'
+                      "Confirmar Agendamento"
                     )}
                   </Button>
                 </>
@@ -620,14 +721,20 @@ const AgendarConsultaPage: React.FC = () => {
                   <Button
                     type="button"
                     variant="secondary"
+                    noFocus
+                    noBorder
+                    noBackground
                     onClick={() => navigate("/dashboard")}
-                    className="flex-1 border-none hover:bg-transparent hover:border-none"
+                    className="flex-1"
                   >
                     Cancelar
                   </Button>
-                  <Button 
-                    type="submit" 
-                    className="flex-1 bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
+                  <Button
+                    type="submit"
+                    noBackground
+                    noBorder
+                    noFocus
+                    className="flex-1 text-white hover:text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
                     disabled={
                       (etapa === 1 && !formData.tipoConsulta) ||
                       (etapa === 2 && (!formData.data || !formData.horario))
@@ -658,24 +765,30 @@ const AgendarConsultaPage: React.FC = () => {
               <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <CreditCard size={32} className="text-red-600" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Créditos Insuficientes</h3>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                Créditos Insuficientes
+              </h3>
               <p className="text-gray-600">
-                Você precisa de créditos para agendar uma {formData.tipoConsulta === 'avaliacao_completa' ? 'avaliação completa' : 'reavaliação'}.
+                Você precisa de créditos para agendar uma{" "}
+                {formData.tipoConsulta === "avaliacao_completa"
+                  ? "avaliação completa"
+                  : "reavaliação"}
+                .
               </p>
             </div>
 
             <div className="space-y-3">
               <Button
-                onClick={() => purchaseCredit('avaliacao_completa')}
+                onClick={() => purchaseCredit("avaliacao_completa")}
                 className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600"
               >
                 <CreditCard size={16} />
                 Comprar Avaliação Completa
               </Button>
-              
+
               {canUseReavaliacao && (
                 <Button
-                  onClick={() => purchaseCredit('reavaliacao')}
+                  onClick={() => purchaseCredit("reavaliacao")}
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600"
                 >
                   <CreditCard size={16} />
