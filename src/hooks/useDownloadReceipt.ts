@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from '../contexts';
 import { useToast } from '../components/ui/ToastProvider';
+import { API } from '../config/api';
 
 export function useDownloadReceipt() {
   const { authenticatedFetch } = useAuth();
@@ -8,7 +9,7 @@ export function useDownloadReceipt() {
 
   const downloadReceipt = useCallback(async (paymentId: string) => {
     try {
-      const response = await authenticatedFetch(`/billing/payments/${paymentId}/receipt`);
+      const response = await authenticatedFetch(API.billingPaymentReceipt(paymentId));
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
