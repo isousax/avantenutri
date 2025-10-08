@@ -8,6 +8,20 @@ import { useI18n } from '../../../i18n';
 import { SEO } from '../../../components/comum/SEO';
 import Skeleton from '../../../components/ui/Skeleton';
 import { useToast } from '../../../components/ui/ToastProvider';
+import {
+  Search,
+  Filter,
+  RefreshCw,
+  CreditCard,
+  BarChart3,
+  Webhook,
+  CheckCircle,
+  XCircle,
+  Calendar,
+  User,
+  DollarSign,
+  Settings
+} from 'lucide-react';
 
 interface PaymentRow { 
   id: string; 
@@ -28,6 +42,7 @@ interface PaymentRow {
   processed_at?: string; 
   updated_at?: string;
 }
+
 interface ListPaymentsResp { 
   payments: PaymentRow[];
   pagination?: {
@@ -38,32 +53,38 @@ interface ListPaymentsResp {
   };
 }
 
-// Placeholder Webhook item (mock until backend endpoint exists)
-interface WebhookDelivery { id: string; event: string; status: string; received_at: string; latency_ms?: number; attempts?: number; }
+interface WebhookDelivery { 
+  id: string; 
+  event: string; 
+  status: string; 
+  received_at: string; 
+  latency_ms?: number; 
+  attempts?: number; 
+}
 
 const AdminBillingPage: React.FC = () => {
   const { authenticatedFetch } = useAuth();
   const { push } = useToast();
   const { locale, t } = useI18n();
-    const [view, setView] = useState<'payments'|'webhooks'|'summary'>('payments');
+  const [view, setView] = useState<'payments'|'webhooks'|'summary'>('payments');
   const [payments, setPayments] = useState<PaymentRow[]>([]);
   const [webhooks, setWebhooks] = useState<WebhookDelivery[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
   // Filtros & paginação
   const [payStatus, setPayStatus] = useState<string>('');
-  const [payUser, setPayUser] = useState<string>(''); // filter by user_id
-  const [payUserInput, setPayUserInput] = useState<string>(''); // debounce input
+  const [payUser, setPayUser] = useState<string>('');
+  const [payUserInput, setPayUserInput] = useState<string>('');
   const [payConsultType, setPayConsultType] = useState<string>('');
   const [payPage, setPayPage] = useState(1);
   const [payHasMore, setPayHasMore] = useState(false);
-  const [payStart, setPayStart] = useState<string>('');
-  const [payEnd, setPayEnd] = useState<string>('');
   const [payTotal, setPayTotal] = useState<number | null>(null);
-  const PAGE_SIZE = 20; // constante local
+  const PAGE_SIZE = 20;
+
   const [searchParams, setSearchParams] = useSearchParams();
   const initializedRef = useRef(false);
-  const [exportingPayments, setExportingPayments] = useState(false);
+  
   // Pricing management state
   const [pricing, setPricing] = useState<{ type: string; amount_cents: number; currency: string; active: number; updated_at: string;}[]>([]);
   const [loadingPricing, setLoadingPricing] = useState(false);
@@ -75,29 +96,27 @@ const AdminBillingPage: React.FC = () => {
     if (initializedRef.current) return;
     const qView = searchParams.get('view');
     if (qView === 'payments' || qView === 'webhooks' || qView === 'summary') setView(qView);
-    const qStatus = searchParams.get('status'); if (qStatus) setPayStatus(qStatus);
-  const qUser = searchParams.get('user'); if (qUser) { setPayUser(qUser); setPayUserInput(qUser); }
-  const qCt = searchParams.get('ctype'); if (qCt) setPayConsultType(qCt);
-    const qPage = Number(searchParams.get('page')||'1'); if (qPage>1) setPayPage(qPage);
-    const qs = searchParams.get('start'); if (qs) setPayStart(qs);
-    const qe = searchParams.get('end'); if (qe) setPayEnd(qe);
+    const qStatus = searchParams.get('status'); 
+    if (qStatus) setPayStatus(qStatus);
+    const qUser = searchParams.get('user'); 
+    if (qUser) { setPayUser(qUser); setPayUserInput(qUser); }
+    const qCt = searchParams.get('ctype'); 
+    if (qCt) setPayConsultType(qCt);
+    const qPage = Number(searchParams.get('page')||'1'); 
+    if (qPage > 1) setPayPage(qPage);
     initializedRef.current = true;
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   // Atualizar querystring quando filtros mudarem
   useEffect(() => {
-    if (!initializedRef.current) return; // evita sobrescrever inicial
-    const params: Record<string,string> = {};
-    params.view = view;
+    if (!initializedRef.current) return;
+    const params: Record<string,string> = { view };
     if (payStatus) params.status = payStatus;
-  if (payUser) params.user = payUser;
-  if (payConsultType) params.ctype = payConsultType;
-    if (payPage>1) params.page = String(payPage);
-    if (payStart) params.start = payStart;
-    if (payEnd) params.end = payEnd;
-    setSearchParams(params, { replace:true });
-  }, [view, payStatus, payUser, payConsultType, payPage, payStart, payEnd, setSearchParams]);
+    if (payUser) params.user = payUser;
+    if (payConsultType) params.ctype = payConsultType;
+    if (payPage > 1) params.page = String(payPage);
+    setSearchParams(params, { replace: true });
+  }, [view, payStatus, payUser, payConsultType, payPage, setSearchParams]);
 
   // Debounce campo user_id
   useEffect(() => {
@@ -110,21 +129,23 @@ const AdminBillingPage: React.FC = () => {
 
   const loadPayments = useCallback(async () => {
     try {
-      setLoading(true); setError(null);
+      setLoading(true); 
+      setError(null);
       const qs: Record<string,string> = { 
         limit: String(PAGE_SIZE),
         offset: String((payPage - 1) * PAGE_SIZE)
       };
-  if (payStatus) qs.status = payStatus; 
-  if (payUser) qs.user_id = payUser;
-  if (payConsultType) qs.consultation_type = payConsultType;
+      if (payStatus) qs.status = payStatus; 
+      if (payUser) qs.user_id = payUser;
+      if (payConsultType) qs.consultation_type = payConsultType;
+      
       const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
-      const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
-      if(!r.ok) throw new Error('HTTP '+r.status);
+      const r = await authenticatedFetch(url, { method: 'GET', autoLogout: true });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      
       const data: ListPaymentsResp = await r.json();
       setPayments(data.payments || []);
       
-      // Usar dados de paginação do backend
       if (data.pagination) {
         setPayHasMore(data.pagination.has_more);
         setPayTotal(data.pagination.total);
@@ -133,208 +154,443 @@ const AdminBillingPage: React.FC = () => {
         setPayHasMore(len === PAGE_SIZE);
         setPayTotal(null);
       }
-    } catch(e:any){ 
+    } catch (e: any) { 
       setError(e.message || 'Erro'); 
-      push({ type:'error', message: t('admin.billing.toast.loadPaymentsError') }); 
+      push({ type: 'error', message: t('admin.billing.toast.loadPaymentsError') }); 
     } finally { 
       setLoading(false); 
     }
-  }, [authenticatedFetch, payStatus, payUser, payConsultType, payPage]);
+  }, [authenticatedFetch, payStatus, payUser, payConsultType, payPage, push, t]);
 
-  const loadPricing = useCallback(async ()=> {
+  const loadPricing = useCallback(async () => {
     try {
       setLoadingPricing(true);
-      const r = await authenticatedFetch(API.ADMIN_CONSULTATION_PRICING, { method:'GET', autoLogout:true });
-      if(!r.ok) throw new Error('HTTP '+r.status);
+      const r = await authenticatedFetch(API.ADMIN_CONSULTATION_PRICING, { 
+        method: 'GET', 
+        autoLogout: true 
+      });
+      if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
       setPricing(data.pricing || []);
-    } catch(e:any){ push({ type:'error', message: 'Falha ao carregar preços' }); }
-    finally { setLoadingPricing(false); }
-  }, [authenticatedFetch]);
+    } catch (e: any) { 
+      push({ type: 'error', message: 'Falha ao carregar preços' }); 
+    } finally { 
+      setLoadingPricing(false); 
+    }
+  }, [authenticatedFetch, push]);
 
-
-
-  const loadWebhooks = useCallback( async () => {
-    // Mock temporário — substituir quando endpoint real existir
-    setLoading(true); setError(null);
+  const loadWebhooks = useCallback(async () => {
+    setLoading(true); 
+    setError(null);
     try {
       await new Promise(r => setTimeout(r, 250));
       setWebhooks([
-        { id:'wh_1', event:'payment.approved', status:'processed', received_at:new Date(Date.now()-3600_000).toISOString(), latency_ms:120, attempts:1 },
-        { id:'wh_2', event:'payment.pending', status:'processed', received_at:new Date(Date.now()-7200_000).toISOString(), latency_ms:200, attempts:1 },
-        { id:'wh_3', event:'payment.failed', status:'error', received_at:new Date(Date.now()-10800_000).toISOString(), latency_ms:350, attempts:2 },
+        { 
+          id: 'wh_1', 
+          event: 'payment.approved', 
+          status: 'processed', 
+          received_at: new Date(Date.now() - 3600_000).toISOString(), 
+          latency_ms: 120, 
+          attempts: 1 
+        },
+        { 
+          id: 'wh_2', 
+          event: 'payment.pending', 
+          status: 'processed', 
+          received_at: new Date(Date.now() - 7200_000).toISOString(), 
+          latency_ms: 200, 
+          attempts: 1 
+        },
+        { 
+          id: 'wh_3', 
+          event: 'payment.failed', 
+          status: 'error', 
+          received_at: new Date(Date.now() - 10800_000).toISOString(), 
+          latency_ms: 350, 
+          attempts: 2 
+        },
       ]);
-  } catch(e:any){ setError(e.message || 'Erro'); push({ type:'error', message: t('admin.billing.toast.loadWebhooksError') }); } finally { setLoading(false); }
-  }, []);
+    } catch (e: any) { 
+      setError(e.message || 'Erro'); 
+      push({ type: 'error', message: t('admin.billing.toast.loadWebhooksError') }); 
+    } finally { 
+      setLoading(false); 
+    }
+  }, [push, t]);
 
   // Carregar conforme view ou mudança de filtros
-  useEffect(()=> {
+  useEffect(() => {
     if (view === 'payments') loadPayments();
   }, [view, loadPayments]);
-  useEffect(()=> { if (view === 'webhooks') loadWebhooks(); }, [view, loadWebhooks]);
-  useEffect(()=> { if (view === 'summary') loadPricing(); }, [view, loadPricing]);
+  
+  useEffect(() => { 
+    if (view === 'webhooks') loadWebhooks(); 
+  }, [view, loadWebhooks]);
+  
+  useEffect(() => { 
+    if (view === 'summary') loadPricing(); 
+  }, [view, loadPricing]);
 
-  const currencyFmt = useCallback((cents: number) => new Intl.NumberFormat(locale==='pt'?'pt-BR':'en-US', { style:'currency', currency:'BRL' }).format(cents/100), [locale]);
+  const currencyFmt = useCallback((cents: number) => 
+    new Intl.NumberFormat(locale === 'pt' ? 'pt-BR' : 'en-US', { 
+      style: 'currency', 
+      currency: 'BRL' 
+    }).format(cents / 100), 
+  [locale]);
 
   const summary = useMemo(() => {
-    const totalApproved = payments.filter(p => p.status === 'approved').reduce((acc,p)=> acc + p.amount_cents, 0);
-    const totalPending = payments.filter(p => p.status === 'pending').reduce((acc,p)=> acc + p.amount_cents, 0);
+    const totalApproved = payments
+      .filter(p => p.status === 'approved')
+      .reduce((acc, p) => acc + p.amount_cents, 0);
+    const totalPending = payments
+      .filter(p => p.status === 'pending')
+      .reduce((acc, p) => acc + p.amount_cents, 0);
     const byType: Record<string, number> = {};
-    payments.forEach(p => { const key = p.consultation_type || p.purpose || 'outro'; if(!byType[key]) byType[key]=0; byType[key]+=1; });
+    
+    payments.forEach(p => { 
+      const key = p.consultation_type || p.purpose || 'outro'; 
+      if (!byType[key]) byType[key] = 0; 
+      byType[key] += 1; 
+    });
+    
     return { totalApproved, totalPending, byType };
   }, [payments]);
 
-  const byTypeEntries = Object.entries(summary.byType).sort((a,b)=> b[1]-a[1]);
 
-  // Util simples para gerar CSV
-  function toCSV(rows: any[]): string {
-    if (!rows.length) return '';
-    const headers = Object.keys(rows[0]);
-    const escape = (v: any) => {
-      if (v == null) return '';
-      const s = String(v).replace(/"/g, '""');
-      return /[";,\n]/.test(s) ? '"'+s+'"' : s;
-    };
-    const lines = [headers.join(',')];
-    for (const r of rows) lines.push(headers.map(h => escape((r as any)[h])).join(','));
-    return lines.join('\n');
-  }
-
-  async function exportPaymentsCSV(){
-    if (exportingPayments) return;
-    setExportingPayments(true);
-    try {
-      const all: PaymentRow[] = [];
-      const limit = 200; // maior para reduzir chamadas
-      let offset = 0;
-      for (let page=1; page<=50; page++){ // hard cap safety
-        const qs: Record<string,string> = { 
-          limit: String(limit),
-          offset: String(offset)
-        };
-        if (payStatus) qs.status = payStatus; 
-  if (payUser) qs.user_id = payUser;
-        const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
-        const r = await authenticatedFetch(url, { method:'GET', autoLogout:true });
-        if(!r.ok) throw new Error('HTTP '+r.status);
-        const data: ListPaymentsResp = await r.json();
-        const batch = data.payments || [];
-        all.push(...batch);
-        
-        // Usar dados de paginação do backend se disponível
-        if (data.pagination && !data.pagination.has_more) break;
-        else if (batch.length < limit) break; // fallback: último page
-        
-        offset += limit;
-      }
-      const csv = toCSV(all.map(p => ({
-        id: p.id,
-        user_id: p.user_id || '',
-        user_email: p.user_email || '',
-        user_name: `${p.first_name || ''} ${p.last_name || ''}`.trim(),
-  consultation_type: p.consultation_type || '',
-        amount_cents: p.amount_cents,
-        amount_brl: (p.amount_cents/100).toFixed(2),
-        status: p.status,
-        status_detail: p.status_detail || '',
-        payment_method: p.payment_method || '',
-        installments: p.installments || '',
-        external_id: p.external_id || '',
-        preference_id: p.preference_id || '',
-        created_at: p.created_at,
-        processed_at: p.processed_at || ''
-      })));
-      const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
-      const urlObj = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = urlObj;
-      const ts = new Date().toISOString().slice(0,10).replace(/-/g,'');
-      a.download = `billing-payments-${ts}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      setTimeout(()=> { URL.revokeObjectURL(urlObj); a.remove(); }, 0);
-      push({ type:'success', message: t('admin.billing.toast.export.payments.success').replace('{count}', String(all.length)) });
-    } catch(e:any){ setError(e.message || 'Erro export'); push({ type:'error', message: t('admin.billing.toast.export.payments.error') }); } finally { setExportingPayments(false); }
-  }
-
-
+  const clearFilters = (): void => {
+    setPayStatus('');
+    setPayUser('');
+    setPayUserInput('');
+    setPayConsultType('');
+    setPayPage(1);
+  };
 
   return (
-    <div className="p-6 space-y-6">
-      <SEO title={t('admin.billing.seo.title')} description={t('admin.billing.seo.desc')} />
-      <div className="flex flex-wrap gap-3 items-center justify-between">
-  <h1 className="text-2xl font-semibold">{t('admin.billing.title')}</h1>
-        <div className="flex gap-2 flex-wrap">
-          <Button type="button" variant={view==='summary'?'primary':'secondary'} onClick={()=> setView('summary')}>{t('admin.billing.view.summary')}</Button>
-          <Button type="button" variant={view==='payments'?'primary':'secondary'} onClick={()=> setView('payments')}>{t('admin.billing.view.payments')}</Button>
-          <Button type="button" variant={view==='webhooks'?'primary':'secondary'} onClick={()=> setView('webhooks')}>{t('admin.billing.view.webhooks')}</Button>
+    <div className="min-h-screen bg-gray-50/30 safe-area-bottom">
+      <SEO 
+        title={t('admin.billing.seo.title')} 
+        description={t('admin.billing.seo.desc')} 
+      />
+
+      {/* Header */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
+          {/* Refresh Button - Mobile */}
+          <div className="absolute top-4 right-4 sm:hidden">
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => view === 'payments' ? loadPayments() : view === 'webhooks' ? loadWebhooks() : loadPricing()}
+              disabled={loading}
+              className="flex items-center gap-2"
+              noBorder
+              noFocus
+              noBackground
+            >
+              <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            </Button>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-blue-500 rounded-xl flex items-center justify-center">
+                <CreditCard size={20} className="text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
+                  {t('admin.billing.title')}
+                </h1>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Gerencie pagamentos, preços e webhooks
+                </p>
+              </div>
+            </div>
+
+            {/* View Switcher */}
+            <div className="grid grid-cols-2 gap-2 bg-gray-100 rounded-lg p-1">
+              <Button
+                type="button"
+                variant={view === 'summary' ? 'primary' : 'secondary'}
+                onClick={() => setView('summary')}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm"
+                noBorder
+                noFocus
+              >
+                <BarChart3 size={14} />
+                Resumo
+              </Button>
+              <Button
+                type="button"
+                variant={view === 'payments' ? 'primary' : 'secondary'}
+                onClick={() => setView('payments')}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm"
+                noBorder
+                noFocus
+              >
+                <CreditCard size={14} />
+                Pagamentos
+              </Button>
+              {/*<Button
+                type="button"
+                variant={view === 'webhooks' ? 'primary' : 'secondary'}
+                onClick={() => setView('webhooks')}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm"
+                noBorder
+              >
+                <Webhook size={14} />
+                Webhooks
+              </Button>*/}
+            </div>
+
+            {/* Refresh Button - Desktop */}
+            <div className="hidden sm:flex items-center gap-3">
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => view === 'payments' ? loadPayments() : view === 'webhooks' ? loadWebhooks() : loadPricing()}
+                disabled={loading}
+                className="flex items-center gap-2"
+                noBorder
+                noFocus
+                noBackground
+              >
+                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
-      {error && <div className="text-sm text-red-600">{error}</div>}
 
-      {view==='summary' && (
-        <div className="grid md:grid-cols-3 gap-4">
-          <Card className="p-4 space-y-1">
-            <div className="text-xs text-gray-500">{t('admin.billing.summary.revenueApproved')}</div>
-            <div className="text-xl font-semibold">{loading ? <Skeleton className="h-6 w-24" /> : currencyFmt(summary.totalApproved)}</div>
-          </Card>
-            <Card className="p-4 space-y-1">
-              <div className="text-xs text-gray-500">{t('admin.billing.summary.paymentsPending')}</div>
-              <div className="text-xl font-semibold">{loading ? <Skeleton className="h-6 w-20" /> : currencyFmt(summary.totalPending)}</div>
-            </Card>
-            <Card className="p-4 space-y-1">
-              <div className="text-xs text-gray-500">Tipos mais frequentes</div>
-              {loading && <div className="space-y-2"><Skeleton className="h-3 w-20" /><Skeleton className="h-3 w-24" /><Skeleton className="h-3 w-16" /></div>}
-              {!loading && <ul className="text-xs space-y-1 max-h-28 overflow-auto">{byTypeEntries.length === 0 && <li className="text-gray-400">—</li>}{byTypeEntries.map(([typ, count])=> <li key={typ}><span className="font-mono">{typ}</span>: {count}</li>)}</ul>}
-            </Card>
-            <Card className="p-4 col-span-full md:col-span-3">
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-sm font-semibold">Preços de Consultas</h2>
-                <Button variant="secondary" type="button" onClick={loadPricing} disabled={loadingPricing}>{loadingPricing?'...':'Reload'}</Button>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Filtros - Payments View */}
+        {view === 'payments' && (
+          <Card className="p-4 sm:p-6 mb-6">
+            <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+              <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Filter size={14} />
+                    Status
+                  </label>
+                  <select 
+                    value={payStatus} 
+                    onChange={(e) => { setPayPage(1); setPayStatus(e.target.value); }} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Todos os status</option>
+                    <option value="approved">Aprovado</option>
+                    <option value="pending">Pendente</option>
+                    <option value="failed">Falhou</option>
+                  </select>
+                </div>
+
+                {/* User Filter */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User size={14} />
+                    User ID
+                  </label>
+                  <input 
+                    value={payUserInput} 
+                    onChange={(e) => setPayUserInput(e.target.value)} 
+                    placeholder="Filtrar por User ID"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+
+                {/* Consultation Type */}
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <Settings size={14} />
+                    Tipo
+                  </label>
+                  <select 
+                    value={payConsultType} 
+                    onChange={(e) => { setPayConsultType(e.target.value); setPayPage(1); }} 
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  >
+                    <option value="">Todos os tipos</option>
+                    <option value="avaliacao_completa">Avaliação</option>
+                    <option value="reavaliacao">Reavaliação</option>
+                  </select>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-end gap-2">
+                  <Button
+                    type="button"
+                    onClick={() => {
+                      setPayPage(1);
+                      loadPayments();
+                    }}
+                    className="flex items-center gap-2 flex-1"
+                  >
+                    <Search size={14} />
+                    Buscar
+                  </Button>
+
+                  {(payStatus || payUser || payConsultType) && (
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      onClick={clearFilters}
+                      className="flex items-center gap-2"
+                    >
+                      Limpar
+                    </Button>
+                  )}
+                </div>
               </div>
-              {loadingPricing && <Skeleton lines={2} />}
-              {!loadingPricing && pricing.length===0 && <p className="text-xs text-gray-500">Nenhum preço configurado</p>}
-              {!loadingPricing && pricing.length>0 && (
+            </div>
+          </Card>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <Card className="p-4 border-l-4 border-red-500 bg-red-50 mb-6">
+            <div className="flex items-start gap-3">
+              <XCircle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h3 className="font-semibold text-red-800 mb-1">
+                  Erro ao carregar dados
+                </h3>
+                <p className="text-red-700 text-sm">{error}</p>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Summary View */}
+        {view === 'summary' && (
+          <div className="grid grid-cols-2 gap-6 mb-6">
+            <Card className="">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                  <CheckCircle size={20} className="text-green-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Aprovada</div>
+                  <div className="text-xl font-semibold">
+                    {loading ? <Skeleton className="h-6 w-24" /> : currencyFmt(summary.totalApproved)}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg flex items-center justify-center">
+                  <CreditCard size={20} className="text-amber-600" />
+                </div>
+                <div>
+                  <div className="text-xs text-gray-500">Pendentes</div>
+                  <div className="text-xl font-semibold">
+                    {loading ? <Skeleton className="h-6 w-20" /> : currencyFmt(summary.totalPending)}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Pricing Management */}
+            <Card className="p-6 col-span-full">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                    <DollarSign size={16} className="text-purple-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-semibold">Preços de Consultas</h2>
+                  </div>
+                </div>
+                <Button 
+                  variant="secondary" 
+                  onClick={loadPricing} 
+                  disabled={loadingPricing}
+                  noBorder
+                  noFocus
+                  noBackground
+                  className="flex items-center gap-2"
+                >
+                  <RefreshCw size={14} className={loadingPricing ? "animate-spin" : ""} />
+                </Button>
+              </div>
+
+              {loadingPricing && <Skeleton lines={3} />}
+              
+              {!loadingPricing && pricing.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <DollarSign size={32} className="mx-auto text-gray-300 mb-2" />
+                  <p>Nenhum preço configurado</p>
+                </div>
+              )}
+              
+              {!loadingPricing && pricing.length > 0 && (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-xs">
+                  <table className="w-full text-sm">
                     <thead>
-                      <tr className="text-left bg-gray-100">
-                        <th className="p-2">Tipo</th>
-                        <th className="p-2">Valor (BRL)</th>
-                        <th className="p-2">Ativo</th>
-                        <th className="p-2">Atualizado</th>
-                        <th className="p-2"></th>
+                      <tr className="text-left border-b border-gray-200">
+                        <th className="pb-3 font-semibold text-gray-700">Tipo</th>
+                        <th className="pb-3 font-semibold text-gray-700">Valor (BRL)</th>
+                        <th className="pb-3 font-semibold text-gray-700">Ativo</th>
+                        <th className="pb-3 font-semibold text-gray-700">Atualizado</th>
+                        <th className="pb-3 font-semibold text-gray-700"></th>
                       </tr>
                     </thead>
                     <tbody>
                       {pricing.map(p => {
                         const edited = pricingDirty[p.type] != null || pricingActiveDirty[p.type] != null;
                         return (
-                          <tr key={p.type} className="border-b last:border-none">
-                            <td className="p-2 font-mono">{p.type}</td>
-                            <td className="p-2">
-                              <input type="number" className="w-24 border rounded px-1 py-0.5" defaultValue={(p.amount_cents/100).toFixed(2)} step="0.01" onChange={e=> {
-                                const v = Math.round(parseFloat(e.target.value||'0')*100);
-                                setPricingDirty(d=> ({ ...d, [p.type]: v }));
-                              }} />
+                          <tr key={p.type} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50">
+                            <td className="py-3 font-medium text-gray-900">{p.type}</td>
+                            <td className="py-3">
+                              <input 
+                                type="number" 
+                                className="w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500" 
+                                defaultValue={(p.amount_cents / 100).toFixed(2)} 
+                                step="0.01" 
+                                onChange={e => {
+                                  const v = Math.round(parseFloat(e.target.value || '0') * 100);
+                                  setPricingDirty(d => ({ ...d, [p.type]: v }));
+                                }} 
+                              />
                             </td>
-                            <td className="p-2">
-                              <input type="checkbox" defaultChecked={p.active===1} onChange={e=> setPricingActiveDirty(d=> ({ ...d, [p.type]: e.target.checked?1:0 }))} />
+                            <td className="py-3">
+                              <input 
+                                type="checkbox" 
+                                defaultChecked={p.active === 1} 
+                                onChange={e => setPricingActiveDirty(d => ({ ...d, [p.type]: e.target.checked ? 1 : 0 }))} 
+                                className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                              />
                             </td>
-                            <td className="p-2 text-[10px] text-gray-500">{new Date(p.updated_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</td>
-                            <td className="p-2">
-                              <Button type="button" disabled={!edited} onClick={async ()=> {
-                                try {
-                                  const amount = pricingDirty[p.type] ?? p.amount_cents;
-                                  const active = pricingActiveDirty[p.type] ?? p.active;
-                                  const r = await authenticatedFetch(API.ADMIN_CONSULTATION_PRICING, { method:'PUT', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ type: p.type, amount_cents: amount, active }) });
-                                  if(!r.ok) throw new Error('fail');
-                                  push({ type:'success', message: 'Atualizado' });
-                                  setPricingDirty(d=> { const { [p.type]:_, ...rest } = d; return rest; });
-                                  setPricingActiveDirty(d=> { const { [p.type]:_, ...rest } = d; return rest; });
-                                  loadPricing();
-                                } catch { push({ type:'error', message:'Falha ao salvar'}); }
-                              }}>Salvar</Button>
+                            <td className="py-3 text-xs text-gray-500">
+                              {new Date(p.updated_at).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')}
+                            </td>
+                            <td className="py-3">
+                              <Button 
+                                type="button" 
+                                disabled={!edited}
+                                onClick={async () => {
+                                  try {
+                                    const amount = pricingDirty[p.type] ?? p.amount_cents;
+                                    const active = pricingActiveDirty[p.type] ?? p.active;
+                                    const r = await authenticatedFetch(API.ADMIN_CONSULTATION_PRICING, { 
+                                      method: 'PUT', 
+                                      headers: { 'Content-Type': 'application/json' }, 
+                                      body: JSON.stringify({ type: p.type, amount_cents: amount, active }) 
+                                    });
+                                    if (!r.ok) throw new Error('fail');
+                                    push({ type: 'success', message: 'Preço atualizado com sucesso' });
+                                    setPricingDirty(d => { const { [p.type]: _, ...rest } = d; return rest; });
+                                    setPricingActiveDirty(d => { const { [p.type]: _, ...rest } = d; return rest; });
+                                    loadPricing();
+                                  } catch { 
+                                    push({ type: 'error', message: 'Falha ao salvar preço' }); 
+                                  }
+                                }}
+                              >
+                                Salvar
+                              </Button>
                             </td>
                           </tr>
                         );
@@ -344,186 +600,404 @@ const AdminBillingPage: React.FC = () => {
                 </div>
               )}
             </Card>
-        </div>
-      )}
-
-      {view==='payments' && (
-        <>
-        <Card className="p-0 overflow-x-auto hidden md:block">
-          <div className="p-3 flex flex-wrap gap-3 items-end border-b bg-white">
-            <div>
-              <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.status')}</label>
-              <select value={payStatus} onChange={e=> { setPayPage(1); setPayStatus(e.target.value); }} className="border rounded px-2 py-1 text-sm">
-                <option value="">{t('admin.billing.status.all')}</option>
-                <option value="approved">{t('admin.billing.status.approved')}</option>
-                <option value="pending">{t('admin.billing.status.pending')}</option>
-                <option value="failed">{t('admin.billing.status.failed')}</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1">User ID</label>
-              <input value={payUserInput} onChange={e=> { setPayUserInput(e.target.value); }} placeholder="Filtrar por User ID" className="border rounded px-2 py-1 text-sm" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1">Tipo</label>
-              <select value={payConsultType} onChange={e=> { setPayConsultType(e.target.value); setPayPage(1); }} className="border rounded px-2 py-1 text-sm">
-                <option value="">Todos</option>
-                <option value="avaliacao_completa">Avaliação</option>
-                <option value="reavaliacao">Reavaliação</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.start')}</label>
-              <input type="date" value={payStart} onChange={e=> { setPayStart(e.target.value); setPayPage(1); }} className="border rounded px-2 py-1 text-sm" />
-            </div>
-            <div>
-              <label className="block text-[11px] font-medium mb-1">{t('admin.billing.filters.end')}</label>
-              <input type="date" value={payEnd} onChange={e=> { setPayEnd(e.target.value); setPayPage(1); }} className="border rounded px-2 py-1 text-sm" />
-            </div>
-            <div className="ml-auto flex gap-2">
-              <Button type="button" variant="secondary" disabled={loading} onClick={()=> { setPayPage(1); loadPayments(); }}>{t('admin.billing.filters.reload')}</Button>
-              <Button type="button" variant="secondary" disabled={loading && !exportingPayments} onClick={exportPaymentsCSV}>{exportingPayments ? t('admin.billing.export.payments.inProgress') : t('admin.billing.export.payments')}</Button>
-            </div>
           </div>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="p-2">{t('admin.billing.table.payments.id')}</th>
-                <th className="p-2">Usuário</th>
-                <th className="p-2">Tipo</th>
-                <th className="p-2">{t('admin.billing.table.payments.amount')}</th>
-                <th className="p-2">{t('admin.billing.table.payments.status')}</th>
-                <th className="p-2">Método</th>
-                <th className="p-2">MP ID</th>
-                <th className="p-2">{t('admin.billing.table.payments.created')}</th>
-                <th className="p-2">{t('admin.billing.table.payments.processed')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && <tr><td colSpan={9} className="p-4"><Skeleton lines={3} /></td></tr>}
-              {!loading && payments.length===0 && <tr><td colSpan={9} className="p-4 text-sm text-gray-500">{t('admin.billing.table.payments.empty')}</td></tr>}
+        )}
+
+        {/* Payments View */}
+        {view === 'payments' && (
+          <>
+            {/* Desktop Table */}
+            <Card className="p-0 overflow-hidden hidden lg:block">
+              <div className="p-4 border-b border-gray-200 bg-white flex items-center justify-between">
+                <h3 className="font-semibold text-gray-900">Pagamentos</h3>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="p-4 text-left font-semibold text-gray-700">Pagamento</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Usuário</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Tipo</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Valor</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Status</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Método</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Criado em</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading && (
+                      <tr>
+                        <td colSpan={7} className="p-4">
+                          <div className="space-y-3">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <Skeleton key={i} lines={1} className="h-12" />
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {!loading && payments.map(p => (
+                      <tr key={p.id} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors">
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <div className="font-medium text-gray-900 text-xs font-mono select-all">
+                              {p.id}
+                            </div>
+                            <div className="text-xs text-gray-500 mt-0.5">
+                              MP: {p.external_id || '—'}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col">
+                            <div className="font-medium text-gray-900">
+                              {p.first_name} {p.last_name}
+                            </div>
+                            <div className="text-xs text-gray-500">{p.user_email}</div>
+                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                              {p.user_id?.slice(0, 8)}...
+                            </div>
+                          </div>
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {p.consultation_type || p.purpose || '—'}
+                        </td>
+                        <td className="p-4">
+                          <div className="font-medium text-gray-900">
+                            {currencyFmt(p.amount_cents)}
+                          </div>
+                          {p.installments && p.installments > 1 && (
+                            <div className="text-xs text-gray-500">
+                              {p.installments}x
+                            </div>
+                          )}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex flex-col gap-1">
+                            <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                              p.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                              p.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                              'bg-red-100 text-red-700'
+                            }`}>
+                              {p.status}
+                            </span>
+                            {p.status_detail && (
+                              <span className="text-xs text-gray-500">{p.status_detail}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {p.payment_method || '—'}
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {new Date(p.created_at).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')}
+                        </td>
+                      </tr>
+                    ))}
+                    {!loading && payments.length === 0 && (
+                      <tr>
+                        <td colSpan={7} className="p-8 text-center">
+                          <div className="flex flex-col items-center gap-3 text-gray-500">
+                            <CreditCard size={48} className="text-gray-300" />
+                            <div>
+                              <div className="font-medium text-gray-900 mb-1">
+                                Nenhum pagamento encontrado
+                              </div>
+                              <div className="text-sm">
+                                Tente ajustar os filtros de busca
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+
+            {/* Mobile List */}
+            <div className="space-y-3 lg:hidden">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-semibold text-gray-900">Pagamentos</h3>
+              </div>
+
+              {loading && (
+                <div className="space-y-3">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Card key={i} className="p-4">
+                      <Skeleton lines={3} />
+                    </Card>
+                  ))}
+                </div>
+              )}
+
               {!loading && payments.map(p => (
-                <tr key={p.id} className="border-b last:border-none hover:bg-gray-50">
-                  <td className="p-2 font-mono text-xs select-all">{p.id}</td>
-                  <td className="p-2 text-xs">
-                    <div className="flex flex-col">
-                      <span className="font-medium">{p.first_name} {p.last_name}</span>
-                      <span className="text-gray-500 text-[10px]">{p.user_email}</span>
-                      <span className="text-gray-400 text-[9px] font-mono">{p.user_id}</span>
+                <Card key={p.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-gray-900 truncate text-sm mb-1">
+                        {p.first_name} {p.last_name}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate mb-2">
+                        {p.user_email}
+                      </div>
+                      <div className="font-mono text-[10px] text-gray-400 select-all">
+                        {p.id}
+                      </div>
                     </div>
-                  </td>
-                  <td className="p-2 font-mono text-xs">{p.consultation_type || p.purpose || '—'}</td>
-                  <td className="p-2">{currencyFmt(p.amount_cents)}
-                    {p.installments && p.installments > 1 && <span className="text-xs text-gray-500 ml-1">({p.installments}x)</span>}
-                  </td>
-                  <td className="p-2 text-xs">
-                    <div className="flex flex-col gap-1">
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${p.status==='approved'?'bg-green-100 text-green-700': p.status==='pending'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700'}`}>{p.status}</span>
-                      {p.status_detail && <span className="text-[9px] text-gray-500">{p.status_detail}</span>}
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      p.status === 'approved' ? 'bg-green-100 text-green-700' : 
+                      p.status === 'pending' ? 'bg-amber-100 text-amber-700' : 
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {p.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Valor</div>
+                      <div className="font-medium">
+                        {currencyFmt(p.amount_cents)}
+                        {p.installments && p.installments > 1 && (
+                          <span className="text-xs text-gray-500 ml-1">({p.installments}x)</span>
+                        )}
+                      </div>
                     </div>
-                  </td>
-                  <td className="p-2 text-xs">{p.payment_method || '—'}</td>
-                  <td className="p-2 font-mono text-xs select-all">{p.external_id || '—'}</td>
-                  <td className="p-2 text-xs">{new Date(p.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</td>
-                  <td className="p-2 text-xs">{p.processed_at ? new Date(p.processed_at).toLocaleString(locale==='pt'?'pt-BR':'en-US') : '—'}</td>
-                </tr>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Tipo</div>
+                      <div className="text-sm">{p.consultation_type || p.purpose || '—'}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3">
+                    <div className="flex items-center gap-1">
+                      <Calendar size={12} />
+                      {new Date(p.created_at).toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US')}
+                    </div>
+                    <div>{p.payment_method || '—'}</div>
+                  </div>
+                </Card>
               ))}
-            </tbody>
-          </table>
-          <div className="flex items-center justify-between p-3 border-t bg-white text-xs">
-            <div className="flex gap-2">
-              <Button variant="secondary" type="button" disabled={loading || payPage===1} onClick={()=> setPayPage(p=> Math.max(1, p-1))}>{t('admin.billing.pagination.previous')}</Button>
-              <Button variant="secondary" type="button" disabled={loading || !payHasMore} onClick={()=> setPayPage(p=> p+1)}>{t('admin.billing.pagination.next')}</Button>
+
+              {!loading && payments.length === 0 && (
+                <Card className="p-8 text-center">
+                  <div className="flex flex-col items-center gap-3 text-gray-500">
+                    <CreditCard size={48} className="text-gray-300" />
+                    <div>
+                      <div className="font-medium text-gray-900 mb-1">
+                        Nenhum pagamento encontrado
+                      </div>
+                      <div className="text-sm">
+                        Tente ajustar os filtros de busca
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
             </div>
-            <div className="flex items-center gap-4">
-              <span>{t('admin.billing.pagination.page')} {payPage}{!loading && payments.length < PAGE_SIZE && !payHasMore ? ' '+t('admin.billing.pagination.final') : ''}</span>
-              <span>{t('admin.billing.pagination.total')}: {payTotal == null ? '?' : payTotal}</span>
-            </div>
-          </div>
-        </Card>
-        {/* Mobile list payments */}
-        <div className="space-y-3 md:hidden">
-          {loading && <Card className="p-4"><Skeleton lines={3} /></Card>}
-          {!loading && payments.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.billing.table.payments.empty')}</Card>}
-          {!loading && payments.map(p => (
-            <Card key={p.id} className="p-4 space-y-2">
-              <div className="flex justify-between items-start gap-2">
-                <span className="font-mono text-[11px] select-all break-all max-w-[160px]">{p.id}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${p.status==='approved'?'bg-green-100 text-green-700': p.status==='pending'?'bg-amber-100 text-amber-700':'bg-red-100 text-red-700'}`}>{p.status}</span>
+
+            {/* Pagination */}
+            {payments.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200">
+                <p className="text-sm text-gray-600">
+                  Mostrando <span className="font-semibold">{payments.length}</span> pagamentos
+                  {payTotal !== null && (
+                    <> de <span className="font-semibold">{payTotal}</span> no total</>
+                  )}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    disabled={payPage === 1}
+                    onClick={() => setPayPage(p => Math.max(1, p - 1))}
+                    className="flex items-center gap-2"
+                  >
+                    Anterior
+                  </Button>
+                  <span className="px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium">
+                    Página {payPage}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() => setPayPage(p => p + 1)}
+                    disabled={!payHasMore}
+                    className="flex items-center gap-2"
+                  >
+                    Próxima
+                  </Button>
+                </div>
               </div>
-              <div className="text-sm font-medium">{currencyFmt(p.amount_cents)}</div>
-              <div className="flex flex-wrap gap-2 text-[11px] text-gray-600">
-                <span>tipo: {p.consultation_type || p.purpose || '—'}</span>
-                <span>{new Date(p.created_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
-                {p.processed_at && <span>{t('admin.billing.table.payments.processed')}: {new Date(p.processed_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>}
+            )}
+          </>
+        )}
+
+        {/* Webhooks View */}
+        {view === 'webhooks' && (
+          <>
+            {/* Desktop Table */}
+            <Card className="p-0 overflow-hidden hidden lg:block">
+              <div className="p-4 border-b border-gray-200 bg-white">
+                <h3 className="font-semibold text-gray-900">Webhooks Recebidos</h3>
+              </div>
+              
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50 border-b border-gray-200">
+                      <th className="p-4 text-left font-semibold text-gray-700">ID</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Evento</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Status</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Recebido em</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Latência</th>
+                      <th className="p-4 text-left font-semibold text-gray-700">Tentativas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading && (
+                      <tr>
+                        <td colSpan={6} className="p-4">
+                          <div className="space-y-3">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                              <Skeleton key={i} lines={1} className="h-12" />
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    {!loading && webhooks.map(w => (
+                      <tr key={w.id} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors">
+                        <td className="p-4">
+                          <div className="font-mono text-xs text-gray-900 select-all">
+                            {w.id}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <div className="font-mono text-xs text-gray-600">
+                            {w.event}
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                            w.status === 'processed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                          }`}>
+                            {w.status}
+                          </span>
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {new Date(w.received_at).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')}
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {w.latency_ms != null ? `${w.latency_ms}ms` : '—'}
+                        </td>
+                        <td className="p-4 text-sm text-gray-600">
+                          {w.attempts ?? '—'}
+                        </td>
+                      </tr>
+                    ))}
+                    {!loading && webhooks.length === 0 && (
+                      <tr>
+                        <td colSpan={6} className="p-8 text-center">
+                          <div className="flex flex-col items-center gap-3 text-gray-500">
+                            <Webhook size={48} className="text-gray-300" />
+                            <div>
+                              <div className="font-medium text-gray-900 mb-1">
+                                Nenhum webhook encontrado
+                              </div>
+                              <div className="text-sm">
+                                Os webhooks aparecerão aqui quando recebidos
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+              <div className="p-4 border-t border-gray-200 text-xs text-gray-500 bg-gray-50">
+                {t('admin.billing.webhooks.mockNote')}
               </div>
             </Card>
-          ))}
-          {!loading && (
-            <div className="flex justify-between items-center pt-2">
-              <Button variant="secondary" type="button" disabled={loading || payPage===1} onClick={()=> setPayPage(p=> Math.max(1,p-1))}>{t('admin.billing.pagination.previous')}</Button>
-              <span className="text-xs">{t('admin.billing.pagination.page')} {payPage}</span>
-              <Button variant="secondary" type="button" disabled={loading || !payHasMore} onClick={()=> setPayPage(p=> p+1)}>{t('admin.billing.pagination.next')}</Button>
-            </div>
-          )}
-        </div>
-        </>
-      )}
 
+            {/* Mobile List */}
+            <div className="space-y-3 lg:hidden">
+              <h3 className="font-semibold text-gray-900 mb-4">Webhooks Recebidos</h3>
 
+              {loading && (
+                <div className="space-y-3">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <Card key={i} className="p-4">
+                      <Skeleton lines={3} />
+                    </Card>
+                  ))}
+                </div>
+              )}
 
-      {view==='webhooks' && (
-        <>
-        <Card className="p-0 overflow-x-auto hidden md:block">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-gray-100 text-left">
-                <th className="p-2">ID</th>
-                <th className="p-2">Evento</th>
-                <th className="p-2">Status</th>
-                <th className="p-2">Recebido</th>
-                <th className="p-2">Latency</th>
-                <th className="p-2">Tentativas</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading && <tr><td colSpan={6} className="p-4"><Skeleton lines={3} /></td></tr>}
-              {!loading && webhooks.length===0 && <tr><td colSpan={6} className="p-4 text-sm text-gray-500">{t('admin.billing.table.webhooks.empty')}</td></tr>}
               {!loading && webhooks.map(w => (
-                <tr key={w.id} className="border-b last:border-none hover:bg-gray-50">
-                  <td className="p-2 font-mono text-xs select-all">{w.id}</td>
-                  <td className="p-2 font-mono text-xs">{w.event}</td>
-                  <td className="p-2 text-xs"><span className={`px-2 py-0.5 rounded text-[10px] font-medium ${w.status==='processed'?'bg-green-100 text-green-700': 'bg-red-100 text-red-700'}`}>{w.status}</span></td>
-                  <td className="p-2 text-xs">{new Date(w.received_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</td>
-                  <td className="p-2 text-xs">{w.latency_ms != null ? w.latency_ms+'ms' : '—'}</td>
-                  <td className="p-2 text-xs">{w.attempts ?? '—'}</td>
-                </tr>
+                <Card key={w.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-mono text-xs text-gray-900 select-all mb-2">
+                        {w.id}
+                      </div>
+                      <div className="font-mono text-xs text-gray-600">
+                        {w.event}
+                      </div>
+                    </div>
+                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+                      w.status === 'processed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
+                      {w.status}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4 text-sm">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Recebido</div>
+                      <div className="text-xs">
+                        {new Date(w.received_at).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Latência</div>
+                      <div className="text-xs">{w.latency_ms != null ? `${w.latency_ms}ms` : '—'}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3 mt-3">
+                    <div>Tentativas: {w.attempts ?? '—'}</div>
+                  </div>
+                </Card>
               ))}
-            </tbody>
-          </table>
-          <div className="p-3 border-t text-[11px] text-gray-500">{t('admin.billing.webhooks.mockNote')}</div>
-        </Card>
-        <div className="space-y-3 md:hidden">
-          {loading && <Card className="p-4"><Skeleton lines={3} /></Card>}
-          {!loading && webhooks.length===0 && <Card className="p-4 text-center text-xs text-gray-500">{t('admin.billing.table.webhooks.empty')}</Card>}
-          {!loading && webhooks.map(w => (
-            <Card key={w.id} className="p-4 space-y-1">
-              <div className="flex justify-between gap-2">
-                <span className="font-mono text-[11px] select-all break-all max-w-[140px]">{w.id}</span>
-                <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${w.status==='processed'?'bg-green-100 text-green-700':'bg-red-100 text-red-700'}`}>{w.status}</span>
+
+              {!loading && webhooks.length === 0 && (
+                <Card className="p-8 text-center">
+                  <div className="flex flex-col items-center gap-3 text-gray-500">
+                    <Webhook size={48} className="text-gray-300" />
+                    <div>
+                      <div className="font-medium text-gray-900 mb-1">
+                        Nenhum webhook encontrado
+                      </div>
+                      <div className="text-sm">
+                        Os webhooks aparecerão aqui quando recebidos
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              <div className="text-xs text-gray-500 mt-4">
+                {t('admin.billing.webhooks.mockNote')}
               </div>
-              <div className="text-[11px] text-gray-600 flex flex-wrap gap-2">
-                <span>{w.event}</span>
-                <span>{new Date(w.received_at).toLocaleString(locale==='pt'?'pt-BR':'en-US')}</span>
-                {w.latency_ms!=null && <span>{w.latency_ms}ms</span>}
-                {w.attempts!=null && <span>{w.attempts}x</span>}
-              </div>
-            </Card>
-          ))}
-        </div>
-        </>
-      )}
-      <p className="text-[11px] text-gray-500">{t('admin.billing.nextSteps.note')}</p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
