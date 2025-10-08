@@ -434,7 +434,6 @@ export type TranslationKey =
   | 'consultations.loading'
   | 'consultations.loadingSlots'
   | 'consultations.none'
-  | 'consultations.refresh'
   | 'consultations.schedule'
   | 'consultations.schedule.buttons.back'
   | 'consultations.schedule.buttons.cancel'

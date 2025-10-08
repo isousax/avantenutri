@@ -166,7 +166,7 @@ const Perfil: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-4 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 p-4 pb-20">
       {/* Header do Perfil */}
       <div className="flex items-center gap-4 mb-6">
         <div className="relative">
@@ -395,17 +395,6 @@ const Perfil: React.FC = () => {
                 className="flex w-full px-4 py-3 rounded-xl border bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20"
                 placeholder="Como você quer ser chamado"
                 maxLength={70}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Email
-              </label>
-              <input
-                value={user?.email || ""}
-                disabled
-                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-gray-600"
               />
             </div>
 

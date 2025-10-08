@@ -11,7 +11,7 @@ const Consultas: React.FC = () => {
     },
     {
       question: "O app está com problemas técnicos, o que fazer?",
-      answer: "Tente atualizar a página, limpar o cache do navegador ou entre em contato conosco pelo formulário abaixo."
+      answer: "Tente atualizar a página, limpar o cache do navegador ou entre em contato conosco."
     }
   ];
     

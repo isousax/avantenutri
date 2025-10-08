@@ -362,7 +362,7 @@ const AgendarConsultaPage: React.FC = () => {
 
   const renderEtapa1 = () => {
     return (
-      <div className="space-y-6">
+      <div className="space-y-6 max-w-full">
         {/* Header da Etapa */}
         <div className="text-center mb-2">
           <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-3">
@@ -387,16 +387,19 @@ const AgendarConsultaPage: React.FC = () => {
             const isEligible = !isReavaliacao || canUseReavaliacao;
             const isDisabled = !isEligible;
 
+            const selected = formData.tipoConsulta === tipo.value;
+
             return (
               <Card
                 key={tipo.value}
-                className={`p-5 border-2 transition-all duration-300 ${
+                // box-border garante borda+padding contidos no tamanho do elemento
+                className={`box-border w-full p-5 border rounded-lg transition-all duration-200 overflow-hidden ${
                   isDisabled
-                    ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
-                    : `cursor-pointer hover:shadow-lg ${
-                        formData.tipoConsulta === tipo.value
-                          ? "border-blue-500 bg-blue-50 shadow-md"
-                          : "border-gray-200 hover:border-blue-300"
+                    ? "border-gray-200 bg-gray-50 opacity-70 cursor-not-allowed"
+                    : `cursor-pointer ${
+                        selected
+                          ? "bg-blue-50 border-blue-300 shadow-sm ring-2 ring-blue-300"
+                          : "border-gray-200 hover:shadow-sm hover:border-blue-300"
                       }`
                 }`}
                 onClick={() => {
@@ -408,29 +411,34 @@ const AgendarConsultaPage: React.FC = () => {
                   }
                 }}
               >
+                {/* Conteúdo principal: ícone + título/preço */}
                 <div className="flex items-start gap-4">
-                  <div
-                    className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${
-                      tipo.color
-                    } rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      isDisabled ? "opacity-50" : ""
-                    }`}
-                  >
-                    <TipoIcon size={26} className="text-white" />
-                  </div>
+                  {TipoIcon ? (
+                    <div
+                      className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${
+                        tipo.color
+                      } rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        isDisabled ? "opacity-50" : ""
+                      }`}
+                    >
+                      <TipoIcon size={26} className="text-white" />
+                    </div>
+                  ) : null}
 
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
+                    <div className="flex items-center justify-between mb-2 gap-3">
+                      <div className="min-w-0">
                         <h3
                           className={`font-bold sm:text-lg ${
                             isDisabled ? "text-gray-400" : "text-gray-900"
                           }`}
+                          title={t(tipo.labelKey)}
                         >
                           {t(tipo.labelKey)}
                         </h3>
                       </div>
-                      <div className="text-right">
+
+                      <div className="text-right flex-shrink-0 ml-2">
                         <div
                           className={`font-bold sm:text-lg ${
                             isDisabled ? "text-gray-400" : "text-green-600"
@@ -447,50 +455,61 @@ const AgendarConsultaPage: React.FC = () => {
                         </div>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    {/* Aviso de não elegibilidade para reavaliação */}
-                    {isReavaliacao && !isEligible && (
-                      <div className="flex items-center gap-2 mt-3 p-2 rounded-lg text-[11px] sm:text-sm bg-yellow-50 text-yellow-700 border border-yellow-200">
-                        <AlertCircle size={16} />
-                        <span>
-                          Não elegível -{" "}
-                          {t("consultations.credits.reavaliacao.rule")}
+                {/* BLOCOS DE AVISO (ocupam 100% da largura do card) */}
+                <div className="mt-4 w-full">
+                  {/* Aviso de não elegibilidade para reavaliação (linha inteira) */}
+                  {isReavaliacao && !isEligible && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg text-[13px] sm:text-sm bg-yellow-50 text-yellow-800 border border-yellow-200">
+                      <div className="mt-0.5">
+                        <AlertCircle size={18} />
+                      </div>
+                      <div className="text-sm leading-tight">
+                        <strong>Não elegível</strong>{" "}
+                        <span className="text-yellow-800">
+                          - {t("consultations.credits.reavaliacao.rule")}
                         </span>
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {/* Status de Créditos */}
-                    {needsCredit && isEligible && (
-                      <div
-                        className={`flex items-center gap-2 mt-3 p-2 rounded-lg text-xs ${
-                          hasCredits
-                            ? "bg-green-50 text-green-700 border border-green-200"
-                            : "bg-red-50 text-red-700 border border-red-200"
-                        }`}
-                      >
+                  {/* Status de Créditos (linha inteira) */}
+                  {needsCredit && isEligible && (
+                    <div
+                      className={`flex items-start gap-3 p-3 rounded-lg text-sm ${
+                        hasCredits
+                          ? "bg-green-50 text-green-700 border border-green-200"
+                          : "bg-red-50 text-red-700 border border-red-200"
+                      }`}
+                    >
+                      <div className="mt-0.5">
                         {hasCredits ? (
-                          <>
-                            <CheckCircle2 size={16} />
-                            <span>
-                              {availableCredits} crédito(s) disponível(s)
-                            </span>
-                          </>
+                          <CheckCircle2 size={18} />
                         ) : (
-                          <>
-                            <AlertCircle size={16} />
-                            <span>Créditos insuficientes</span>
-                          </>
+                          <AlertCircle size={18} />
                         )}
                       </div>
-                    )}
-
-                    {/* Regra de Reavaliação */}
-                    {tipo.value === "reavaliacao" && isEligible && (
-                      <div className="mt-2 text-xs text-gray-500 bg-gray-50 p-2 rounded border">
-                        {t("consultations.credits.reavaliacao.rule")}
+                      <div className="leading-tight">
+                        {hasCredits ? (
+                          <span>
+                            <strong>{availableCredits}</strong> crédito(s)
+                            disponível(is)
+                          </span>
+                        ) : (
+                          <span>Créditos insuficientes</span>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </div>
+                  )}
+
+                  {/* Regra de Reavaliação (quando elegível mostramos a regra em bloco separado) */}
+                  {tipo.value === "reavaliacao" && isEligible && (
+                    <div className="mt-3 text-sm text-gray-500 bg-gray-50 p-3 rounded border">
+                      {t("consultations.credits.reavaliacao.rule")}
+                    </div>
+                  )}
                 </div>
               </Card>
             );
@@ -533,7 +552,7 @@ const AgendarConsultaPage: React.FC = () => {
             <div
               className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${selectedTipo?.color} rounded-xl flex items-center justify-center flex-shrink-0`}
             >
-              <TipoIcon size={24} className="text-white" />
+              <TipoIcon size={26} className="text-white" />
             </div>
             <div className="flex-1 min-w-0  ">
               <h3 className="font-bold text-gray-900 sm:text-lg">

@@ -12,14 +12,13 @@ import { CAPABILITIES } from '../../../types/capabilities';
 import { useI18n, formatNumber } from '../../../i18n';
 import { formatDateSafe } from '../../../utils/formatDate';
 import { ArrowLeft, Target, Plus, Check, X } from '../../../components/icons';
-import { TrendingUp, BarChart3, Sparkles, Scale, Edit3, History } from 'lucide-react';
+import {  BarChart3, Sparkles, Scale, Edit3, History } from 'lucide-react';
 import StatusPill, { getStatusTone } from '../../../components/ui/StatusPill';
-
 const PesoRegistroPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'registrar' | 'analise' | 'historico'>('registrar');
   
   const inteligente = useWeightLogsInteligente(90);
-  const { latest, logs, diff_kg, series, goal, setGoal, upsert, patch } = useWeightData(90) as any;
+  const { latest, logs, series, goal, setGoal, upsert, patch } = useWeightData(90) as any;
   const analiseTendencia = inteligente.analiseTendencia;
   const { t, locale } = useI18n();
   const { can } = usePermissions();
@@ -93,27 +92,9 @@ const PesoRegistroPage: React.FC = () => {
   const renderRegistrar = () => (
     <div className="space-y-6">
 
-      {/* Progresso */}
-      {diff_kg !== null && (
-        <Card className="bg-white border-0 shadow-lg rounded-2xl p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={18} className="text-gray-600" />
-              <span className="text-sm font-medium text-gray-700">Progresso total</span>
-            </div>
-            <span className={`text-lg font-bold ${
-              diff_kg < 0 ? 'text-green-600' : 
-              diff_kg > 0 ? 'text-red-600' : 'text-gray-600'
-            }`}>
-              {diff_kg >= 0 ? '+' : ''}{formatNumber(+diff_kg.toFixed(1), locale)} kg
-            </span>
-          </div>
-        </Card>
-      )}
-
       {/* Formulário de Registro */}
       <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
-        <div className="p-5">
+        <div className="p-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
               <Plus size={20} className="text-blue-600" />
@@ -282,7 +263,7 @@ const PesoRegistroPage: React.FC = () => {
   const renderHistorico = () => (
     <div className="space-y-6">
       <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
-        <div className="p-5">
+        <div className="p-1">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
               <History size={20} className="text-purple-600" />
@@ -323,18 +304,18 @@ const PesoRegistroPage: React.FC = () => {
                       
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
-                          <p className="text-lg font-semibold text-gray-900">
+                          <p className="sm:text-lg font-semibold text-gray-900">
                             {formatNumber(+log.weight_kg.toFixed(1), locale)} kg
                           </p>
                           {goal && (
-                            <span className={`text-xs px-1.5 py-0.5 rounded-full ${
+                            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
                               log.weight_kg > goal ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
                             }`}>
                               {goal > log.weight_kg ? '↓' : '↑'} {Math.abs(goal - log.weight_kg).toFixed(1)}kg
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
+                        <p className="text-xs text-gray-500 mt-1">
                           {formatDateSafe(log.log_date, locale)}
                         </p>
                         {log.note && (
@@ -375,7 +356,6 @@ const PesoRegistroPage: React.FC = () => {
                         className="ml-4 text-sm bg-white hover:bg-gray-100 text-gray-700 px-3 py-2 rounded-lg transition-colors duration-200 border border-gray-300 flex items-center gap-1"
                       >
                         <Edit3 size={14} />
-                        Editar
                       </button>
                     )}
                   </div>
@@ -417,7 +397,7 @@ const PesoRegistroPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-1 py-6">
         {/* Tabs de Navegação */}
         <Card className="bg-white border-0 shadow-lg rounded-2xl mb-6">
           <div className="flex p-1">

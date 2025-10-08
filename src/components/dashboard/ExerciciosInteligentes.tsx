@@ -11,7 +11,6 @@ import {
   Dumbbell,
   Heart,
   Zap,
-  Star,
   CheckCircle,
   PlayCircle,
   ArrowLeft,
@@ -76,46 +75,9 @@ export function ExerciciosInteligentes() {
     },
   };
 
-  const getNivelIcon = (nivel: string) => {
-    switch (nivel) {
-      case 'iniciante': return <Star className="text-green-500" size={20} />;
-      case 'intermediario': return <Zap className="text-yellow-500" size={20} />;
-      case 'avancado': return <Trophy className="text-red-500" size={20} />;
-      default: return <Activity className="text-blue-500" size={20} />;
-    }
-  };
-
   // Conteúdo da aba Hoje
   const renderHoje = () => (
     <div className="space-y-6">
-      {/* Stats Rápidos */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="bg-white border-0 shadow-lg rounded-2xl p-4 text-center">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center mx-auto mb-2">
-            {getNivelIcon(nivelCondicionamento)}
-          </div>
-          <p className="text-sm font-medium text-gray-600">Nível</p>
-          <p className="text-lg font-bold text-gray-900 capitalize">
-            {nivelCondicionamento}
-          </p>
-        </Card>
-
-        <Card className="bg-white border-0 shadow-lg rounded-2xl p-4 text-center">
-          <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center mx-auto mb-2">
-            <Flame size={20} className="text-white" />
-          </div>
-          <p className="text-sm font-medium text-gray-600">Meta</p>
-          <p className="text-lg font-bold text-gray-900">{caloriasAlvo} kcal</p>
-        </Card>
-
-        <Card className="bg-white border-0 shadow-lg rounded-2xl p-4 text-center">
-          <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center mx-auto mb-2">
-            <Clock size={20} className="text-white" />
-          </div>
-          <p className="text-sm font-medium text-gray-600">Semana</p>
-          <p className="text-lg font-bold text-gray-900">{planoSemanal.totalSemanal.tempo}min</p>
-        </Card>
-      </div>
 
       {/* Atividade de Hoje em Destaque */}
       {atividadeHoje && (
@@ -126,47 +88,47 @@ export function ExerciciosInteligentes() {
                 <Trophy size={24} className="text-yellow-300" />
                 <h2 className="text-lg font-bold">Exercício de Hoje</h2>
               </div>
-              <Button className="bg-white/20 hover:bg-white/30 text-white border-0 flex items-center justify-center text-sm">
+              <Button className="bg-white/20 hover:bg-white/30 text-white border-0 flex items-center justify-center text-sm" noFocus>
                 <PlayCircle size={18} />
               </Button>
             </div>
             
-            <div className="bg-white/10 rounded-2xl p-5 backdrop-blur-sm">
+            <div className="bg-white/10 rounded-2xl p-3 backdrop-blur-sm">
               <div className="flex items-start justify-between">
                 <div className="flex items-start gap-4 flex-1">
                   <div className="text-4xl">{atividadeHoje.icone}</div>
                   <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
+                    <div className="flex justify-between gap-3 mb-2">
                       <h3 className="text-lg font-bold text-white">
                         {atividadeHoje.nome}
                       </h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium bg-white/20 text-white border border-white/30`}>
+                      <span className={`px-3 py-1 rounded-full text-[11px] font-medium bg-white/20 text-white border border-white/30`}>
                         {atividadeHoje.tipo}
                       </span>
                     </div>
-                    <p className="text-blue-100 mb-4">{atividadeHoje.descricao}</p>
+                    <p className="text-blue-100 mb-4 text-sm">{atividadeHoje.descricao}</p>
                     
                     <div className="grid grid-cols-3 gap-4 text-center">
                       <div>
-                        <div className="flex items-center justify-center gap-1 text-sm text-blue-100 mb-1">
+                        <div className="flex items-center justify-center gap-1 text-xs text-blue-100 mb-1">
                           <Clock size={14} />
                           Duração
                         </div>
-                        <div className="font-bold text-white">{atividadeHoje.duracao}min</div>
+                        <div className="font-bold text-white text-sm">{atividadeHoje.duracao}min</div>
                       </div>
                       <div>
-                        <div className="flex items-center justify-center gap-1 text-sm text-blue-100 mb-1">
+                        <div className="flex items-center justify-center gap-1 text-xs text-blue-100 mb-1">
                           <Flame size={14} />
                           Calorias
                         </div>
-                        <div className="font-bold text-white">{atividadeHoje.calorias}kcal</div>
+                        <div className="font-bold text-white text-sm">{atividadeHoje.calorias}kcal</div>
                       </div>
                       <div>
-                        <div className="flex items-center justify-center gap-1 text-sm text-blue-100 mb-1">
+                        <div className="flex items-center justify-center gap-1 text-xs text-blue-100 mb-1">
                           <Target size={14} />
                           Dificuldade
                         </div>
-                        <div className="font-bold text-white">{atividadeHoje.dificuldade}</div>
+                        <div className="font-bold text-white text-sm">{atividadeHoje.dificuldade}</div>
                       </div>
                     </div>
                   </div>
@@ -174,7 +136,7 @@ export function ExerciciosInteligentes() {
               </div>
 
               <div className="mt-4 pt-4 border-t border-white/20">
-                <h4 className="font-semibold text-white mb-3">Benefícios Principais:</h4>
+                <h4 className="font-semibold text-white mb-3 text-sm">Benefícios Principais:</h4>
                 <div className="flex flex-wrap gap-2">
                   {atividadeHoje.beneficios.map((beneficio: string, index: number) => (
                     <span
@@ -198,7 +160,7 @@ export function ExerciciosInteligentes() {
             <Lightbulb size={20} className="text-green-600" />
             <h3 className="font-semibold text-gray-900">Dica do Dia</h3>
           </div>
-          <p className="text-gray-700">
+          <p className="text-gray-700 text-sm">
             Mantenha a consistência! {nivelCondicionamento === 'iniciante' 
               ? 'Comece com exercícios leves e aumente gradualmente.' 
               : nivelCondicionamento === 'intermediario'
@@ -215,27 +177,24 @@ export function ExerciciosInteligentes() {
   const renderSemana = () => (
     <div className="space-y-6">
       {/* Resumo da Semana */}
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="text-center p-4 bg-blue-50 border-0">
+      <div className="grid grid-cols-3 gap-2">
+        <Card className="text-center bg-blue-50 border-0">
           <Clock size={20} className="text-blue-600 mx-auto mb-2" />
-          <div className="text-sm text-gray-600">Tempo Total</div>
           <div className="text-lg font-bold text-blue-700">{planoSemanal.totalSemanal.tempo}min</div>
         </Card>
-        <Card className="text-center p-4 bg-orange-50 border-0">
+        <Card className="text-center bg-orange-50 border-0">
           <Flame size={20} className="text-orange-600 mx-auto mb-2" />
-          <div className="text-sm text-gray-600">Calorias Total</div>
           <div className="text-lg font-bold text-orange-700">{planoSemanal.totalSemanal.calorias}kcal</div>
         </Card>
-        <Card className="text-center p-4 bg-green-50 border-0">
+        <Card className="text-center bg-green-50 border-0">
           <Activity size={20} className="text-green-600 mx-auto mb-2" />
-          <div className="text-sm text-gray-600">Variedade</div>
           <div className="text-lg font-bold text-green-700">{planoSemanal.totalSemanal.variedade} tipos</div>
         </Card>
       </div>
 
       {/* Grade Semanal */}
       <Card className="bg-white border-0 shadow-lg rounded-2xl overflow-hidden">
-        <div className="p-5">
+        <div className="">
           <div className="flex items-center gap-3 mb-6">
             <Calendar size={20} className="text-purple-600" />
             <h3 className="font-semibold text-gray-900">Plano da Semana</h3>
@@ -288,10 +247,10 @@ export function ExerciciosInteligentes() {
                             >
                               <TipoIcon size={18} className={tipoConfig.text} />
                               <div className="flex-1">
-                                <div className="font-medium text-gray-800">
+                                <div className="font-medium text-gray-800 text-sm">
                                   {atividade.nome}
                                 </div>
-                                <div className="text-sm text-gray-600">
+                                <div className="text-xs text-gray-600">
                                   {atividade.duracao}min • {atividade.calorias}kcal
                                 </div>
                               </div>
@@ -321,7 +280,7 @@ export function ExerciciosInteligentes() {
     <div className="space-y-6">
       {recomendacoes.map((rec: any, index: number) => (
         <Card key={index} className="border-0 shadow-lg rounded-2xl overflow-hidden">
-          <div className="p-5">
+          <div className="">
             <div className="flex items-start gap-4">
               <div className="text-3xl">{rec.icone}</div>
               <div className="flex-1">
@@ -337,9 +296,9 @@ export function ExerciciosInteligentes() {
                     {rec.intensidade}
                   </span>
                 </div>
-                <p className="text-gray-600 mb-3">{rec.descricao}</p>
+                <p className="text-gray-600 mb-3 text-sm">{rec.descricao}</p>
                 <div className="bg-blue-50 rounded-lg p-3 border border-blue-200">
-                  <p className="text-blue-700 font-medium text-sm">
+                  <p className="text-blue-700 font-medium text-xs">
                     💡 {rec.motivacao}
                   </p>
                 </div>
@@ -354,7 +313,7 @@ export function ExerciciosInteligentes() {
         <div className="p-5">
           <div className="flex items-center gap-3 mb-4">
             <Brain size={20} className="text-purple-600" />
-            <h3 className="font-semibold text-gray-900">Dicas Inteligentes</h3>
+            <h3 className="font-semibold text-gray-900">Dicas</h3>
           </div>
           
           <div className="space-y-3">
@@ -386,7 +345,7 @@ export function ExerciciosInteligentes() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 safe-area-bottom">
       {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
-        <div className="max-w-6xl mx-auto px-4 py-4">
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -409,7 +368,7 @@ export function ExerciciosInteligentes() {
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-1 py-6">
         {/* Tabs de Navegação */}
         <Card className="bg-white border-0 shadow-lg rounded-2xl mb-6">
           <div className="flex p-1">

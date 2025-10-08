@@ -5,7 +5,6 @@ import { useConsultations } from "../../hooks/useConsultations";
 import { useI18n, formatDate } from "../../i18n";
 import React from "react";
 import StatusPill, { getStatusTone } from "../ui/StatusPill";
-import { useConsultationCreditsSummary } from "../../hooks/useConsultationCredits";
 import { useToast } from "../ui/ToastProvider";
 
 const Consultas: React.FC = () => {
@@ -13,8 +12,6 @@ const Consultas: React.FC = () => {
   const { items, loading, error, list, cancel } = useConsultations();
   const [cancelingId, setCancelingId] = React.useState<string | null>(null);
   const { locale, t } = useI18n();
-  const { data: creditsSummaryData } = useConsultationCreditsSummary();
-  const summary = creditsSummaryData?.summary || {};
   const { push } = useToast();
   
   const upcoming = React.useMemo(() =>
@@ -84,17 +81,10 @@ const Consultas: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div className="flex flex-wrap gap-3 items-center">
-          <div className="flex gap-2 text-xs">
-            <span className="px-2 py-1 rounded bg-green-50 text-green-700 border border-green-200">
-              Avaliação: {summary.avaliacao_completa?.available || 0}
-            </span>
-            <span className="px-2 py-1 rounded bg-blue-50 text-blue-700 border border-blue-200">
-              Reavaliação: {summary.reavaliacao?.available || 0}
-            </span>
-          </div>
           <Button 
             onClick={handleSchedule}
             className="flex items-center justify-center bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 border-0 text-white shadow-lg shadow-blue-500/25"
+            noFocus
           >
             <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -114,8 +104,7 @@ const Consultas: React.FC = () => {
               </svg>
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900">{t('consultations.upcoming')}</h2>
-              <p className="text-sm text-gray-600">Suas consultas agendadas</p>
+              <h2 className="text-lg font-bold text-gray-900">{t('consultations.upcoming')}</h2>
             </div>
           </div>
           <button 
@@ -125,7 +114,6 @@ const Consultas: React.FC = () => {
             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
             </svg>
-            {t('consultations.refresh')}
           </button>
         </div>
 
@@ -163,7 +151,7 @@ const Consultas: React.FC = () => {
             <Button 
               onClick={() => navigate('/agendar-consulta')}
               variant="secondary"
-              className="border border-gray-300 hover:border-gray-400"
+              noFocus
             >
               Agendar Primeira Consulta
             </Button>

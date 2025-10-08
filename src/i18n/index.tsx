@@ -272,7 +272,6 @@ const translations: Record<Locale, Record<string,string>> = {
   'consultations.status.scheduled': 'Agendada',
   'consultations.status.canceled': 'Cancelada',
   'consultations.status.completed': 'Concluída',
-  'consultations.refresh': 'Atualizar',
   'consultations.scheduling': 'Agendando...',
   // Scheduling (patient flow)
   'consultations.schedule.typeHeading': 'Tipo de Consulta',
@@ -1406,7 +1405,6 @@ const translations: Record<Locale, Record<string,string>> = {
   'consultations.status.scheduled': 'Scheduled',
   'consultations.status.canceled': 'Canceled',
   'consultations.status.completed': 'Completed',
-  'consultations.refresh': 'Refresh',
   'consultations.scheduling': 'Scheduling...',
   // Scheduling (patient flow)
   'consultations.schedule.typeHeading': 'Consultation Type',

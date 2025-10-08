@@ -11,6 +11,9 @@ import {
   Calendar,
   ChevronDown,
   Droplets,
+  Edit3,
+  BarChart3,
+  History,
   GlassWater,
   Settings,
   Check,
@@ -29,12 +32,15 @@ export {
   Calendar,
   ChevronDown,
   Droplets,
+  Edit3,
+  BarChart3,
+  History,
   GlassWater,
   Settings,
   Check,
+  Inbox,
   X,
   Zap,
-  Inbox,
 };
 
 // Wrapper utilitário opcional para padronizar tamanho

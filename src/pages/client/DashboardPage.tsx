@@ -563,6 +563,27 @@ const DashboardPage: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const qc = useQueryClient();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  
+  // Handle body scroll lock when sidebar is open on mobile
+  useEffect(() => {
+    if (sidebarOpen) {
+      document.body.style.overflow = 'hidden';
+      document.body.style.position = 'fixed';
+      document.body.style.width = '100%';
+    } else {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    }
+
+    return () => {
+      document.body.style.overflow = '';
+      document.body.style.position = '';
+      document.body.style.width = '';
+    };
+  }, [sidebarOpen]);
+  
   // Hover timers for deep (includeData) diet plan prefetch
   const dietHoverTimers = useRef<Record<string, number>>({});
 
@@ -589,7 +610,6 @@ const DashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<
     "overview" | "questionario" | "dietas" | "perfil" | "suporte" | "consultas"
   >("overview");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // Prefetch baseado em visibilidade para dietas (mobile support)
   useIntersectionPrefetch("[data-plan-id]", {
@@ -852,15 +872,15 @@ const DashboardPage: React.FC = () => {
       {/* Modern Sidebar */}
       <aside
         className={`
-          fixed md:static inset-y-0 left-0 z-50 w-80 bg-white/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-gray-200/60
+          fixed md:static inset-y-0 left-0 z-50 w-80 bg-white/90 backdrop-blur-xl shadow-2xl transform transition-transform duration-300 ease-in-out border-r border-gray-200/60 flex flex-col
           ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
           }
         `}
       >
-        <div className="flex flex-col h-full">
+        <div className="flex flex-col min-h-0 h-full">
           {/* Logo */}
-          <div className="p-6 border-b border-gray-200/60">
+          <div className="flex-shrink-0 p-6 border-b border-gray-200/60">
             <div className="flex items-center">
               <div className="flex items-center pr-4 border-r border-gray-300/60">
                 <LogoCroped />
@@ -897,7 +917,7 @@ const DashboardPage: React.FC = () => {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 p-4">
+          <nav className="flex-1 p-4 overflow-y-auto">
             {[
               { id: "overview", label: "Visão Geral", icon: "📊" },
               { id: "perfil", label: "Meu Perfil", icon: "👤" },
@@ -951,7 +971,7 @@ const DashboardPage: React.FC = () => {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-gray-200/60">
+          <div className="flex-shrink-0 p-4 border-t border-gray-200/60 mt-auto">
             <Button
               variant="secondary"
               className="w-full flex justify-center text-center py-3.5 text-sm rounded-2xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"

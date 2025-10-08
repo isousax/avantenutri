@@ -8,7 +8,7 @@ interface ProgressoNutricionalProps {
 }
 
 const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className = '' }) => {
-  const { metas, metasCalculadas } = useMetasAutomaticas();
+  const { metas } = useMetasAutomaticas();
   // Reutilizar queries reativas (1 dia para granularidade). Caso deseje evitar nova query, aceitar props no futuro.
   const meal = useMealData(1);
   const water = useWaterData(1);
@@ -47,22 +47,16 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h3 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
             📊 Progresso Nutricional de Hoje
           </h3>
-          <p className="text-sm text-gray-600 mt-1">
-            {metasCalculadas ? 'Metas calculadas automaticamente' : 'Usando metas padrão'}
-          </p>
-        </div>
-        <div className="text-right text-sm text-gray-500">
-          {new Date().toLocaleDateString('pt-BR')}
         </div>
       </div>
 
       {/* Grid de Progressos */}
-      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Calorias */}
-        <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200">
+        <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">🔥 Calorias</span>
             <span className={`text-xs font-bold ${getTextoProgresso(progressos.calorias)}`}>
@@ -88,7 +82,7 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
         </div>
 
         {/* Proteína */}
-        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">💪 Proteína</span>
             <span className={`text-xs font-bold ${getTextoProgresso(progressos.proteina)}`}>
@@ -114,7 +108,7 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
         </div>
 
         {/* Carboidratos */}
-        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
+        <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">🍞 Carboidratos</span>
             <span className={`text-xs font-bold ${getTextoProgresso(progressos.carboidratos)}`}>
@@ -140,7 +134,7 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
         </div>
 
         {/* Gordura */}
-        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+        <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">🥑 Gordura</span>
             <span className={`text-xs font-bold ${getTextoProgresso(progressos.gordura)}`}>
@@ -166,7 +160,7 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
         </div>
 
         {/* Água */}
-        <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-200">
+        <div className="col-span-2 md:col-span-1 bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-200 h-full flex flex-col justify-between">
           <div className="flex items-center justify-between mb-2">
             <span className="text-sm font-semibold text-gray-700">💧 Água</span>
             <span className={`text-xs font-bold ${getTextoProgresso(progressos.agua)}`}>
@@ -201,16 +195,16 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
           </h4>
           <div className="space-y-1 text-sm">
             <div className="flex justify-between">
-              <span>Total de calorias:</span>
-              <span className="font-medium">{hoje?.calories || 0} kcal</span>
+              <span className="text-xs">Total de calorias:</span>
+              <span className="font-bold">{hoje?.calories || 0} kcal</span>
             </div>
             <div className="flex justify-between">
-              <span>Refeições registradas:</span>
-              <span className="font-medium">{hoje?.count || 0}</span>
+              <span className="text-xs">Refeições registradas:</span>
+              <span className="font-bold">{hoje?.count || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span>Copos de água:</span>
-              <span className="font-medium">{totalToday || 0}</span>
+              <span className="text-xs">Copos de água:</span>
+              <span className="font-bold">{totalToday || 0}</span>
             </div>
           </div>
         </div>
