@@ -644,7 +644,7 @@ const AgendarConsultaPage: React.FC = () => {
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
-        <div className="max-w-2xl mx-auto px-4 py-4">
+        <div className="max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -668,7 +668,7 @@ const AgendarConsultaPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6">
+      <div className="max-w-4xl mx-auto px-4 py-6">
         {/* Formulário Principal */}
         <Card className="p-6 shadow-xl border-0 bg-white/90 backdrop-blur-sm">
           <form onSubmit={handleSubmit}>

@@ -88,7 +88,7 @@ export const ProgressoHidratacao: React.FC = () => {
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
       {/* Progresso Principal */}
       <Card className="lg:col-span-2 bg-gradient-to-br from-blue-50 to-cyan-50 border-blue-200">
-        <div className="p-6">
+        <div className="p-2">
           {/* Header com Status */}
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
@@ -98,7 +98,7 @@ export const ProgressoHidratacao: React.FC = () => {
                   {getStatusText(progressoHoje.status)}
                 </h3>
                 <p className="text-sm text-gray-600">
-                  Meta {metasFinais.fonte === 'automatica' ? 'automática' : 'personalizada'}: {metasFinais.metaCopos} copos
+                  Meta {metasFinais.fonte === 'automatica' ? 'automática' : 'personalizada'}
                 </p>
               </div>
             </div>
@@ -106,14 +106,13 @@ export const ProgressoHidratacao: React.FC = () => {
               <div className="text-2xl font-bold text-blue-700">
                 {progressoHoje.consumidoCopos}/{metasFinais.metaCopos}
               </div>
-              <div className="text-sm text-gray-600">copos hoje</div>
             </div>
           </div>
 
           {/* Barra de Progresso */}
           <div className="mb-6">
             <div className="flex justify-between text-sm text-gray-600 mb-2">
-              <span>Progresso: {progressoHoje.percentual}%</span>
+              <span>{progressoHoje.percentual}%</span>
               <span>{progressoHoje.faltaML > 0 ? `Faltam ${progressoHoje.faltaML}ml` : 'Meta atingida!'}</span>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden">
@@ -138,7 +137,7 @@ export const ProgressoHidratacao: React.FC = () => {
             <div className="bg-white/60 rounded-lg p-4 border border-blue-200">
               <div className="flex items-center gap-2 mb-2">
                 <TargetIcon className="w-4 h-4 text-blue-600" />
-                <span className="font-medium text-blue-800">Meta Inteligente</span>
+                <span className="font-medium text-blue-800">Meta</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs text-gray-700">
                 <div>
@@ -165,13 +164,13 @@ export const ProgressoHidratacao: React.FC = () => {
 
       {/* Dicas e Estatísticas */}
       <div className="space-y-6">
-        {/* Dicas Inteligentes */}
+        {/* Dicas */}
         {dicasInteligentes.length > 0 && (
           <Card className="bg-gradient-to-br from-cyan-50 to-blue-50 border-cyan-200">
             <div className="p-4">
               <h4 className="font-semibold text-gray-800 mb-3 flex items-center gap-2">
                 <ZapIcon className="w-4 h-4 text-cyan-600" />
-                Dicas Inteligentes
+                Dicas
               </h4>
               <div className="space-y-3">
                 {dicasInteligentes.slice(0, 2).map((dica, index) => (
@@ -205,21 +204,21 @@ export const ProgressoHidratacao: React.FC = () => {
               <TrendingUpIcon className="w-4 h-4 text-gray-600" />
               Esta Semana
             </h4>
-            <div className="grid grid-cols-2 gap-3 text-sm">
+            <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="text-center p-2 bg-white/60 rounded">
                 <div className="font-medium text-gray-600">Média Diária</div>
                 <div className="text-lg font-bold text-blue-700">{estatisticasSemana.mediaCopos}</div>
-                <div className="text-xs text-gray-500">copos</div>
+                <div className="text-[11px] text-gray-500">copos</div>
               </div>
               <div className="text-center p-2 bg-white/60 rounded">
                 <div className="font-medium text-gray-600">Dias Cumpridos</div>
                 <div className="text-lg font-bold text-green-700">{estatisticasSemana.diasCumpridos}</div>
-                <div className="text-xs text-gray-500">de 7</div>
+                <div className="text-[11px] text-gray-500">de 7</div>
               </div>
               <div className="text-center p-2 bg-white/60 rounded">
                 <div className="font-medium text-gray-600">Melhor Dia</div>
                 <div className="text-lg font-bold text-emerald-700">{Math.round(estatisticasSemana.melhorDia / metasFinais.cupSize)}</div>
-                <div className="text-xs text-gray-500">copos</div>
+                <div className="text-[11px] text-gray-500">copos</div>
               </div>
               <div className="text-center p-2 bg-white/60 rounded">
                 <div className="font-medium text-gray-600">Tendência</div>

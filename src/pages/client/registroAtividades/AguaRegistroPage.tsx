@@ -12,8 +12,6 @@ import {
   Plus,
   Minus,
   Target,
-  Trophy,
-  TrendingUp,
   Calendar,
   Droplets,
   GlassWater,
@@ -21,8 +19,8 @@ import {
   Check,
   X,
   Zap,
-  Activity
-} from 'lucide-react';
+  Activity,
+} from "lucide-react";
 
 const AguaRegistroPage: React.FC = () => {
   const { t } = useI18n();
@@ -41,7 +39,9 @@ const AguaRegistroPage: React.FC = () => {
 
   const [pendingCops, setPendingCops] = useState(0);
   const [isSaving, setIsSaving] = useState(false);
-  const [activeSection, setActiveSection] = useState<'progresso' | 'meta' | 'historico'>('progresso');
+  const [activeSection, setActiveSection] = useState<
+    "progresso" | "meta" | "historico"
+  >("progresso");
 
   const mlPorCopo = metasFinais.cupSize;
   const coposHoje = progressoHoje.consumidoCopos;
@@ -107,7 +107,10 @@ const AguaRegistroPage: React.FC = () => {
     }
   };
 
-  const progressoPercentual = Math.min(((coposHoje + pendingCops) / metaDiaria) * 100, 100);
+  const progressoPercentual = Math.min(
+    ((coposHoje + pendingCops) / metaDiaria) * 100,
+    100
+  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-cyan-50 to-blue-100 safe-area-bottom">
@@ -118,7 +121,7 @@ const AguaRegistroPage: React.FC = () => {
 
       {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
-        <div className="max-w-2xl mx-auto px-4 py-3">
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <button
               onClick={() => navigate(-1)}
@@ -141,24 +144,10 @@ const AguaRegistroPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* Card Principal de Registro */}
         <Card className="bg-white border-0 shadow-xl rounded-2xl overflow-hidden">
           <div className="p-6">
-            {/* Cabeçalho Simples */}
-            <div className="text-center mb-6">
-              <h2 className="text-xl font-bold text-gray-900 mb-2">
-                Quantos copos você bebeu?
-              </h2>
-              <p className="text-gray-600">
-                {new Date().toLocaleDateString("pt-BR", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "long",
-                })}
-              </p>
-            </div>
-
             {/* Contador Visual Grande */}
             <div className="text-center mb-6">
               <div className="relative inline-block mb-4">
@@ -171,7 +160,7 @@ const AguaRegistroPage: React.FC = () => {
                   <GlassWater size={16} className="text-blue-600" />
                 </div>
               </div>
-              
+
               <div className="space-y-1">
                 <p className="text-lg font-semibold text-gray-900">
                   {(coposHoje + pendingCops) * mlPorCopo}ml
@@ -185,7 +174,9 @@ const AguaRegistroPage: React.FC = () => {
             {/* Barra de Progresso */}
             <div className="mb-6">
               <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700">Progresso diário</span>
+                <span className="text-sm font-medium text-gray-700">
+                  Progresso diário
+                </span>
                 <span className="text-sm font-bold text-blue-600">
                   {progressoPercentual.toFixed(0)}%
                 </span>
@@ -244,11 +235,11 @@ const AguaRegistroPage: React.FC = () => {
         {/* Navegação por Seções */}
         <div className="flex bg-white rounded-2xl shadow-lg p-1 border border-gray-200">
           <button
-            onClick={() => setActiveSection('progresso')}
+            onClick={() => setActiveSection("progresso")}
             className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
-              activeSection === 'progresso'
-                ? 'bg-blue-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              activeSection === "progresso"
+                ? "bg-blue-500 text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -256,13 +247,13 @@ const AguaRegistroPage: React.FC = () => {
               Progresso
             </div>
           </button>
-          
+
           <button
-            onClick={() => setActiveSection('meta')}
+            onClick={() => setActiveSection("meta")}
             className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
-              activeSection === 'meta'
-                ? 'bg-blue-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              activeSection === "meta"
+                ? "bg-blue-500 text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -270,13 +261,13 @@ const AguaRegistroPage: React.FC = () => {
               Meta
             </div>
           </button>
-          
+
           <button
-            onClick={() => setActiveSection('historico')}
+            onClick={() => setActiveSection("historico")}
             className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-all ${
-              activeSection === 'historico'
-                ? 'bg-blue-500 text-white shadow-sm'
-                : 'text-gray-600 hover:text-gray-900'
+              activeSection === "historico"
+                ? "bg-blue-500 text-white shadow-sm"
+                : "text-gray-600 hover:text-gray-900"
             }`}
           >
             <div className="flex items-center justify-center gap-2">
@@ -288,39 +279,16 @@ const AguaRegistroPage: React.FC = () => {
 
         {/* Conteúdo das Seções */}
         <div className="animate-fade-in">
-          {activeSection === 'progresso' && (
+          {activeSection === "progresso" && (
             <div className="space-y-4">
               <ProgressoHidratacao />
-              
-              {/* Stats Rápidos */}
-              <div className="grid grid-cols-3 gap-4">
-                <Card className="text-center p-4 bg-blue-50 border-0">
-                  <Target size={20} className="text-blue-600 mx-auto mb-2" />
-                  <div className="text-sm text-gray-600">Meta Diária</div>
-                  <div className="text-lg font-bold text-blue-700">{metaDiaria} copos</div>
-                </Card>
-                <Card className="text-center p-4 bg-green-50 border-0">
-                  <TrendingUp size={20} className="text-green-600 mx-auto mb-2" />
-                  <div className="text-sm text-gray-600">Dias na Meta</div>
-                  <div className="text-lg font-bold text-green-700">
-                    {historico.filter((h) => h.copos >= metaDiaria).length}/{historico.length}
-                  </div>
-                </Card>
-                <Card className="text-center p-4 bg-purple-50 border-0">
-                  <Trophy size={20} className="text-purple-600 mx-auto mb-2" />
-                  <div className="text-sm text-gray-600">Melhor Dia</div>
-                  <div className="text-lg font-bold text-purple-700">
-                    {Math.max(...historico.map(h => h.copos))} copos
-                  </div>
-                </Card>
-              </div>
             </div>
           )}
 
-          {activeSection === 'meta' && (
+          {activeSection === "meta" && (
             <div className="space-y-4">
               <Card className="bg-white border-0 shadow-lg rounded-2xl p-5">
-                <MetaEditor 
+                <MetaEditor
                   metaDiaria={metaDiaria}
                   mlPorCopo={mlPorCopo}
                   metasFinais={metasFinais}
@@ -334,14 +302,18 @@ const AguaRegistroPage: React.FC = () => {
             </div>
           )}
 
-          {activeSection === 'historico' && (
+          {activeSection === "historico" && (
             <div className="space-y-4">
               <Card className="bg-white border-0 shadow-lg rounded-2xl p-5">
                 <div className="flex items-center gap-3 mb-4">
                   <Calendar size={20} className="text-purple-600" />
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">Histórico da Semana</h3>
-                    <p className="text-sm text-gray-500">Seu consumo nos últimos dias</p>
+                    <h3 className="text-lg font-semibold text-gray-900">
+                      Histórico da Semana
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      Seu consumo nos últimos dias
+                    </p>
                   </div>
                 </div>
 
@@ -361,10 +333,13 @@ const AguaRegistroPage: React.FC = () => {
                         </div>
                         <div>
                           <p className="text-sm font-medium text-gray-900">
-                            {new Date(registro.data).toLocaleDateString("pt-BR", {
-                              day: "numeric",
-                              month: "short",
-                            })}
+                            {new Date(registro.data).toLocaleDateString(
+                              "pt-BR",
+                              {
+                                day: "numeric",
+                                month: "short",
+                              }
+                            )}
                           </p>
                         </div>
                       </div>
@@ -407,15 +382,15 @@ const AguaRegistroPage: React.FC = () => {
 };
 
 // Componente de Edição de Meta
-const MetaEditor = ({ 
-  metaDiaria, 
-  mlPorCopo, 
-  metasFinais, 
-  onSetMetaManual, 
-  onResetMetaAutomatica, 
-  onUpdateCupSize, 
-  push, 
-  t 
+const MetaEditor = ({
+  metaDiaria,
+  mlPorCopo,
+  metasFinais,
+  onSetMetaManual,
+  onResetMetaAutomatica,
+  onUpdateCupSize,
+  push,
+  t,
 }: any) => {
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(metaDiaria.toString());
@@ -435,54 +410,59 @@ const MetaEditor = ({
     <div className="space-y-6">
       {/* Meta Atual */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-3">Sua Meta Diária</h3>
-        
-        {!editingGoal ? (
-          <div className="flex items-center justify-between p-4 bg-blue-50 rounded-xl">
-            <div>
-              <p className="font-medium text-gray-700">Meta atual</p>
-              <p className="text-2xl font-bold text-blue-600">{metaDiaria} copos</p>
-              <p className="text-sm text-gray-600">{metaDiaria * mlPorCopo}ml por dia</p>
+        <div className="bg-blue-50 rounded-xl p-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Target size={16} className="text-blue-600" />
+              <span className="text-sm font-medium text-gray-700">
+                Meta diária
+              </span>
             </div>
-            <button
-              onClick={() => setEditingGoal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-blue-600 rounded-lg hover:bg-blue-50 transition-colors border border-blue-200"
-            >
-              <Settings size={16} />
-              Ajustar
-            </button>
+
+            {!editingGoal ? (
+              <button
+                onClick={() => setEditingGoal(true)}
+                className="text-sm bg-white hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-colors border border-blue-200 flex items-center gap-1"
+              >
+                <Settings size={12} />
+                Ajustar
+              </button>
+            ) : (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={handleSaveGoal}
+                  className="w-6 h-6 bg-green-500 text-white rounded flex items-center justify-center hover:bg-green-600 transition-colors"
+                >
+                  <Check size={12} />
+                </button>
+                <button
+                  onClick={() => setEditingGoal(false)}
+                  className="w-6 h-6 bg-red-500 text-white rounded flex items-center justify-center hover:bg-red-600 transition-colors"
+                >
+                  <X size={12} />
+                </button>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="bg-blue-50 rounded-xl p-4 space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Nova meta diária (copos)
-              </label>
+
+          {!editingGoal ? (
+            <p className="text-lg font-bold text-blue-600 mt-2">
+              {metaDiaria} copos por dia
+            </p>
+          ) : (
+            <div className="flex items-center gap-2 mt-3">
               <input
                 value={goalInput}
-                onChange={(e) => setGoalInput(e.target.value.replace(/[^0-9]/g, ""))}
-                className="w-full border-2 border-blue-300 rounded-lg px-4 py-3 text-center font-bold text-lg"
+                onChange={(e) =>
+                  setGoalInput(e.target.value.replace(/[^0-9]/g, ""))
+                }
+                className="flex-1 border-2 border-blue-300 rounded-lg px-3 py-2 text-center font-medium"
                 placeholder="8"
               />
+              <span className="text-gray-600 font-medium">copos</span>
             </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={handleSaveGoal}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium"
-              >
-                <Check size={16} />
-                Salvar Meta
-              </button>
-              <button
-                onClick={() => setEditingGoal(false)}
-                className="flex-1 flex items-center justify-center gap-2 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium"
-              >
-                <X size={16} />
-                Cancelar
-              </button>
-            </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Tamanho do Copo */}
@@ -499,13 +479,18 @@ const MetaEditor = ({
           <div className="flex items-center gap-3">
             <Zap size={20} className="text-green-600" />
             <div className="flex-1">
-              <p className="font-medium text-green-800">Meta Inteligente Disponível</p>
-              <p className="text-sm text-green-600">Use nossa recomendação automática</p>
+              <p className="font-medium text-green-800 text-sm">
+                Meta Inteligente
+              </p>
+              <p className="text-xs text-green-600">Baseada no seu perfil</p>
             </div>
             <button
               onClick={async () => {
                 await onResetMetaAutomatica();
-                push({ type: "success", message: "Meta automática ativada com base no seu perfil!" });
+                push({
+                  type: "success",
+                  message: "Meta automática ativada com base no seu perfil!",
+                });
               }}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors text-sm font-medium"
             >
@@ -527,18 +512,22 @@ const CupSizeEditor = ({ current, onSave, push, t }: any) => {
     const n = Math.max(50, Math.min(1000, Number(value || "0")));
     if (!n) return;
     await onSave(n);
-    push({ type: "success", message: t("water.cup.updated").replace("{ml}", String(n)) });
+    push({
+      type: "success",
+      message: t("water.cup.updated").replace("{ml}", String(n)),
+    });
     setOpen(false);
   };
 
   return (
     <div>
-      <h3 className="text-lg font-semibold text-gray-900 mb-3">Tamanho do Copo</h3>
       <div className="bg-blue-50 rounded-xl p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <GlassWater size={16} className="text-blue-600" />
-            <span className="text-sm font-medium text-gray-700">Capacidade</span>
+            <span className="text-sm font-medium text-gray-700">
+              Capacidade
+            </span>
           </div>
           {!open ? (
             <button
@@ -567,7 +556,9 @@ const CupSizeEditor = ({ current, onSave, push, t }: any) => {
         </div>
 
         {!open ? (
-          <p className="text-lg font-bold text-blue-600 mt-2">{current}ml por copo</p>
+          <p className="text-lg font-bold text-blue-600 mt-2">
+            {current}ml por copo
+          </p>
         ) : (
           <div className="flex items-center gap-2 mt-3">
             <input

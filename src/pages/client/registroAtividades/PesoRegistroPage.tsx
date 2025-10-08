@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Card from '../../../components/ui/Card';
-import DataSection from '../../../components/ui/DataSection';
 import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
 import { useWeightLogsInteligente } from '../../../hooks/useWeightLogsInteligente';
@@ -15,7 +14,6 @@ import { formatDateSafe } from '../../../utils/formatDate';
 import { ArrowLeft, Target, Plus, Check, X } from '../../../components/icons';
 import { TrendingUp, BarChart3, Sparkles, Scale, Edit3, History } from 'lucide-react';
 import StatusPill, { getStatusTone } from '../../../components/ui/StatusPill';
-import { shouldShowSkeleton } from '../../../utils/loadingHelpers';
 
 const PesoRegistroPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'registrar' | 'analise' | 'historico'>('registrar');
@@ -94,44 +92,6 @@ const PesoRegistroPage: React.FC = () => {
   // Conteúdo da aba Registrar
   const renderRegistrar = () => (
     <div className="space-y-6">
-      {/* Stats Rápidos */}
-      <div className="grid grid-cols-2 gap-4">
-        <DataSection
-          isLoading={shouldShowSkeleton(!latest, latest)}
-          error={null}
-          skeletonLines={3}
-          skeletonClassName="h-28"
-        >
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white p-4 border-0 shadow-lg rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Scale size={16} className="text-blue-100" />
-              <span className="text-blue-100 text-sm font-medium">Peso Atual</span>
-            </div>
-            <p className="text-2xl font-bold">
-              {latest ? formatNumber(+latest.weight_kg.toFixed(1), locale) : '--'}
-              <span className="text-lg font-semibold text-blue-100 ml-1">kg</span>
-            </p>
-          </Card>
-        </DataSection>
-        
-        <DataSection
-          isLoading={shouldShowSkeleton(!goal && !latest, goal)}
-          error={null}
-          skeletonLines={3}
-          skeletonClassName="h-28"
-        >
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 border-0 shadow-lg rounded-2xl">
-            <div className="flex items-center gap-2 mb-2">
-              <Target size={16} className="text-purple-100" />
-              <span className="text-purple-100 text-sm font-medium">Meta</span>
-            </div>
-            <p className="text-2xl font-bold">
-              {goal ? formatNumber(+goal.toFixed(1), locale) : '--'}
-              <span className="text-lg font-semibold text-purple-100 ml-1">kg</span>
-            </p>
-          </Card>
-        </DataSection>
-      </div>
 
       {/* Progresso */}
       {diff_kg !== null && (
@@ -434,7 +394,7 @@ const PesoRegistroPage: React.FC = () => {
       
       {/* Header compacto e moderno */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
-        <div className="max-w-4xl mx-auto px-4 py-3">
+        <div className="max-w-6xl mx-auto px-4 py-3">
           <div className="flex items-center gap-3">
             <button 
               onClick={() => navigate(-1)} 
@@ -457,7 +417,7 @@ const PesoRegistroPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-6">
         {/* Tabs de Navegação */}
         <Card className="bg-white border-0 shadow-lg rounded-2xl mb-6">
           <div className="flex p-1">
