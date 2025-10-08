@@ -777,9 +777,6 @@ const RefeicaoRegistroPage: React.FC = () => {
               <h1 className="text-lg font-semibold text-gray-900 truncate">
                 Registro de Refeições
               </h1>
-              <p className="text-xs text-gray-500 truncate">
-                {logs.length} refeições • {new Date().toLocaleDateString('pt-BR')}
-              </p>
             </div>
 
             <div className="w-9 h-9 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center">

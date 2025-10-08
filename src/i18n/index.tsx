@@ -278,7 +278,6 @@ const translations: Record<Locale, Record<string,string>> = {
   'consultations.schedule.typeHeading': 'Tipo de Consulta',
   'consultations.schedule.step2.title': 'Data e Horário',
   'consultations.schedule.type.avaliacao_completa.label': 'Avaliação Completa',
-  'consultations.schedule.type.avaliacao_completa.desc': 'Avaliação nutricional completa e elaboração do plano alimentar',
   'consultations.schedule.type.avaliacao_completa.duration': '60 min',
   // Pricing aligned to backend (avaliacao 150, reavaliacao 90)
   'consultations.schedule.type.avaliacao_completa.price': 'R$ 150',
@@ -1413,7 +1412,6 @@ const translations: Record<Locale, Record<string,string>> = {
   'consultations.schedule.typeHeading': 'Consultation Type',
   'consultations.schedule.step2.title': 'Date & Time',
   'consultations.schedule.type.avaliacao_completa.label': 'Complete Assessment',
-  'consultations.schedule.type.avaliacao_completa.desc': 'Complete nutritional assessment and meal plan development',
   'consultations.schedule.type.avaliacao_completa.duration': '60 min',
   'consultations.schedule.type.avaliacao_completa.price': 'R$ 150',
   'consultations.schedule.type.reavaliacao.label': 'Re-evaluation',

@@ -142,7 +142,6 @@ const AgendarConsultaPage: React.FC = () => {
   const tiposConsulta: ReadonlyArray<{
     value: TipoConsulta;
     labelKey: TranslationKey;
-    descKey: TranslationKey;
     durationKey: TranslationKey;
     priceKey: TranslationKey;
     icon: React.ComponentType<Record<string, unknown>>;
@@ -151,7 +150,6 @@ const AgendarConsultaPage: React.FC = () => {
     {
       value: "avaliacao_completa",
       labelKey: 'consultations.schedule.type.avaliacao_completa.label',
-      descKey: 'consultations.schedule.type.avaliacao_completa.desc',
       durationKey: 'consultations.schedule.type.avaliacao_completa.duration',
       priceKey: 'consultations.schedule.type.avaliacao_completa.price',
       icon: Star,
@@ -160,7 +158,6 @@ const AgendarConsultaPage: React.FC = () => {
     {
       value: "reavaliacao",
       labelKey: 'consultations.schedule.type.reavaliacao.label',
-      descKey: 'consultations.schedule.type.reavaliacao.desc',
       durationKey: 'consultations.schedule.type.reavaliacao.duration',
       priceKey: 'consultations.schedule.type.reavaliacao.price',
       icon: Heart,
@@ -321,7 +318,6 @@ const AgendarConsultaPage: React.FC = () => {
             <Calendar size={28} className="text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">Escolha o Tipo de Consulta</h2>
-          <p className="text-gray-600">Selecione a consulta que melhor atende suas necessidades</p>
         </div>
 
         {/* Cards de Tipo de Consulta */}
@@ -366,9 +362,6 @@ const AgendarConsultaPage: React.FC = () => {
                         <h3 className={`font-bold text-lg ${isDisabled ? 'text-gray-400' : 'text-gray-900'}`}>
                           {t(tipo.labelKey)}
                         </h3>
-                        <p className={`text-sm mt-1 ${isDisabled ? 'text-gray-400' : 'text-gray-600'}`}>
-                          {t(tipo.descKey)}
-                        </p>
                       </div>
                       <div className="text-right">
                         <div className={`text-lg font-bold ${isDisabled ? 'text-gray-400' : 'text-green-600'}`}>
@@ -390,7 +383,7 @@ const AgendarConsultaPage: React.FC = () => {
 
                     {/* Status de Créditos */}
                     {needsCredit && isEligible && (
-                      <div className={`flex items-center gap-2 mt-3 p-2 rounded-lg text-sm ${
+                      <div className={`flex items-center gap-2 mt-3 p-2 rounded-lg text-xs ${
                         hasCredits 
                           ? 'bg-green-50 text-green-700 border border-green-200' 
                           : 'bg-red-50 text-red-700 border border-red-200'
@@ -460,9 +453,6 @@ const AgendarConsultaPage: React.FC = () => {
                 <h3 className="font-bold text-gray-900 text-lg">
                   {t(selectedTipo?.labelKey as TranslationKey)}
                 </h3>
-                <p className="text-gray-600 text-sm">
-                  {t(selectedTipo?.descKey as TranslationKey)}
-                </p>
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold text-green-600">
@@ -580,7 +570,7 @@ const AgendarConsultaPage: React.FC = () => {
                 Agendar Consulta
               </h1>
               <p className="text-xs text-gray-500">
-                Etapa {etapa} de 2 • {etapa === 1 ? 'Tipo de Consulta' : 'Detalhes'}
+                Etapa {etapa} de 2
               </p>
             </div>
 
@@ -649,26 +639,6 @@ const AgendarConsultaPage: React.FC = () => {
               )}
             </div>
           </form>
-        </Card>
-
-        {/* Informações de Suporte */}
-        <Card className="mt-6 bg-gradient-to-r from-blue-50 to-cyan-50 border-0">
-          <div className="p-5">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                <Shield size={20} className="text-blue-600" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-blue-800 mb-2">Suporte e Informações</h3>
-                <div className="space-y-2 text-xs text-blue-700">
-                  <p>• Consultas 100% online</p>
-                  <p>• Receba o link de acesso por email</p>
-                  <p>• Reagendamento com 24h de antecedência</p>
-                  <p>• Chegue 5 minutos antes</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </Card>
       </div>
 

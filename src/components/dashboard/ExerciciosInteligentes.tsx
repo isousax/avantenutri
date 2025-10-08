@@ -120,15 +120,14 @@ export function ExerciciosInteligentes() {
       {/* Atividade de Hoje em Destaque */}
       {atividadeHoje && (
         <Card className="bg-gradient-to-r from-blue-500 to-purple-600 border-0 shadow-xl rounded-2xl overflow-hidden">
-          <div className="p-6 text-white">
+          <div className="p-2 text-white">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <Trophy size={24} className="text-yellow-300" />
-                <h2 className="text-xl font-bold">Exercício de Hoje</h2>
+                <h2 className="text-lg font-bold">Exercício de Hoje</h2>
               </div>
-              <Button className="bg-white/20 hover:bg-white/30 text-white border-0">
-                <PlayCircle size={16} className="mr-2" />
-                Começar
+              <Button className="bg-white/20 hover:bg-white/30 text-white border-0 flex items-center justify-center text-sm">
+                <PlayCircle size={18} />
               </Button>
             </div>
             
@@ -399,11 +398,8 @@ export function ExerciciosInteligentes() {
             
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900">
-                Exercícios Inteligentes
+                Exercícios
               </h1>
-              <p className="text-xs text-gray-500">
-                Plano personalizado para seus objetivos
-              </p>
             </div>
 
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">

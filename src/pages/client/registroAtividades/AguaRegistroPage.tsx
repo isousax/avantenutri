@@ -132,9 +132,6 @@ const AguaRegistroPage: React.FC = () => {
               <h1 className="text-lg font-semibold text-gray-900 truncate">
                 Hidratação
               </h1>
-              <p className="text-xs text-gray-500 truncate">
-                {logs.length} registros • {new Date().toLocaleDateString("pt-BR")}
-              </p>
             </div>
 
             <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center">

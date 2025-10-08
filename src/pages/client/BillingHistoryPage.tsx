@@ -1,30 +1,42 @@
-import { useCallback, useState } from 'react';
-import { useI18n } from '../../i18n';
-import { SEO } from '../../components/comum/SEO';
-import { ArrowLeft, Calendar } from '../../components/icons';
-import { RefreshCw, CreditCard, CheckCircle, Clock, XCircle, AlertTriangle, Download, Eye, Hash } from 'lucide-react';
-import StatusPill, { getStatusTone } from '../../components/ui/StatusPill';
-import Card from '../../components/ui/Card';
-import { SkeletonCard } from '../../components/ui/Loading';
-import DataSection from '../../components/ui/DataSection';
-import { shouldShowSkeleton } from '../../utils/loadingHelpers';
-import Button from '../../components/ui/Button';
-import { useNavigate } from 'react-router-dom';
-import { useBillingHistory } from '../../hooks/useBillingHistory';
-import { useDownloadReceipt } from '../../hooks/useDownloadReceipt';
-import { PaymentDetailsModal } from '../../components/billing/PaymentDetailsModal';
+import { useCallback, useState } from "react";
+import { useI18n } from "../../i18n";
+import { SEO } from "../../components/comum/SEO";
+import { ArrowLeft, Calendar } from "../../components/icons";
+import {
+  RefreshCw,
+  CreditCard,
+  CheckCircle,
+  Clock,
+  XCircle,
+  AlertTriangle,
+  Download,
+  Eye,
+  Hash,
+} from "lucide-react";
+import StatusPill, { getStatusTone } from "../../components/ui/StatusPill";
+import Card from "../../components/ui/Card";
+import { SkeletonCard } from "../../components/ui/Loading";
+import DataSection from "../../components/ui/DataSection";
+import { shouldShowSkeleton } from "../../utils/loadingHelpers";
+import Button from "../../components/ui/Button";
+import { useNavigate } from "react-router-dom";
+import { useBillingHistory } from "../../hooks/useBillingHistory";
+import { useDownloadReceipt } from "../../hooks/useDownloadReceipt";
+import { PaymentDetailsModal } from "../../components/billing/PaymentDetailsModal";
 
-export default function BillingHistoryPage(){
+export default function BillingHistoryPage() {
   const { locale, t } = useI18n();
-  // Mantido caso queiramos notificar em refetch manual; não usado agora
-  // const { push } = useToast();
   const navigate = useNavigate();
   const { payments, loading, error, refetch, isFetching } = useBillingHistory();
   const { downloadReceipt } = useDownloadReceipt();
-  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(null);
+  const [selectedPaymentId, setSelectedPaymentId] = useState<string | null>(
+    null
+  );
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  const load = useCallback(()=> { refetch(); }, [refetch]);
+
+  const load = useCallback(() => {
+    refetch();
+  }, [refetch]);
 
   const handleViewDetails = (paymentId: string) => {
     setSelectedPaymentId(paymentId);
@@ -40,69 +52,75 @@ export default function BillingHistoryPage(){
     setSelectedPaymentId(null);
   };
 
-  function fmtCurrency(cents:number){
-    return new Intl.NumberFormat(locale==='pt'?'pt-BR':'en-US', { 
-      style:'currency', 
-      currency:'BRL'
-    }).format(cents/100);
+  function fmtCurrency(cents: number) {
+    return new Intl.NumberFormat(locale === "pt" ? "pt-BR" : "en-US", {
+      style: "currency",
+      currency: "BRL",
+    }).format(cents / 100);
   }
 
   function getStatusConfig(status: string) {
     switch (status.toLowerCase()) {
-      case 'approved':
-      case 'completed':
-      case 'paid':
+      case "approved":
+      case "completed":
+      case "paid":
         return {
-          color: 'text-green-600',
-          bgColor: 'bg-green-50',
-          borderColor: 'border-green-200',
+          color: "text-green-600",
+          bgColor: "bg-green-50",
+          borderColor: "border-green-200",
           icon: CheckCircle,
-          label: 'Pago'
+          label: "Pago",
         };
-      case 'pending':
-      case 'processing':
+      case "pending":
+      case "processing":
         return {
-          color: 'text-yellow-600',
-          bgColor: 'bg-yellow-50',
-          borderColor: 'border-yellow-200',
+          color: "text-yellow-600",
+          bgColor: "bg-yellow-50",
+          borderColor: "border-yellow-200",
           icon: Clock,
-          label: 'Pendente'
+          label: "Pendente",
         };
-      case 'failed':
-      case 'cancelled':
-      case 'declined':
+      case "failed":
+      case "cancelled":
+      case "declined":
         return {
-          color: 'text-red-600',
-          bgColor: 'bg-red-50',
-          borderColor: 'border-red-200',
+          color: "text-red-600",
+          bgColor: "bg-red-50",
+          borderColor: "border-red-200",
           icon: XCircle,
-          label: 'Falhou'
+          label: "Falhou",
         };
       default:
         return {
-          color: 'text-gray-600',
-          bgColor: 'bg-gray-50',
-          borderColor: 'border-gray-200',
+          color: "text-gray-600",
+          bgColor: "bg-gray-50",
+          borderColor: "border-gray-200",
           icon: AlertTriangle,
-          label: status
+          label: status,
         };
     }
   }
 
   function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString(locale === 'pt' ? 'pt-BR' : 'en-US', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    return new Date(dateString).toLocaleDateString(
+      locale === "pt" ? "pt-BR" : "en-US",
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 safe-area-bottom">
-      <SEO title={t('billing.history.seo.title')} description={t('billing.history.seo.desc')} />
-      
+      <SEO
+        title={t("billing.history.seo.title")}
+        description={t("billing.history.seo.desc")}
+      />
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
         <div className="max-w-4xl mx-auto px-4 py-4">
@@ -114,17 +132,14 @@ export default function BillingHistoryPage(){
             >
               <ArrowLeft size={20} className="text-gray-700" />
             </button>
-            
+
             <div className="flex-1">
               <h1 className="text-xl font-bold text-gray-900">
-                {t('billing.history.title')}
+                {t("billing.history.title")}
               </h1>
-              <p className="text-sm text-gray-600">
-                {payments.length} pagamentos registrados
-              </p>
             </div>
 
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-xl flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
               <CreditCard size={20} className="text-white" />
             </div>
           </div>
@@ -138,220 +153,219 @@ export default function BillingHistoryPage(){
             <Calendar size={16} />
             <span>Histórico completo de pagamentos</span>
           </div>
-          
+
           <Button
             onClick={load}
             variant="secondary"
             className="flex items-center gap-2"
             disabled={loading || isFetching}
           >
-            <RefreshCw size={16} className={loading ? 'animate-spin' : ''} />
-            {t('billing.history.reload')}
+            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+            {t("billing.history.reload")}
           </Button>
         </div>
 
-        {/* Lista de Pagamentos */}
+        {/* Lista de Pagamentos - CARDS OTIMIZADOS PARA MOBILE */}
         <DataSection
           isLoading={shouldShowSkeleton(loading, payments)}
           error={error ? error : null}
           skeletonLines={4}
           skeletonClassName="h-32"
-          customSkeleton={<div className="space-y-4">{Array.from({length:3}).map((_,i)=>(<SkeletonCard key={i} lines={4} className="h-32" />))}</div>}
-        >
-  {error && !loading && (
-          <Card className="p-6 border-l-4 border-red-500 bg-red-50">
-            <div className="flex items-start gap-3">
-              <AlertTriangle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
-              <div>
-                <h3 className="font-semibold text-red-800 mb-1">Erro ao carregar</h3>
-                <p className="text-red-700 text-sm">{String(error)}</p>
-                <Button
-                  onClick={load}
-                  variant="secondary"
-                  className="mt-3 flex items-center gap-2"
-                >
-                  <RefreshCw size={14} />
-                  Tentar novamente
-                </Button>
-              </div>
+          customSkeleton={
+            <div className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <SkeletonCard key={i} lines={4} className="h-32" />
+              ))}
             </div>
-          </Card>
-        )}
-  {!loading && !error && (
-          <div className="space-y-4">
-            {payments.length === 0 ? (
-              <Card className="p-8 text-center">
-                <div className="flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center">
-                    <CreditCard size={24} className="text-gray-400" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-1">
-                      {t('billing.history.empty.payments')}
-                    </h3>
-                    <p className="text-gray-600 text-sm">
-                      Nenhum pagamento encontrado no seu histórico
-                    </p>
-                  </div>
-                </div>
-              </Card>
-            ) : (
-              payments.map((payment) => {
-                const statusConfig = getStatusConfig(payment.status);
-                const StatusIcon = statusConfig.icon;
-                
-                return (
-                  <Card 
-                    key={payment.id} 
-                    className={`p-5 border-l-4 ${statusConfig.borderColor} hover:shadow-md transition-all duration-200`}
+          }
+        >
+          {error && !loading && (
+            <Card className="p-6 border-l-4 border-red-500 bg-red-50">
+              <div className="flex items-start gap-3">
+                <AlertTriangle
+                  size={20}
+                  className="text-red-500 mt-0.5 flex-shrink-0"
+                />
+                <div>
+                  <h3 className="font-semibold text-red-800 mb-1">
+                    Erro ao carregar
+                  </h3>
+                  <p className="text-red-700 text-sm">{String(error)}</p>
+                  <Button
+                    onClick={load}
+                    variant="secondary"
+                    className="mt-3 flex items-center gap-2"
                   >
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="flex items-start gap-4 flex-1">
-                        <div className={`w-12 h-12 ${statusConfig.bgColor} rounded-xl flex items-center justify-center flex-shrink-0`}>
-                          <StatusIcon size={20} className={statusConfig.color} />
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-3 mb-2">
-                            <h3 className="font-semibold text-gray-900 truncate">
-                              {payment.consultation_type
-                                ? payment.consultation_type === 'avaliacao_completa'
-                                  ? 'Avaliação Completa'
-                                  : payment.consultation_type === 'reavaliacao'
-                                    ? 'Reavaliação'
-                                    : payment.consultation_type
-                                : payment.purpose === 'consultation'
-                                  ? 'Consulta'
-                                  : 'Pagamento'}
-                            </h3>
-                            <StatusPill 
-                              label={statusConfig.label}
-                              tone={getStatusTone(statusConfig.label)}
+                    <RefreshCw size={14} />
+                    Tentar novamente
+                  </Button>
+                </div>
+              </div>
+            </Card>
+          )}
+          {!loading && !error && (
+            <div className="space-y-3">
+              {payments.length === 0 ? (
+                <Card className="p-6 text-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
+                      <CreditCard size={20} className="text-gray-400" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900 mb-1">
+                        {t("billing.history.empty.payments")}
+                      </h3>
+                      <p className="text-gray-600 text-sm">
+                        Nenhum pagamento encontrado no seu histórico
+                      </p>
+                    </div>
+                  </div>
+                </Card>
+              ) : (
+                payments.map((payment) => {
+                  const statusConfig = getStatusConfig(payment.status);
+                  const StatusIcon = statusConfig.icon;
+
+                  return (
+                    <Card
+                      key={payment.id}
+                      className={`p-4 border-l-4 ${statusConfig.borderColor} hover:shadow-md transition-all duration-200`}
+                    >
+                      {/* Header Compacto */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <div
+                            className={`w-10 h-10 ${statusConfig.bgColor} rounded-lg flex items-center justify-center flex-shrink-0`}
+                          >
+                            <StatusIcon
+                              size={16}
+                              className={statusConfig.color}
                             />
                           </div>
                           
-                          <div className="flex items-center gap-4 text-sm text-gray-600">
-                            <div className="flex items-center gap-1">
-                              <Hash size={14} />
-                              <span className="font-mono">{payment.id.slice(0,8)}...</span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1">
+                              <h3 className="font-semibold text-gray-900 text-sm truncate">
+                                {payment.consultation_type
+                                  ? payment.consultation_type ===
+                                    "avaliacao_completa"
+                                    ? "Avaliação Completa"
+                                    : payment.consultation_type ===
+                                      "reavaliacao"
+                                    ? "Reavaliação"
+                                    : payment.consultation_type
+                                  : payment.purpose === "consultation"
+                                  ? "Consulta"
+                                  : "Pagamento"}
+                              </h3>
+                              <StatusPill
+                                label={statusConfig.label}
+                                tone={getStatusTone(statusConfig.label)}
+                              />
                             </div>
-                            <div className="flex items-center gap-1">
-                              <Calendar size={14} />
-                              <span>{formatDate(payment.created_at)}</span>
+                            
+                            <div className="text-lg font-bold text-gray-900">
+                              {fmtCurrency(payment.amount_cents)}
                             </div>
                           </div>
-
-                          {payment.status_detail && (
-                            <div className="mt-2 text-xs text-gray-500">
-                              Detalhe: {payment.status_detail}
-                            </div>
-                          )}
                         </div>
                       </div>
-                      
-                      <div className="text-right flex-shrink-0">
-                        <div className="text-xl font-bold text-gray-900 mb-1">
-                          {fmtCurrency(payment.amount_cents)}
-                        </div>
-                        <div className="text-sm text-gray-500 capitalize">
-                          {payment.currency}
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Informações Adicionais */}
-                    <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                      <div className="flex items-center gap-4 text-sm text-gray-600">
-                        {payment.external_id && (
+                      {/* Metadados */}
+                      <div className="flex flex-col gap-2 mb-3">
+                        <div className="flex items-center gap-4 text-xs text-gray-600">
                           <div className="flex items-center gap-1">
-                            <CreditCard size={14} />
-                            <span>ID externo: {payment.external_id}</span>
+                            <Hash size={12} />
+                            <span className="font-mono truncate">
+                              {payment.id.slice(0, 8)}...
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Calendar size={12} />
+                            <span className="truncate">
+                              {formatDate(payment.created_at)}
+                            </span>
+                          </div>
+                        </div>
+
+                        {payment.external_id && (
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <CreditCard size={12} />
+                            <span className="truncate">
+                              ID: {payment.external_id}
+                            </span>
+                          </div>
+                        )}
+
+                        {payment.status_detail && (
+                          <div className="text-xs text-gray-500">
+                            {payment.status_detail}
                           </div>
                         )}
                       </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button 
-                          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Ver detalhes"
-                          onClick={() => handleViewDetails(payment.id)}
-                        >
-                          <Eye size={16} />
-                        </button>
-                        <button 
-                          className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                          title="Baixar recibo"
-                          onClick={() => handleDownloadReceipt(payment.id)}
-                          disabled={!['approved', 'completed', 'paid'].includes(payment.status.toLowerCase())}
-                        >
-                          <Download size={16} />
-                        </button>
-                      </div>
-                    </div>
 
-                    {/* Data de processamento */}
-                    {payment.processed_at && (
-                      <div className="mt-3 pt-3 border-t border-gray-100">
-                        <div className="flex items-center gap-2 text-xs text-gray-500">
-                          <CheckCircle size={12} />
-                          <span>
-                            {t('billing.history.processedAt')}: {formatDate(payment.processed_at)}
-                          </span>
+                      {/* Footer com Ações */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <div className="text-xs text-gray-500 capitalize">
+                          {payment.currency}
+                        </div>
+
+                        <div className="flex items-center gap-1">
+                          <button
+                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                            title="Ver detalhes"
+                            onClick={() => handleViewDetails(payment.id)}
+                          >
+                            <Eye size={14} />
+                          </button>
+                          <button
+                            className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                            title="Baixar recibo"
+                            onClick={() => handleDownloadReceipt(payment.id)}
+                            disabled={
+                              !["approved", "completed", "paid"].includes(
+                                payment.status.toLowerCase()
+                              )
+                            }
+                          >
+                            <Download size={14} />
+                          </button>
                         </div>
                       </div>
-                    )}
-                  </Card>
-                );
-              })
-            )}
-          </div>
-  )}
-  </DataSection>
 
-        {/* Resumo Estatístico */}
-        {payments.length > 0 && (
-          <Card className="mt-6 p-5 bg-gradient-to-r from-blue-50 to-purple-50 border-0">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-              <div>
-                <div className="text-2xl font-bold text-gray-900">{payments.length}</div>
-                <div className="text-sm text-gray-600">Total</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-green-600">
-                  {payments.filter(p => 
-                    ['approved', 'completed', 'paid'].includes(p.status.toLowerCase())
-                  ).length}
-                </div>
-                <div className="text-sm text-gray-600">Concluídos</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-yellow-600">
-                  {payments.filter(p => 
-                    ['pending', 'processing'].includes(p.status.toLowerCase())
-                  ).length}
-                </div>
-                <div className="text-sm text-gray-600">Pendentes</div>
-              </div>
-              <div>
-                <div className="text-2xl font-bold text-red-600">
-                  {payments.filter(p => 
-                    ['failed', 'cancelled', 'declined'].includes(p.status.toLowerCase())
-                  ).length}
-                </div>
-                <div className="text-sm text-gray-600">Com erro</div>
-              </div>
+                      {/* Data de processamento */}
+                      {payment.processed_at && (
+                        <div className="mt-2 pt-2 border-t border-gray-100">
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <CheckCircle size={12} />
+                            <span>
+                              Processado: {formatDate(payment.processed_at)}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  );
+                })
+              )}
             </div>
-          </Card>
-        )}
+          )}
+        </DataSection>
 
         {/* Informações de Ajuda */}
-        <Card className="mt-6 p-5 bg-gray-50 border-0">
+        <Card className="mt-6 p-4 bg-gray-50 border-0">
           <div className="flex items-start gap-3">
-            <AlertTriangle size={20} className="text-gray-500 mt-0.5 flex-shrink-0" />
+            <AlertTriangle
+              size={16}
+              className="text-gray-500 mt-0.5 flex-shrink-0"
+            />
             <div>
-              <h4 className="font-semibold text-gray-900 mb-2">Precisa de ajuda com um pagamento?</h4>
-              <p className="text-gray-600 text-sm mb-3">
-                Em caso de problemas com pagamentos, entre em contato com nosso suporte.
+              <h4 className="font-semibold text-gray-900 text-sm mb-2">
+                Precisa de ajuda com um pagamento?
+              </h4>
+              <p className="text-gray-600 text-xs mb-3">
+                Em caso de problemas com pagamentos, entre em contato com nosso
+                suporte.
               </p>
               <Button variant="secondary">
                 Entrar em contato

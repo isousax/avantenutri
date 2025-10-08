@@ -453,7 +453,6 @@ export type TranslationKey =
   | 'consultations.schedule.summary.time'
   | 'consultations.schedule.summary.title'
   | 'consultations.schedule.summary.type'
-  | 'consultations.schedule.type.avaliacao_completa.desc'
   | 'consultations.schedule.type.avaliacao_completa.duration'
   | 'consultations.schedule.type.avaliacao_completa.label'
   | 'consultations.schedule.type.avaliacao_completa.price'

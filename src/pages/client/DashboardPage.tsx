@@ -1252,12 +1252,12 @@ const DashboardPage: React.FC = () => {
                         adherence ? (
                           <span className="inline-flex items-center gap-1">
                             {adherence.daysCovered}/{adherence.totalDays} dias
-                            com registros • 💧{adherence.waterAdherence}% água
+                            com registros
                             <Tooltip
                               content={
                                 <div className="text-left leading-snug">
                                   <div className="font-semibold mb-1">
-                                    Fórmula Inteligente
+                                    Fórmula
                                   </div>
                                   <div>
                                     60% Refeições (cobertura + consistência)

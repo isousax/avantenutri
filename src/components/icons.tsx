@@ -14,6 +14,7 @@ import {
   GlassWater,
   Settings,
   Check,
+  Inbox,
   X,
   Zap,
 } from 'lucide-react';
@@ -33,6 +34,7 @@ export {
   Check,
   X,
   Zap,
+  Inbox,
 };
 
 // Wrapper utilitário opcional para padronizar tamanho
