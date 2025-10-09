@@ -25,7 +25,7 @@ export const queryClient = new QueryClient({
 if (typeof window !== "undefined") {
   try {
     const STORAGE_KEY = "rq-cache-v1";
-    const CURRENT_VERSION = 1;
+    const CURRENT_VERSION = 2;
     const persisted = window.localStorage.getItem(STORAGE_KEY);
     if (persisted) {
       const parsed = JSON.parse(persisted);
@@ -61,8 +61,7 @@ if (typeof window !== "undefined") {
                 },
               })),
           };
-          const version =
-            (import.meta.env?.VITE_RQ_CACHE_VERSION as unknown as number) || 1;
+          const version = CURRENT_VERSION;
           window.localStorage.setItem(
             STORAGE_KEY,
             JSON.stringify({ clientState: qcState, v: version })

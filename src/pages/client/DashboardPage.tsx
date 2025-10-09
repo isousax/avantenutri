@@ -475,7 +475,7 @@ const WeightSection: React.FC<{
                   : "--"}
               </p>
               {weightDiff != null && (
-                <div className={`${weightDiffClass} text-sm`}>
+                <div className={`${weightDiffClass} text-xs`}>
                   {weightDiff >= 0 ? "+" : ""}
                   {weightDiff.toFixed(1)} kg
                   {weightDiffPct != null &&

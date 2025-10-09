@@ -151,7 +151,7 @@ export default function BillingHistoryPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar size={16} />
-            <span>Histórico completo de pagamentos</span>
+            <span>Histórico de pagamentos</span>
           </div>
 
           <Button
@@ -159,9 +159,14 @@ export default function BillingHistoryPage() {
             variant="secondary"
             className="flex items-center gap-2"
             disabled={loading || isFetching}
+            noBorder
+            noFocus
+            noBackground
           >
-            <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
-            {t("billing.history.reload")}
+            <RefreshCw
+              size={16}
+              className={(loading || isFetching) ? "animate-spin" : ""}
+            />
           </Button>
         </div>
 
@@ -195,8 +200,9 @@ export default function BillingHistoryPage() {
                     onClick={load}
                     variant="secondary"
                     className="mt-3 flex items-center gap-2"
+                    disabled={loading || isFetching}
                   >
-                    <RefreshCw size={14} />
+                    <RefreshCw size={14} className={(loading || isFetching) ? "animate-spin" : ""} />
                     Tentar novamente
                   </Button>
                 </div>
@@ -204,8 +210,16 @@ export default function BillingHistoryPage() {
             </Card>
           )}
           {!loading && !error && (
-            <div className="space-y-3">
-              {payments.length === 0 ? (
+            <>
+              {isFetching ? (
+                <div className="space-y-3">
+                  {Array.from({ length: 4 }).map((_, i) => (
+                    <SkeletonCard key={i} lines={2} className="h-24" />
+                  ))}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                {payments.length === 0 ? (
                 <Card className="p-6 text-center">
                   <div className="flex flex-col items-center gap-3">
                     <div className="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center">
@@ -347,8 +361,10 @@ export default function BillingHistoryPage() {
                     </Card>
                   );
                 })
+                )}
+                </div>
               )}
-            </div>
+            </>
           )}
         </DataSection>
 

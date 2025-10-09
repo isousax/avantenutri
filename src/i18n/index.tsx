@@ -831,8 +831,7 @@ const translations: Record<Locale, Record<string,string>> = {
   'dashboard.quick.billing.label': 'Pagamentos',
   'dashboard.quick.billing.desc': 'Histórico de pagamentos',
   // Billing History
-  'billing.history.title': 'Histórico de Billing',
-  'billing.history.reload': 'Recarregar',
+  'billing.history.title': 'Extrato',
   'billing.history.loading': 'Carregando...',
   'billing.history.payments': 'Pagamentos',
   'billing.history.processedAt': 'proc',
@@ -1791,8 +1790,7 @@ const translations: Record<Locale, Record<string,string>> = {
   'dashboard.quick.billing.label': 'Payments',
   'dashboard.quick.billing.desc': 'Payment history',
   // Billing History
-  'billing.history.title': 'Billing History',
-  'billing.history.reload': 'Reload',
+  'billing.history.title': 'Extract',
   'billing.history.loading': 'Loading...',
   'billing.history.payments': 'Payments',
   'billing.history.processedAt': 'proc',
