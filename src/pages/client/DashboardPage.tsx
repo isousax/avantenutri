@@ -27,7 +27,6 @@ import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { QuestionnaireBanner } from "../../components/dashboard/QuestionnaireBanner";
-import { useFirstLoginRedirect } from "../../hooks/useFirstLoginRedirect";
 import {
   MealIcon,
   WeightIcon,
@@ -595,8 +594,6 @@ const DashboardPage: React.FC = () => {
     };
   }, []);
 
-  // First login redirect hook
-  useFirstLoginRedirect();
 
   const handleLogout = async () => {
     await logout();

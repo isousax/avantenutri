@@ -11,7 +11,7 @@ export function useQuestionnaireStatus() {
   const { authenticatedFetch, user } = useAuth();
 
   return useQuery({
-    queryKey: ['questionnaire-status'],
+    queryKey: ['questionnaire-status', user?.id],
     queryFn: async (): Promise<QuestionnaireStatus> => {
       const response = await authenticatedFetch(API.QUESTIONNAIRE_STATUS);
       if (!response.ok) {

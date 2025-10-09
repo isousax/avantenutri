@@ -9,11 +9,13 @@ const BANNER_DISMISSAL_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 export const QuestionnaireBanner: React.FC = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
-  const { data: status, isLoading } = useQuestionnaireStatus();
+  const { data: status, isLoading, isError } = useQuestionnaireStatus();
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
-    // Check if banner was recently dismissed
+    // Só considera o dismissal do localStorage depois que a API confirmar status
+    if (!status || isLoading || isError) return;
+    if (status.is_complete) return; // se completo, não precisa checar dismiss
     const dismissedAt = localStorage.getItem(BANNER_DISMISSAL_KEY);
     if (dismissedAt) {
       const dismissTime = parseInt(dismissedAt, 10);
@@ -23,10 +25,13 @@ export const QuestionnaireBanner: React.FC = () => {
         localStorage.removeItem(BANNER_DISMISSAL_KEY);
       }
     }
-  }, []);
+  }, [status, isLoading, isError]);
 
   const handleDismiss = () => {
-    localStorage.setItem(BANNER_DISMISSAL_KEY, Date.now().toString());
+    // Persistir o dismissal apenas quando a API afirmar que ainda falta completar
+    if (status && !status.is_complete) {
+      localStorage.setItem(BANNER_DISMISSAL_KEY, Date.now().toString());
+    }
     setIsDismissed(true);
   };
 
@@ -34,8 +39,8 @@ export const QuestionnaireBanner: React.FC = () => {
     navigate('/questionario');
   };
 
-  // Don't show if loading, dismissed, or questionnaire is complete
-  if (isLoading || isDismissed || status?.is_complete) {
+  // Não mostrar enquanto carrega, em erro (não conseguimos confirmar), se dismiss recente, ou se completo
+  if (isLoading || isError || isDismissed || status?.is_complete) {
     return null;
   }
 
