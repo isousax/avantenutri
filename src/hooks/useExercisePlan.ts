@@ -45,6 +45,28 @@ export function useExercisePlan() {
     return 'manter';
   }, [q.data, peso.metasFinais.pesoMeta, peso.metasFinais.pesoAtual]);
 
+  // Labels e descrições amigáveis para o usuário
+  const objetivoInfo = useMemo(() => {
+    switch (objetivoDerivado) {
+      case 'perder':
+        return {
+          label: 'Emagrecimento saudável',
+          descricao: 'Reduzir percentual de gordura com treino cardio/funcional e alimentação equilibrada.'
+        } as const;
+      case 'ganhar':
+        return {
+          label: 'Ganho de massa muscular',
+          descricao: 'Aumentar massa e força com treinos de resistência e ingestão proteica adequada.'
+        } as const;
+      case 'manter':
+      default:
+        return {
+          label: 'Manutenção e definição',
+          descricao: 'Equilíbrio entre cardio, força e mobilidade para manter composição corporal e condicionamento.'
+        } as const;
+    }
+  }, [objetivoDerivado]);
+
   const nivelDerivado = useMemo(() => {
     const data = (q.data as QuestionnaireDataShape)?.data as Record<string, string> | undefined;
     return mapNivelFromQuestionnaire(data);
@@ -82,6 +104,8 @@ export function useExercisePlan() {
     error: q.error as Error | null,
     questionario: q.data,
     objetivo: objetivoDerivado,
+    objetivoLabel: objetivoInfo.label,
+    objetivoDescricao: objetivoInfo.descricao,
     nivelAtividade: nivelDerivado,
     clima: weather,
     indoorPreferred,

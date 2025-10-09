@@ -204,6 +204,8 @@ export function ExerciciosInteligentes() {
     error,
     questionario,
     objetivo,
+    objetivoLabel,
+    objetivoDescricao,
     nivelAtividade,
     nivelCondicionamento,
     caloriasAlvo,
@@ -300,7 +302,7 @@ export function ExerciciosInteligentes() {
                     )}
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Objetivo atual: <b>{objetivo || "manter"}</b>
+                    Objetivo atual: <b>{objetivoLabel}</b>
                     {nivelAtividade ? (
                       <>
                         {" "}
@@ -471,16 +473,9 @@ export function ExerciciosInteligentes() {
             <Lightbulb size={20} className="text-green-600" />
             <h3 className="font-semibold text-gray-900">Dica do Dia</h3>
           </div>
-          <p className="text-gray-700 text-sm">
-            Mantenha a consistência!{" "}
-            {nivelCondicionamento === "iniciante"
-              ? "Comece com exercícios leves e aumente gradualmente."
-              : nivelCondicionamento === "intermediario"
-              ? "Varie os tipos de exercício para melhores resultados."
-              : "Desafie-se com intensidade progressiva para evolução contínua."}
-          </p>
+          <p className="text-gray-700 text-sm">{objetivoDescricao}</p>
           <div className="text-xs text-gray-500 mt-2">
-            Plano baseado em: objetivo <b>{objetivo}</b>
+            Plano baseado em: <b>{objetivoLabel}</b>
             {nivelAtividade ? `, nível ${nivelAtividade}` : ""}.
           </div>
         </div>
@@ -719,7 +714,7 @@ export function ExerciciosInteligentes() {
             <div className="flex items-start gap-3">
               <Target size={16} className="text-blue-500 mt-1 flex-shrink-0" />
               <p className="text-gray-700 text-sm">
-                Objetivo: <strong>{objetivo || "manter"}</strong> —{" "}
+                Objetivo: <strong>{objetivoLabel}</strong> —{" "}
                 {objetivo === "perder"
                   ? "foco extra em cardio e funcional."
                   : objetivo === "ganhar"
