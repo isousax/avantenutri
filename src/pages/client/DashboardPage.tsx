@@ -48,6 +48,7 @@ import Prefetch, { logPrefetchMetrics } from "../../utils/prefetch";
 import { shouldShowSkeleton } from "../../utils/loadingHelpers";
 import { useIntersectionPrefetch } from "../../hooks/useIntersectionPrefetch";
 import { API } from "../../config/api";
+import { useWaterLogsInteligente } from "../../hooks/useWaterLogsInteligente";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -641,10 +642,24 @@ const DashboardPage: React.FC = () => {
   } = useDashboardData();
   const mealProgress = meals.progress;
   const mealGoals = meals.goals;
+  // Calorias consumidas hoje (não o percentual)
+  const todayStrForMeals = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  })();
+  type MealDay = { date: string; calories: number };
+  const summaryDays = (meals.summary?.days || []) as MealDay[];
+  const todayMealsAgg = summaryDays.find((d) => d.date === todayStrForMeals);
+  const caloriesToday = todayMealsAgg?.calories ?? 0;
   const waterToday = water.totalToday; // ml consumidos hoje
   const dailyGoalCups = water.dailyGoalCups; // meta em copos (base legado)
   const cupSize = water.cupSize || 250;
-  const dailyGoalMl = dailyGoalCups ? dailyGoalCups * cupSize : null;
+  // Meta inteligente de água (clima/histórico/IMC + arredondamento por copo)
+  // Usa o mesmo hook da tela de registro para manter consistência
+  const { metasFinais: waterIntelGoal } = useWaterLogsInteligente(7);
+  const waterTargetMl = waterIntelGoal?.metaML
+    ?? ((dailyGoalCups ? dailyGoalCups * cupSize : null));
   const latestWeight = weightAgg.latest;
   const goal = weightAgg.goal;
   // progressPercent era usado para trend visual; removido ao padronizar LoadingState
@@ -1334,7 +1349,7 @@ const DashboardPage: React.FC = () => {
                         gradient="from-green-500 to-emerald-600"
                       />
                       <Progress
-                        current={mealProgress?.calories || 0}
+                        current={caloriesToday}
                         target={mealGoals?.calories || 2000}
                         label="Meta de Calorias"
                         unit="kcal"
@@ -1343,7 +1358,7 @@ const DashboardPage: React.FC = () => {
                       />
                       <Progress
                         current={waterToday}
-                        target={dailyGoalMl || 2000}
+                        target={waterTargetMl || 2000}
                         label="Hidratação"
                         unit="ml"
                         size="sm"

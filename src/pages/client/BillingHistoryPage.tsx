@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { useI18n } from "../../i18n";
+import { formatLocalDateTimeFromUTC } from "../../utils/date";
 import { SEO } from "../../components/comum/SEO";
 import { ArrowLeft, Calendar } from "../../components/icons";
 import {
@@ -101,18 +102,16 @@ export default function BillingHistoryPage() {
     }
   }
 
-  function formatDate(dateString: string) {
-    return new Date(dateString).toLocaleDateString(
-      locale === "pt" ? "pt-BR" : "en-US",
-      {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      }
-    );
-  }
+  // Datas no fuso horário local usando util centralizado
+  // Preferimos o parser local para strings SQL ("YYYY-MM-DD HH:mm:ss") do backend
+  const fmtDateTimeLocal = (dateString: string) =>
+    formatLocalDateTimeFromUTC(dateString, locale, {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 safe-area-bottom">
@@ -297,7 +296,7 @@ export default function BillingHistoryPage() {
                           <div className="flex items-center gap-1">
                             <Calendar size={12} />
                             <span className="truncate">
-                              {formatDate(payment.created_at)}
+                              {fmtDateTimeLocal(payment.created_at)}
                             </span>
                           </div>
                         </div>
@@ -353,7 +352,7 @@ export default function BillingHistoryPage() {
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <CheckCircle size={12} />
                             <span>
-                              Processado: {formatDate(payment.processed_at)}
+                              Processado: {fmtDateTimeLocal(payment.processed_at)}
                             </span>
                           </div>
                         </div>
@@ -383,9 +382,6 @@ export default function BillingHistoryPage() {
                 Em caso de problemas com pagamentos, entre em contato com nosso
                 suporte.
               </p>
-              <Button variant="secondary">
-                Entrar em contato
-              </Button>
             </div>
           </div>
         </Card>

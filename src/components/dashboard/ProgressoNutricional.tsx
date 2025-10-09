@@ -2,30 +2,57 @@ import React from 'react';
 import { useMetasAutomaticas } from '../../hooks/useMetasAutomaticas';
 import { useMealData } from '../../hooks/useMealData';
 import { useWaterData } from '../../hooks/useWaterData';
+import { useWaterLogsInteligente } from '../../hooks/useWaterLogsInteligente';
 
 interface ProgressoNutricionalProps {
   className?: string;
 }
 
 const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className = '' }) => {
-  const { metas } = useMetasAutomaticas();
-  // Reutilizar queries reativas (1 dia para granularidade). Caso deseje evitar nova query, aceitar props no futuro.
+  const { metas: metasAuto } = useMetasAutomaticas();
+  // Reutilizar queries reativas (1 dia para granularidade)
   const meal = useMealData(1);
   const water = useWaterData(1);
+  // Meta de água inteligente (usa clima/histórico/IMC e arredonda p/ múltiplo do copo)
+  const waterIntel = useWaterLogsInteligente(7);
   const days = meal.summary?.days || [];
   const totalToday = water.totalToday;
+
+  // Construir metas finais priorizando metas salvas no backend e configurações de água
+  const metas = {
+    calorias: meal.goals?.calories ?? metasAuto.calorias,
+    proteina: meal.goals?.protein_g ?? metasAuto.proteina,
+    carboidratos: meal.goals?.carbs_g ?? metasAuto.carboidratos,
+    gordura: meal.goals?.fat_g ?? metasAuto.gordura,
+    // Água: usar meta inteligente arredondada (mesma da tela de registro de água)
+    // Fallback seguro: daily_cups * cupSize; senão metas automáticas
+    agua:
+      waterIntel.metasFinais?.metaML ??
+      ((water.dailyGoalCups != null && water.cupSize != null)
+        ? water.dailyGoalCups * water.cupSize
+        : metasAuto.agua),
+  };
   
-  // Dados de hoje
-  const hoje = days[0];
+  // Dados de hoje: encontrar pelo date string para evitar ordem inesperada
+  const todayStr = (() => {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  })();
+  const hoje = days.find((d) => d.date === todayStr) || days[0];
   const aguaHoje = (totalToday) || 0; // totalToday já em ml no hook atual
   
   // Calcular percentuais
+  const safePct = (num: number | undefined, den: number | undefined) => {
+    if (!num || !den || den <= 0) return 0;
+    return Math.min(100, Math.round((num / den) * 100));
+  };
   const progressos = {
-    calorias: hoje ? Math.min(100, Math.round((hoje.calories / metas.calorias) * 100)) : 0,
-    proteina: hoje ? Math.min(100, Math.round((hoje.protein_g / metas.proteina) * 100)) : 0,
-    carboidratos: hoje ? Math.min(100, Math.round((hoje.carbs_g / metas.carboidratos) * 100)) : 0,
-    gordura: hoje ? Math.min(100, Math.round((hoje.fat_g / metas.gordura) * 100)) : 0,
-    agua: Math.min(100, Math.round((aguaHoje / metas.agua) * 100))
+    calorias: hoje ? safePct(hoje.calories, metas.calorias) : 0,
+    proteina: hoje ? safePct(hoje.protein_g, metas.proteina) : 0,
+    carboidratos: hoje ? safePct(hoje.carbs_g, metas.carboidratos) : 0,
+    gordura: hoje ? safePct(hoje.fat_g, metas.gordura) : 0,
+    agua: safePct(aguaHoje, metas.agua),
   };
 
   const getCorProgresso = (percentual: number) => {
@@ -203,8 +230,8 @@ const ProgressoNutricional: React.FC<ProgressoNutricionalProps> = ({ className =
               <span className="font-bold">{hoje?.count || 0}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-xs">Copos de água:</span>
-              <span className="font-bold">{totalToday || 0}</span>
+              <span className="text-xs">Água (ml):</span>
+              <span className="font-bold">{aguaHoje}</span>
             </div>
           </div>
         </div>

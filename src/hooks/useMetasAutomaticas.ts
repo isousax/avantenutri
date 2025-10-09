@@ -103,7 +103,21 @@ export function useMetasAutomaticas(): {
   const metas = useMemo((): MetasNutricionais => {
     const { peso, altura, idade, sexo, nivelAtividade, objetivo } = dadosPerfil;
     
-    // Validação mais rigorosa: verificar se temos dados mínimos válidos
+    // Se faltarem dados para calorias/macros, ainda assim tentamos calcular água de forma independente usando o que estiver disponível
+    const calcAguaFallback = (): number => {
+      // Base por kg: feminino 30, masculino 35, neutro 32.5
+      const basePorKg = sexo === 'feminino' ? 30 : (sexo === 'masculino' ? 35 : 32.5);
+      const base = peso && peso >= 20 && peso <= 300 ? peso * basePorKg : null;
+      const extra = nivelAtividade === 'muito_intenso' ? 800
+        : nivelAtividade === 'intenso' ? 600
+        : nivelAtividade === 'moderado' ? 400
+        : nivelAtividade === 'leve' ? 200
+        : 0;
+      const ml = base != null ? Math.round(Math.min(base + extra, 4000)) : null;
+      return ml ?? (user?.dailyWaterGoal || 2000);
+    };
+
+    // Validação mais rigorosa: precisamos de todos os dados para calorias/macros; água pode usar fallback acima
     if (!peso || peso < 20 || peso > 300 || 
         !altura || altura < 100 || altura > 250 || 
         !idade || idade < 10 || idade > 120 ||
@@ -113,7 +127,7 @@ export function useMetasAutomaticas(): {
         proteina: 150,
         carboidratos: 250,
         gordura: 65,
-        agua: user?.dailyWaterGoal || 2000
+        agua: calcAguaFallback()
       };
     }
 
@@ -200,7 +214,7 @@ export function useMetasAutomaticas(): {
         break;
     }
     
-    const agua = Math.min(aguaBase + aguaExtra, 4000); // Máximo 4L por segurança
+  const agua = Math.min(aguaBase + aguaExtra, 4000); // Máximo 4L por segurança
 
     return {
       calorias: Math.round(calorias),
