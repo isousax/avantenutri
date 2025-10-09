@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedFetch } from './useApi';
 import { API } from '../config/api';
+import { useAuth } from '../contexts';
 
 export interface QuestionnaireData {
   categoria: string;
@@ -31,9 +32,9 @@ export const useGetQuestionnaire = () => {
         // Backend deve retornar objeto ou erro 404 (capturado e tratado)
         if (!data) return null;
         return data as QuestionnaireResponse;
-      } catch (e: any) {
+      } catch (e: unknown) {
         // Se 404 ou não encontrado, tratamos como inexistente
-        if (e?.message?.includes('404')) return null;
+        if (e instanceof Error && e.message?.includes('404')) return null;
         throw e; // outros erros sobem para permitir UI mostrar problema
       }
     },
@@ -45,6 +46,7 @@ export const useGetQuestionnaire = () => {
 export const useSaveQuestionnaire = () => {
   const authenticatedFetch = useAuthenticatedFetch();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (input: QuestionnaireData): Promise<QuestionnaireResponse> => {
@@ -63,7 +65,17 @@ export const useSaveQuestionnaire = () => {
     onSuccess: (data) => {
       // Atualiza cache imediatamente para evitar segundo loading
       queryClient.setQueryData(['questionnaire'], data);
-      queryClient.invalidateQueries({ queryKey: ['questionnaire-status'] });
+      // Garante que o status do questionário para o usuário atual seja atualizado imediatamente
+      if (user?.id) {
+        queryClient.setQueryData(['questionnaire-status', user.id], {
+          is_complete: true,
+          has_data: true,
+        });
+        queryClient.invalidateQueries({ queryKey: ['questionnaire-status', user.id] });
+      } else {
+        // Invalida genericamente caso o id não esteja disponível por algum motivo
+        queryClient.invalidateQueries({ queryKey: ['questionnaire-status'], exact: false });
+      }
       queryClient.invalidateQueries({ queryKey: ['user-progress'] });
     },
   });
@@ -73,6 +85,7 @@ export const useSaveQuestionnaire = () => {
 export const useSaveQuestionnaireDraft = () => {
   const authenticatedFetch = useAuthenticatedFetch();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
 
   return useMutation({
     mutationFn: async (partial: Partial<QuestionnaireData>): Promise<QuestionnaireResponse> => {
@@ -89,7 +102,17 @@ export const useSaveQuestionnaireDraft = () => {
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['questionnaire'], data);
-      queryClient.invalidateQueries({ queryKey: ['questionnaire-status'] });
+      if (user?.id) {
+        // Draft implica has_data: true, is_complete pode ser falso
+        queryClient.setQueryData(['questionnaire-status', user.id], (prev: { is_complete?: boolean; has_data?: boolean } | undefined) => ({
+          is_complete: false,
+          has_data: true,
+          ...(prev || {}),
+        }));
+        queryClient.invalidateQueries({ queryKey: ['questionnaire-status', user.id] });
+      } else {
+        queryClient.invalidateQueries({ queryKey: ['questionnaire-status'], exact: false });
+      }
     },
   });
 };

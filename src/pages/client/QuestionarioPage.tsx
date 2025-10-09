@@ -3,10 +3,10 @@ import { useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { useQuestionario } from "../../contexts/useQuestionario";
-import { useToast } from "../../components/ui/ToastProvider";
 import { SEO } from "../../components/comum/SEO";
 import { useI18n } from "../../i18n";
 import { useSaveQuestionnaire } from "../../hooks/useQuestionnaire";
+import { useToast } from "../../components/ui/ToastProvider";
 import {
   ArrowLeft,
   Baby,
@@ -383,23 +383,16 @@ const QuestionarioPage: React.FC = () => {
         categoria,
         respostas: respostasFiltradas,
       });
-      // Feedback imediato e redirecionamento rápido
-      try {
-        push({ type: "success", title: "Questionário salvo", message: "Vamos te redirecionar para o painel." });
-      } catch (e) {
-        console.warn('toast push failed', e);
-      }
-      // Opcional: atualizar step localmente caso permaneça na página por algum motivo
+
       updateQuestionario({ step: etapas.length - 1 });
-      // Redireciona sem atraso artificial
-      navigate("/dashboard", { replace: true });
+
+      // Feedback e pequeno delay antes de redirecionar
+      push({ type: 'success', message: 'Questionário salvo com sucesso. Redirecionando...' });
+      setTimeout(() => {
+        navigate("/dashboard");
+      }, 800);
     } catch (error) {
       console.error("Erro ao salvar questionário:", error);
-      try {
-        push({ type: "error", title: "Falha ao salvar", message: "Tente novamente em instantes." });
-      } catch (e) {
-        console.warn('toast push failed', e);
-      }
     }
   };
 

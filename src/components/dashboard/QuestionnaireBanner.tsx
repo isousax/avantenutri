@@ -13,6 +13,7 @@ export const QuestionnaireBanner: React.FC = () => {
   const { user } = useAuth();
   const { data: status, isLoading, isError } = useQuestionnaireStatus();
   const [isDismissed, setIsDismissed] = useState(false);
+  // Garantir que não há delay de exibição aqui; exibir assim que status estiver pronto.
 
   useEffect(() => {
     // Só considera o dismissal do localStorage depois que a API confirmar status
