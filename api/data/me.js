@@ -4,6 +4,25 @@ import { meCacheGet, meCacheSet } from '../_utils/meCache.js';
 
 const DEFAULT_TTL_MS = Number(process.env.ME_CACHE_TTL_MS || 60000);
 
+// Campos permitidos na resposta final (contrato estável com o front)
+const ALLOWED_FIELDS = [
+  'id',
+  'email',
+  'role',
+  'full_name',
+  'display_name',
+  'phone',
+  'birth_date',
+  'photo_url',
+];
+
+function pickAllowed(obj) {
+  if (!obj || typeof obj !== 'object') return {};
+  const out = {};
+  for (const k of ALLOWED_FIELDS) if (k in obj) out[k] = obj[k];
+  return out;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET');
@@ -28,26 +47,22 @@ export default async function handler(req, res) {
     const publicKeyPem = process.env.JWT_PUBLIC_KEY_PEM; // alternativa a JWKS
     const issuer = process.env.JWT_EXPECTED_ISSUER; // opcional
     const audience = process.env.JWT_EXPECTED_AUDIENCE; // opcional
+    // verifiedLocal guarda APENAS o subconjunto whitelisted, evitando vazar claims do JWT
+    let verifiedLocal = null;
     if (jwksUrl || publicKeyPem) {
       try {
-        const { payload, header } = await verifyJwt(token, { jwksUrl, publicKeyPem, issuer, audience });
-        // Normaliza retorno
-        const responseData = {
+        const { payload } = await verifyJwt(token, { jwksUrl, publicKeyPem, issuer, audience });
+        // Extrai apenas campos do contrato; nada de exp/iss/aud/alg/kid
+        verifiedLocal = pickAllowed({
           id: payload.sub || payload.user_id || payload.id,
           email: payload.email,
           role: payload.role,
           full_name: payload.full_name || payload.name,
-          iat: payload.iat,
-          exp: payload.exp,
-          iss: payload.iss,
-          aud: payload.aud,
-          alg: header.alg,
-          kid: header.kid,
-          validationSource: publicKeyPem ? 'local-pem' : 'local-jwks'
-        };
-  meCacheSet(token, responseData, DEFAULT_TTL_MS);
-        res.setHeader('X-Me-Cache', 'MISS');
-        return json(res, 200, responseData);
+          phone: payload.phone,
+          birth_date: payload.birth_date,
+          // display_name e photo_url não vêm do token; permanecem undefined
+        });
+        // não retornamos ainda; vamos buscar upstream para enriquecer
       } catch (err) {
         // Se falhou verificação local, prossegue para upstream para confirmar (pode ter token de outro issuer)
         // Mas se o erro for de assinatura especificamente, podemos retornar 401 direto.
@@ -70,9 +85,17 @@ export default async function handler(req, res) {
       // Como fallback extra, decodificação não confiável (NÃO substitui assinatura!)
       const dec = unsafeDecode(token);
       if (dec?.payload) {
-        const fallbackData = { ...dec.payload, _warning: 'Upstream unavailable; signature NOT verified' };
+        // Aplica whitelist para não vazar claims
+        const fallbackData = pickAllowed({
+          id: dec.payload.sub || dec.payload.user_id || dec.payload.id,
+          email: dec.payload.email,
+          role: dec.payload.role,
+          full_name: dec.payload.full_name || dec.payload.name,
+          phone: dec.payload.phone,
+          birth_date: dec.payload.birth_date,
+        });
         // Cache menor (10s) para evitar tempestade de requisições durante outage
-  meCacheSet(token, fallbackData, 10000);
+        meCacheSet(token, fallbackData, 10000);
         res.setHeader('X-Me-Cache', 'MISS');
         return json(res, 200, fallbackData);
       }
@@ -83,10 +106,31 @@ export default async function handler(req, res) {
     }
     let data = null;
     try { data = await upstreamResp.json(); } catch { data = null; }
-    if (upstreamResp.ok && data) {
-      // TTL menor para resultado sem verificação local (30s)
-  meCacheSet(token, data, 30000);
+
+    // Para 401/403 (ex.: email não verificado ou token inválido), não mascarar com fallback local
+    if (upstreamResp.status === 401 || upstreamResp.status === 403) {
+      res.setHeader('X-Me-Cache', 'MISS');
+      return json(res, upstreamResp.status, data ?? { error: 'Unauthorized' });
     }
+
+    if (upstreamResp.ok && data) {
+      // Normaliza payload do upstream: alguns handlers retornam { user: { ... } }
+      const upstreamData = (data && typeof data === 'object' && data.user && typeof data.user === 'object') ? data.user : data;
+      const upstreamNorm = pickAllowed(upstreamData);
+      // Se tivemos verificação local (whitelisted), enriquecemos com upstream (upstream tem prioridade)
+      const merged = verifiedLocal ? { ...verifiedLocal, ...upstreamNorm } : upstreamNorm;
+      meCacheSet(token, merged, 30000);
+      res.setHeader('X-Me-Cache', 'MISS');
+      return json(res, 200, merged);
+    }
+
+    // Se upstream falhou (ex.: 5xx) mas temos dados verificados localmente, devolve-os como fallback degradado
+    if (verifiedLocal) {
+      meCacheSet(token, verifiedLocal, DEFAULT_TTL_MS);
+      res.setHeader('X-Me-Cache', 'MISS');
+      return json(res, 200, verifiedLocal);
+    }
+
     res.setHeader('X-Me-Cache', 'MISS');
     return json(res, upstreamResp.status, data ?? {});
   } catch (err) {
