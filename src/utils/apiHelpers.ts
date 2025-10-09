@@ -9,7 +9,7 @@
 export async function safeJsonParse<T = any>(response: Response): Promise<T> {
   try {
     return await response.json();
-  } catch (error) {
+  } catch {
     // Se não conseguir fazer parse do JSON, joga um erro mais claro
     throw new Error('Resposta inválida do servidor');
   }

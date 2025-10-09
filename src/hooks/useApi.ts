@@ -21,11 +21,8 @@ export const useAuthenticatedFetch = () => {
       },
     });
 
-    if (!response.ok) {
-      throw new Error(`Erro ${response.status}: ${response.statusText}`);
-    }
-
-    return response.json();
+    // Não lançamos aqui; deixamos os hooks chamadores decidirem como tratar response.ok e parsing
+    return response;
   };
 
   return authenticatedFetch;

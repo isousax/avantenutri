@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthenticatedFetch } from './useApi';
-import { API } from '../config/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthenticatedFetch } from "./useApi";
+import { API } from "../config/api";
 
 // Types
 export interface MealLog {
@@ -55,33 +55,40 @@ export const useMealLogsQuery = (days = 7) => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
-    queryKey: ['meal-logs', days],
+    queryKey: ["meal-logs", days],
     queryFn: async () => {
       const end = new Date();
-      const start = new Date(Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate()));
+      const start = new Date(
+        Date.UTC(end.getUTCFullYear(), end.getUTCMonth(), end.getUTCDate())
+      );
       start.setUTCDate(start.getUTCDate() - (days - 1));
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const fmt = (d: Date) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const fmt = (d: Date) =>
+        `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(
+          d.getUTCDate()
+        )}`;
       const fromStr = fmt(start);
       const toStr = fmt(end);
 
       const endpoint = API.MEAL_LOGS;
-      const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
-      
+      const response = await authenticatedFetch(
+        `${endpoint}?from=${fromStr}&to=${toStr}`
+      );
+
       let data;
       try {
         data = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Falha ao carregar refeições');
+        throw new Error(data.error || "Falha ao carregar refeições");
       }
 
       return {
         results: data.results || [],
-        range: data.range
+        range: data.range,
       };
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
@@ -94,20 +101,20 @@ export const useMealSummaryQuery = (days = 7) => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
-    queryKey: ['meal-summary', days],
+    queryKey: ["meal-summary", days],
     queryFn: async (): Promise<SummaryResponse> => {
       const endpoint = API.MEAL_SUMMARY;
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
-      
+
       let data;
       try {
         data = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Falha ao carregar resumo de refeições');
+        throw new Error(data.error || "Falha ao carregar resumo de refeições");
       }
 
       return data;
@@ -137,27 +144,27 @@ export const useMealLogs = (days = 7) => {
     }) => {
       const endpoint = API.MEAL_LOGS;
       const response = await authenticatedFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(input),
       });
 
       let data;
       try {
         data = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao registrar');
+        throw new Error(data.error || "Erro ao registrar");
       }
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meal-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['meal-summary'] });
+      queryClient.invalidateQueries({ queryKey: ["meal-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["meal-summary"] });
     },
   });
 
@@ -177,27 +184,27 @@ export const useMealLogs = (days = 7) => {
     }) => {
       const endpoint = API.MEAL_LOGS;
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(data),
       });
 
       let result;
       try {
         result = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(result.error || 'Erro ao atualizar');
+        throw new Error(result.error || "Erro ao atualizar");
       }
 
       return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meal-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['meal-summary'] });
+      queryClient.invalidateQueries({ queryKey: ["meal-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["meal-summary"] });
     },
   });
 
@@ -205,7 +212,7 @@ export const useMealLogs = (days = 7) => {
     mutationFn: async (id: string) => {
       const endpoint = API.MEAL_LOGS;
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -213,16 +220,16 @@ export const useMealLogs = (days = 7) => {
         try {
           data = await response.json();
         } catch (e) {
-          throw new Error('Erro ao excluir');
+          throw new Error("Erro ao excluir");
         }
-        throw new Error(data.error || 'Erro ao excluir');
+        throw new Error(data.error || "Erro ao excluir");
       }
 
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['meal-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['meal-summary'] });
+      queryClient.invalidateQueries({ queryKey: ["meal-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["meal-summary"] });
     },
   });
 
@@ -234,13 +241,27 @@ export const useMealLogs = (days = 7) => {
 
   // Progress calculation
   const goals = summary?.goals;
-  const todayStats = summary?.days?.find(day => day.date === new Date().toISOString().split('T')[0]);
-  
+  const todayStats = summary?.days?.find(
+    (day) => day.date === new Date().toISOString().split("T")[0]
+  );
+
   const progress = {
-    calories: goals?.calories && todayStats ? Math.min((todayStats.calories / goals.calories) * 100, 100) : 0,
-    protein: goals?.protein_g && todayStats ? Math.min((todayStats.protein_g / goals.protein_g) * 100, 100) : 0,
-    carbs: goals?.carbs_g && todayStats ? Math.min((todayStats.carbs_g / goals.carbs_g) * 100, 100) : 0,
-    fat: goals?.fat_g && todayStats ? Math.min((todayStats.fat_g / goals.fat_g) * 100, 100) : 0,
+    calories:
+      goals?.calories && todayStats
+        ? Math.min((todayStats.calories / goals.calories) * 100, 100)
+        : 0,
+    protein:
+      goals?.protein_g && todayStats
+        ? Math.min((todayStats.protein_g / goals.protein_g) * 100, 100)
+        : 0,
+    carbs:
+      goals?.carbs_g && todayStats
+        ? Math.min((todayStats.carbs_g / goals.carbs_g) * 100, 100)
+        : 0,
+    fat:
+      goals?.fat_g && todayStats
+        ? Math.min((todayStats.fat_g / goals.fat_g) * 100, 100)
+        : 0,
   };
 
   return {

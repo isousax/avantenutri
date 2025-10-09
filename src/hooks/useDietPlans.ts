@@ -34,7 +34,7 @@ export function useDietPlans() {
       let data;
       try {
         data = await resp.json();
-      } catch (e) {
+      } catch {
         throw new Error('Resposta inválida do servidor');
       }
       

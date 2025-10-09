@@ -1,6 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useAuthenticatedFetch } from './useApi';
-import { API } from '../config/api';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuthenticatedFetch } from "./useApi";
+import { API } from "../config/api";
 
 // Types
 export interface WaterLog {
@@ -38,33 +38,36 @@ export const useWaterLogsQuery = (days = 7) => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
-    queryKey: ['water-logs', days],
+    queryKey: ["water-logs", days],
     queryFn: async () => {
       const end = new Date();
       const start = new Date();
       start.setDate(start.getDate() - (days - 1));
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+      const pad = (n: number) => String(n).padStart(2, "0");
+      const fmt = (d: Date) =>
+        `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
       const fromStr = fmt(start);
       const toStr = fmt(end);
 
       const endpoint = API.WATER_LOGS;
-      const response = await authenticatedFetch(`${endpoint}?from=${fromStr}&to=${toStr}`);
-      
+      const response = await authenticatedFetch(
+        `${endpoint}?from=${fromStr}&to=${toStr}`
+      );
+
       let data;
       try {
         data = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Falha ao carregar água');
+        throw new Error(data.error || "Falha ao carregar água");
       }
 
       return {
         results: data.results || [],
-        range: data.range
+        range: data.range,
       };
     },
     staleTime: 2 * 60 * 1000, // 2 minutos
@@ -77,20 +80,20 @@ export const useWaterSummaryQuery = (days = 7) => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
-    queryKey: ['water-summary', days],
+    queryKey: ["water-summary", days],
     queryFn: async (): Promise<SummaryResponse> => {
       const endpoint = API.WATER_SUMMARY;
       const response = await authenticatedFetch(`${endpoint}?days=${days}`);
-      
+
       let data;
       try {
         data = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Falha ao carregar resumo de água');
+        throw new Error(data.error || "Falha ao carregar resumo de água");
       }
 
       return data;
@@ -112,27 +115,27 @@ export const useWaterLogs = (days = 7) => {
     mutationFn: async (amount_ml: number = 250) => {
       const endpoint = API.WATER_LOGS;
       const response = await authenticatedFetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ amount_ml }),
       });
 
       let data;
       try {
         data = await response.json();
-      } catch (e) {
-        throw new Error('Resposta inválida do servidor');
+      } catch {
+        throw new Error("Resposta inválida do servidor");
       }
-      
+
       if (!response.ok) {
-        throw new Error(data.error || 'Erro ao registrar água');
+        throw new Error(data.error || "Erro ao registrar água");
       }
 
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['water-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['water-summary'] });
+      queryClient.invalidateQueries({ queryKey: ["water-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["water-summary"] });
     },
   });
 
@@ -140,24 +143,24 @@ export const useWaterLogs = (days = 7) => {
     mutationFn: async (id: string) => {
       const endpoint = API.WATER_LOGS;
       const response = await authenticatedFetch(`${endpoint}/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
         let data;
         try {
           data = await response.json();
-        } catch (e) {
-          throw new Error('Erro ao excluir');
+        } catch {
+          throw new Error("Erro ao excluir");
         }
-        throw new Error(data.error || 'Erro ao excluir');
+        throw new Error(data.error || "Erro ao excluir");
       }
 
       return true;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['water-logs'] });
-      queryClient.invalidateQueries({ queryKey: ['water-summary'] });
+      queryClient.invalidateQueries({ queryKey: ["water-logs"] });
+      queryClient.invalidateQueries({ queryKey: ["water-summary"] });
     },
   });
 
@@ -170,10 +173,10 @@ export const useWaterLogs = (days = 7) => {
   // Calcular dados para hoje
   const today = (() => {
     const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
+    const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   })();
-  const todayStats = summary?.days?.find(day => day.date === today);
+  const todayStats = summary?.days?.find((day) => day.date === today);
   const totalToday = todayStats?.total_ml || 0;
   const dailyGoalMl = summary?.stats?.goal_ml || 2000;
   const dailyGoalCups = Math.ceil(dailyGoalMl / 250); // Assumindo 250ml por copo
