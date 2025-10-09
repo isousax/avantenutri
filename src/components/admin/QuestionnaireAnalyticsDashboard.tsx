@@ -131,7 +131,7 @@ const QuestionnaireAnalyticsDashboard: React.FC = () => {
             {analytics.recent_activity.slice(0, 10).map((activity) => (
               <div key={activity.date} className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
                 <span className="text-sm text-gray-600">
-                  {new Date(activity.date).toLocaleDateString('pt-BR')}
+                  {new Date(activity.date.includes('T') ? activity.date : `${activity.date}T00:00:00`).toLocaleDateString('pt-BR')}
                 </span>
                 <span className="text-sm font-medium text-gray-900">
                   {activity.count} questionário{activity.count !== 1 ? 's' : ''}

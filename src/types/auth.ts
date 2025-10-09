@@ -38,5 +38,7 @@ export interface AuthContextType {
     display_name?: string;
     full_name?: string;
     phone?: string | null;
+    birth_date?: string | null;
+    height?: number | null;
   }) => Promise<{ ok: true; updated: Partial<User> } | { ok: false; error: string }>;
 }

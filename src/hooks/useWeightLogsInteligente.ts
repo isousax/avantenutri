@@ -371,7 +371,9 @@ export function useWeightLogsInteligente(days: number = 90) {
     const volatilidade = Math.sqrt(variancia);
 
     // Regularidade (assumindo que deveria ter registros diários)
-    const diasTotais = Math.ceil((new Date(logs[logs.length - 1].log_date).getTime() - new Date(logs[0].log_date).getTime()) / (1000 * 60 * 60 * 24)) + 1;
+  const firstDay = new Date(`${logs[0].log_date}T00:00:00`).getTime();
+  const lastDay = new Date(`${logs[logs.length - 1].log_date}T00:00:00`).getTime();
+  const diasTotais = Math.ceil((lastDay - firstDay) / (1000 * 60 * 60 * 24)) + 1;
     const regularidade = (logs.length / diasTotais) * 100;
 
     return {

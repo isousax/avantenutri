@@ -151,7 +151,7 @@ const AdminUsersPage: React.FC = () => {
       />
 
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-10 backdrop-blur-lg bg-white/95">
+      <div className="bg-white border-b border-gray-200 sticky top-0 backdrop-blur-lg bg-white/95">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 relative">
           {/* 🔁 Botão no canto superior direito (aparece só no mobile) */}
           <div className="absolute top-4 right-4 sm:hidden">
@@ -206,7 +206,7 @@ const AdminUsersPage: React.FC = () => {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 py-6">
         {/* Filtros e Busca */}
         <Card className="p-4 sm:p-6 mb-6">
           <div className="flex flex-col lg:flex-row lg:items-end gap-4">

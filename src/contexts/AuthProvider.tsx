@@ -1274,6 +1274,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               "") as string,
             display_name: (data.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
             phone: (data.phone ?? user?.phone ?? "") as string,
+            birthDate: (data.birth_date ?? user?.birthDate) as string | undefined,
+            height: (data.height ?? user?.height) as number | undefined,
           };
           setUser(updated);
           const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
@@ -1334,10 +1336,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           );
         }
         // Atualiza user local se campos retornados
-        const updatedPartial: Partial<User> = {};
+  const updatedPartial: Partial<User> = {};
         if (data?.display_name) updatedPartial.display_name = data.display_name;
         if (data?.full_name) updatedPartial.full_name = data.full_name;
         if (data?.phone !== undefined) updatedPartial.phone = data.phone;
+  if (data?.birth_date !== undefined) updatedPartial.birthDate = data.birth_date ?? undefined;
+  if (data?.height !== undefined) updatedPartial.height = data.height ?? undefined;
         if (Object.keys(updatedPartial).length > 0 && user) {
           const merged = { ...user, ...updatedPartial } as User;
           setUser(merged);

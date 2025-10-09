@@ -240,7 +240,9 @@ const RefeicaoRegistroPage: React.FC = () => {
         fat_g: +totalNutricao.gordura.toFixed(2),
       };
 
-      await create(body);
+  await create(body);
+  // Força atualização imediata do histórico e métricas da aba
+  await mealBase.refetch();
       setAlimentosSelecionados([]);
     } catch (e: any) {
       setError(e.message || "Erro ao registrar refeição");

@@ -58,7 +58,12 @@ export function useMealData(days = 7) {
     placeholderData: (prev) => prev,
   });
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: ['meals'] });
+  const invalidate = () => {
+    // Invalida todas as queries relacionadas a refeições nas duas convenções de keys
+    qc.invalidateQueries({ queryKey: ['meals'] });
+    qc.invalidateQueries({ queryKey: ['meal-logs'] });
+    qc.invalidateQueries({ queryKey: ['meal-summary'] });
+  };
 
   const createMutation = useMutation({
       mutationFn: async (input: { meal_type: string; description?: string; calories?: number; protein_g?: number; carbs_g?: number; fat_g?: number; datetime?: string; }) => {
@@ -96,7 +101,16 @@ export function useMealData(days = 7) {
         if (ctx?.prevLogs) qc.setQueryData(mealLogsKey(days), ctx.prevLogs);
         if (ctx?.prevSummary) qc.setQueryData(mealSummaryKey(days), ctx.prevSummary);
       },
-      onSettled: () => invalidate(),
+      onSettled: async () => {
+        invalidate();
+        // Força um refetch imediato para refletir no histórico/dashboard
+        try {
+          await Promise.all([
+            qc.refetchQueries({ queryKey: mealLogsKey(days) }),
+            qc.refetchQueries({ queryKey: mealSummaryKey(days) }),
+          ]);
+        } catch { /* noop */ }
+      },
   });
 
   const patchMutation = useMutation({
@@ -148,7 +162,15 @@ export function useMealData(days = 7) {
       if (ctx?.prevLogs) qc.setQueryData(mealLogsKey(days), ctx.prevLogs);
       if (ctx?.prevSummary) qc.setQueryData(mealSummaryKey(days), ctx.prevSummary);
     },
-    onSettled: () => invalidate(),
+    onSettled: async () => {
+      invalidate();
+      try {
+        await Promise.all([
+          qc.refetchQueries({ queryKey: mealLogsKey(days) }),
+          qc.refetchQueries({ queryKey: mealSummaryKey(days) }),
+        ]);
+      } catch { /* noop */ }
+    },
   });
 
   const removeMutation = useMutation({
@@ -171,7 +193,15 @@ export function useMealData(days = 7) {
       if (ctx?.prevLogs) qc.setQueryData(mealLogsKey(days), ctx.prevLogs);
       if (ctx?.prevSummary) qc.setQueryData(mealSummaryKey(days), ctx.prevSummary);
     },
-    onSettled: () => invalidate(),
+    onSettled: async () => {
+      invalidate();
+      try {
+        await Promise.all([
+          qc.refetchQueries({ queryKey: mealLogsKey(days) }),
+          qc.refetchQueries({ queryKey: mealSummaryKey(days) }),
+        ]);
+      } catch { /* noop */ }
+    },
   });
 
   const goalsMutation = useMutation({

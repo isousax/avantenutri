@@ -658,7 +658,6 @@ const DashboardPage: React.FC = () => {
   const heightCm = user?.height || // Prioridade: perfil do usuário
     (heightCmRaw ? parseFloat(heightCmRaw.replace(",", ".")) : undefined); // Fallback: questionário
 
-  // Todos podem visualizar dietas (flag removida por não ser usada diretamente)
   const canEditDiets = false; // Pacientes não editam dietas, apenas admin
 
   const [showCreateModal, setShowCreateModal] = useState(false);

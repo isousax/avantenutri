@@ -7,6 +7,8 @@ import { useWaterLogsInteligente } from "../../../hooks/useWaterLogsInteligente"
 import { ProgressoHidratacao } from "../../../components/dashboard/ProgressoHidratacao";
 import { useI18n, formatNumber } from "../../../i18n";
 import { useToast } from "../../../components/ui/ToastProvider";
+import type { Toast } from "../../../components/ui/ToastProvider";
+import { parseYMDToLocalDate } from "../../../utils/date";
 import {
   ChevronDown,
   ArrowLeft,
@@ -27,6 +29,7 @@ import {
 const AguaRegistroPage: React.FC = () => {
   const { t } = useI18n();
   const { push } = useToast();
+  // Observação: datas 'YYYY-MM-DD' devem ser interpretadas como locais (ver util date.ts)
   const navigate = useNavigate();
   const {
     logs,
@@ -293,7 +296,7 @@ const AguaRegistroPage: React.FC = () => {
                   <div className="flex items-center gap-4 flex-1 min-w-0">
                     <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center flex-shrink-0">
                       <span className="text-sm font-bold text-blue-600">
-                        {new Date(registro.data)
+                        {parseYMDToLocalDate(registro.data)
                           .toLocaleDateString("pt-BR", { weekday: "short" })
                           .slice(0, 3)}
                       </span>
@@ -316,7 +319,7 @@ const AguaRegistroPage: React.FC = () => {
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
-                        {new Date(registro.data).toLocaleDateString("pt-BR", {
+                        {parseYMDToLocalDate(registro.data).toLocaleDateString("pt-BR", {
                           day: "numeric",
                           month: "short",
                           year: "numeric",
@@ -442,6 +445,22 @@ const AguaRegistroPage: React.FC = () => {
   );
 };
 
+// Tipos auxiliares para o editor de metas e copo
+type ToastPushFn = (toast: Omit<Toast, "id">) => string | void;
+import type { TranslationKey } from "../../../types/i18n.d";
+type TranslateFn = (key: TranslationKey, vars?: Record<string, string | number>) => string;
+
+interface MetaEditorProps {
+  metaDiaria: number;
+  mlPorCopo: number;
+  metasFinais: { fonte?: string };
+  onSetMetaManual: (copos: number) => Promise<void> | void;
+  onResetMetaAutomatica: () => Promise<void> | void;
+  onUpdateCupSize: (ml: number) => Promise<void> | void;
+  push: ToastPushFn;
+  t: TranslateFn;
+}
+
 // Componente de Edição de Meta (mantido igual)
 const MetaEditor = ({
   metaDiaria,
@@ -452,7 +471,7 @@ const MetaEditor = ({
   onUpdateCupSize,
   push,
   t,
-}: any) => {
+}: MetaEditorProps) => {
   const [open, setOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(metaDiaria?.toString() ?? "");
@@ -620,7 +639,14 @@ const MetaEditor = ({
 };
 
 // Componente CupSizeEditor também atualizado
-const CupSizeEditor = ({ current, onSave, push, t }: any) => {
+interface CupSizeEditorProps {
+  current: number;
+  onSave: (ml: number) => Promise<void> | void;
+  push: ToastPushFn;
+  t: TranslateFn;
+}
+
+const CupSizeEditor = ({ current, onSave, push, t }: CupSizeEditorProps) => {
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState(String(current));
 

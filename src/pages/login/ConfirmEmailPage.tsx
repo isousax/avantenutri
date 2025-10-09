@@ -256,14 +256,6 @@ const ConfirmEmailPage: React.FC = () => {
                 <p className="text-sm text-blue-700 mt-1">
                   {t('auth.confirm.help')}
                 </p>
-                <div className="gap-2 text-center">
-                  <a
-                    href="mailto:souzacawanne@gmail.com"
-                    className="text-blue-600 hover:text-blue-800 text-xs underline"
-                  >
-                    souzacawanne@gmail.com
-                  </a>
-                </div>
               </div>
             </div>
           </Card>
