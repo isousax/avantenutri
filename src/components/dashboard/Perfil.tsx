@@ -419,11 +419,6 @@ const Perfil: React.FC = () => {
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Data de Nascimento
-                {user?.birthDate && (
-                  <span className="text-xs text-gray-500 ml-2">
-                    (não pode ser alterada)
-                  </span>
-                )}
               </label>
               <input
                 type="date"
@@ -436,11 +431,6 @@ const Perfil: React.FC = () => {
                 min="1900-01-01"
                 max={new Date().toISOString().split('T')[0]}
               />
-              {user?.birthDate && (
-                <p className="text-xs text-gray-500 mt-1">
-                  Data já definida e não pode ser alterada
-                </p>
-              )}
             </div>
 
             <div>

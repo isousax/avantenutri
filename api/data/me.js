@@ -14,6 +14,7 @@ const ALLOWED_FIELDS = [
   'phone',
   'birth_date',
   'photo_url',
+  'height',
 ];
 
 function pickAllowed(obj) {
@@ -60,6 +61,7 @@ export default async function handler(req, res) {
           full_name: payload.full_name || payload.name,
           phone: payload.phone,
           birth_date: payload.birth_date,
+          height: payload.height,
           // display_name e photo_url não vêm do token; permanecem undefined
         });
         // não retornamos ainda; vamos buscar upstream para enriquecer
@@ -93,6 +95,7 @@ export default async function handler(req, res) {
           full_name: dec.payload.full_name || dec.payload.name,
           phone: dec.payload.phone,
           birth_date: dec.payload.birth_date,
+          height: dec.payload.height,
         });
         // Cache menor (10s) para evitar tempestade de requisições durante outage
         meCacheSet(token, fallbackData, 10000);
