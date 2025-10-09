@@ -112,6 +112,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       localStorage.removeItem(STORAGE_ACCESS_KEY);
       localStorage.removeItem(STORAGE_REFRESH_KEY);
       localStorage.removeItem(STORAGE_EXPIRES_KEY);
+      // Limpar cache persistido do React Query
+      localStorage.removeItem('rq-cache-v1');
     } catch (err) {
       console.warn("[AuthProvider] Failed to clear localStorage", err);
     }

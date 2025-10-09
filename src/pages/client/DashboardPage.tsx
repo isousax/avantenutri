@@ -25,6 +25,7 @@ import Suporte from "../../components/dashboard/Suporte";
 import { useConsultations } from "../../hooks/useConsultations"; // integração real de consultas
 import Sparkline from "../../components/ui/Sparkline";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
+import type { Locale } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { QuestionnaireBanner } from "../../components/dashboard/QuestionnaireBanner";
 import {
@@ -37,7 +38,10 @@ import {
 import { SkeletonCard } from "../../components/ui/Loading";
 import DataSection from "../../components/ui/DataSection";
 import { useWeightData } from "../../hooks/useWeightData"; // mantido para WeightSection isolada
+import type { StructuredDietData } from "../../types/structuredDiet";
+import { colorForWeightDiff, inferWeightObjective, WEIGHT_TOLERANCE_KG } from "../../utils/weightObjective";
 import { useDietPlans } from "../../hooks/useDietPlans";
+import type { DietPlanDetail, DietPlanVersion } from "../../hooks/useDietPlans";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useQueryClient } from "@tanstack/react-query";
 import Prefetch, { logPrefetchMetrics } from "../../utils/prefetch";
@@ -63,7 +67,7 @@ const DietPlanCard: React.FC<{
   onView: (id: string) => void;
   onRevise?: (id: string) => void;
   canEdit: boolean;
-  locale: string;
+  locale: Locale;
 }> = ({ diet, onView, onRevise, canEdit, locale }) => {
   const isCurrent = diet.status === "active";
 
@@ -117,7 +121,7 @@ const DietPlanCard: React.FC<{
           </span>
           <p className="font-semibold text-gray-900">
             {diet.start_date
-              ? fmtDate(diet.start_date, locale as any, { dateStyle: "short" })
+              ? fmtDate(diet.start_date, locale, { dateStyle: "short" })
               : "-"}
           </p>
         </div>
@@ -127,7 +131,7 @@ const DietPlanCard: React.FC<{
           </span>
           <p className="font-semibold text-gray-900">
             {diet.end_date
-              ? fmtDate(diet.end_date, locale as any, { dateStyle: "short" })
+              ? fmtDate(diet.end_date, locale, { dateStyle: "short" })
               : "-"}
           </p>
         </div>
@@ -177,7 +181,7 @@ const DietPlanCard: React.FC<{
 };
 
 // Export controls for structured diet versions (user dashboard)
-const DietVersionExportControls: React.FC<{ data: any; version: number }> = ({
+const DietVersionExportControls: React.FC<{ data: StructuredDietData; version: number }> = ({
   data,
   version,
 }) => {
@@ -353,12 +357,14 @@ const DietVersionExportControls: React.FC<{ data: any; version: number }> = ({
 };
 
 // Modern Bottom Navigation
+type BottomTabId = "overview" | "dietas" | "consultas" | "perfil" | "suporte";
+interface BottomTab { id: BottomTabId; label: string; icon: string; navigate?: string }
 const BottomNav: React.FC<{
-  activeTab: string;
-  onTabChange: (tab: any) => void;
+  activeTab: BottomTabId;
+  onTabChange: (tab: BottomTabId) => void;
 }> = ({ activeTab, onTabChange }) => {
   const navigate = useNavigate();
-  const tabs = [
+  const tabs: BottomTab[] = [
     { id: "overview", label: "Visão", icon: "📊" },
     { id: "dietas", label: "Dietas", icon: "🍽️" },
     { id: "consultas", label: "Consultas", icon: "📅" },
@@ -373,9 +379,7 @@ const BottomNav: React.FC<{
           <button
             key={tab.id}
             onClick={() =>
-              (tab as any).navigate
-                ? navigate((tab as any).navigate)
-                : onTabChange(tab.id)
+              tab.navigate ? navigate(tab.navigate) : onTabChange(tab.id)
             }
             className={`flex flex-col items-center py-2 px-1 flex-1 min-w-0 rounded-xl transition-all duration-300 ${
               activeTab === tab.id
@@ -446,6 +450,10 @@ const WeightSection: React.FC<{
       : "Obesidade III"
     : undefined;
 
+  // Cor da variação baseada no objetivo de peso do usuário
+  const objective = React.useMemo(() => inferWeightObjective(goal, latestWeight?.weight_kg, WEIGHT_TOLERANCE_KG), [goal, latestWeight?.weight_kg]);
+  const weightDiffClass = React.useMemo(() => colorForWeightDiff(objective, weightDiff, WEIGHT_TOLERANCE_KG), [objective, weightDiff]);
+
   return (
     <DataSection
       isLoading={loading}
@@ -467,18 +475,12 @@ const WeightSection: React.FC<{
                   : "--"}
               </p>
               {weightDiff != null && (
-                <p
-                  className={`text-sm ${
-                    weightDiff >= 0 ? "text-red-600" : "text-green-600"
-                  }`}
-                >
+                <div className={weightDiffClass}>
                   {weightDiff >= 0 ? "+" : ""}
                   {weightDiff.toFixed(1)} kg
                   {weightDiffPct != null &&
-                    ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(
-                      1
-                    )}%)`}
-                </p>
+                    ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(1)}%)`}
+                </div>
               )}
               {bmi && bmiClass && (
                 <p className="text-sm text-gray-600 mt-1">
@@ -604,9 +606,7 @@ const DashboardPage: React.FC = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "questionario" | "dietas" | "perfil" | "suporte" | "consultas"
-  >("overview");
+  const [activeTab, setActiveTab] = useState<BottomTabId>("overview");
 
   // Prefetch baseado em visibilidade para dietas (mobile support)
   useIntersectionPrefetch("[data-plan-id]", {
@@ -616,7 +616,7 @@ const DashboardPage: React.FC = () => {
 
   // Log métricas de prefetch ao trocar aba em dev
   useEffect(() => {
-    if ((import.meta as any).env?.DEV) {
+    if (import.meta.env?.DEV) {
       logPrefetchMetrics();
     }
   }, [activeTab]);
@@ -667,12 +667,12 @@ const DashboardPage: React.FC = () => {
   );
   const [pdfBase64, setPdfBase64] = useState<string>("");
   const [pdfName, setPdfName] = useState<string>("");
-  const [structuredData, setStructuredData] = useState<any>(null);
+  const [structuredData, setStructuredData] = useState<StructuredDietData | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [includeData, setIncludeData] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
-  const [detailJson, setDetailJson] = useState<any>(null);
+  const [detailJson, setDetailJson] = useState<DietPlanDetail | null>(null);
 
   // Fetch automático via React Query – sem efeito manual.
 
@@ -705,7 +705,7 @@ const DashboardPage: React.FC = () => {
       meta_fat_g: undefined,
       pdf_base64: planFormat === "pdf" ? pdfBase64 || undefined : undefined,
       pdf_filename: planFormat === "pdf" ? pdfName || undefined : undefined,
-    } as any);
+    } as unknown as Parameters<typeof create>[0]);
     if (id) {
       setShowCreateModal(false);
       setCreatingName("");
@@ -942,7 +942,7 @@ const DashboardPage: React.FC = () => {
                   } else if (item.id === "questionario") {
                     navigate("/questionario");
                   } else {
-                    setActiveTab(item.id as any);
+                    setActiveTab(item.id as BottomTabId);
                   }
                   setSidebarOpen(false);
                 }}
@@ -1020,7 +1020,6 @@ const DashboardPage: React.FC = () => {
                 <div className="min-w-0">
                   <h1 className="text-xl font-bold text-gray-900 truncate capitalize">
                     {activeTab === "overview" && "Visão Geral"}
-                    {activeTab === "questionario" && "Questionário"}
                     {activeTab === "dietas" && "Minhas Dietas"}
                     {activeTab === "consultas" && "Minhas Consultas"}
                     {activeTab === "perfil" && "Meu Perfil"}
@@ -1796,11 +1795,11 @@ const DashboardPage: React.FC = () => {
 
 interface DetailContentProps {
   includeData: boolean;
-  detailJson: any;
+  detailJson: DietPlanDetail | null;
   canEdit: boolean;
   onRevise: (notes: string) => Promise<void>;
   revising: boolean;
-  locale: string;
+  locale: Locale;
 }
 const DetailContent: React.FC<DetailContentProps> = ({
   includeData,
@@ -1822,7 +1821,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
         </p>
         <p className="text-xs text-gray-400">
           Criado em{" "}
-          {fmtDate(cached.created_at, locale as any, {
+          {fmtDate(cached.created_at, locale, {
             dateStyle: "short",
             timeStyle: "short",
           })}
@@ -1831,7 +1830,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
       <div>
         <h4 className="font-semibold mb-2">Versões</h4>
         <div className="max-h-64 overflow-y-auto border rounded divide-y bg-white/50">
-          {cached.versions.map((v: any, idx: number) => {
+          {cached.versions.map((v: DietPlanVersion, idx: number) => {
             const isTemp = String(v.id).startsWith("temp-rev-");
             return (
               <div
@@ -1855,7 +1854,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
                     )}
                   </span>
                   <span>
-                    {fmtDate(v.created_at, locale as any, {
+                    {fmtDate(v.created_at, locale, {
                       dateStyle: "short",
                     })}
                   </span>

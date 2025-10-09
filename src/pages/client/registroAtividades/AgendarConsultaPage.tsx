@@ -137,6 +137,7 @@ const AgendarConsultaPage: React.FC = () => {
   const { data: questionnaireStatus } = useQuestionnaireStatus();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
   const [showCreditModal, setShowCreditModal] = useState(false);
+  const [purchaseLoading, setPurchaseLoading] = useState<null | TipoConsulta>(null);
 
   function getErrorMessage(err: unknown) {
     if (!err) return "";
@@ -340,13 +341,15 @@ const AgendarConsultaPage: React.FC = () => {
 
   const purchaseCredit = async (type: TipoConsulta) => {
     try {
-      const data = (await authenticatedFetch("/billing/intent", {
+      setPurchaseLoading(type);
+      const res = await authenticatedFetch(API.BILLING_INTENT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, display_name: user?.display_name }),
-      })) as { checkout_url?: string; error?: string };
-
-      if (!data?.checkout_url) {
+      });
+      const data: { ok?: boolean; checkout_url?: string; error?: string } = await res.json();
+      console.log("Billing intent data:", data);
+      if (!res.ok || !data?.checkout_url) {
         push({
           type: "error",
           message: data?.error || "Falha ao iniciar pagamento",
@@ -357,6 +360,8 @@ const AgendarConsultaPage: React.FC = () => {
     } catch (err: unknown) {
       const msg = getErrorMessage(err);
       push({ type: "error", message: msg || "Erro inesperado" });
+    } finally {
+      setPurchaseLoading(null);
     }
   };
 
@@ -754,57 +759,82 @@ const AgendarConsultaPage: React.FC = () => {
       />
 
       {/* Credits Purchase Modal */}
-      {showCreditModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <CreditCard size={32} className="text-red-600" />
+        {showCreditModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+            <div className="bg-white rounded-2xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <CreditCard size={32} className="text-red-600" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">
+                  Créditos Insuficientes
+                </h3>
+                <p className="text-gray-600">
+                  Você precisa de créditos para agendar uma{" "}
+                  {formData.tipoConsulta === "avaliacao_completa"
+                    ? "avaliação completa"
+                    : "reavaliação"}
+                  .
+                </p>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Créditos Insuficientes
-              </h3>
-              <p className="text-gray-600">
-                Você precisa de créditos para agendar uma{" "}
-                {formData.tipoConsulta === "avaliacao_completa"
-                  ? "avaliação completa"
-                  : "reavaliação"}
-                .
-              </p>
-            </div>
 
-            <div className="space-y-3">
-              <Button
-                onClick={() => purchaseCredit("avaliacao_completa")}
-                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600"
-              >
-                <CreditCard size={16} />
-                Comprar Avaliação Completa
-              </Button>
-
-              {canUseReavaliacao && (
+              <div className="space-y-3">
                 <Button
-                  onClick={() => purchaseCredit("reavaliacao")}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600"
+                  onClick={() => purchaseCredit("avaliacao_completa")}
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600"
+                  noFocus
+                  disabled={purchaseLoading !== null}
                 >
-                  <CreditCard size={16} />
-                  Comprar Reavaliação
+                  {purchaseLoading === "avaliacao_completa" ? (
+                    <div className="flex items-center gap-2">
+                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Iniciando checkout...
+                    </div>
+                  ) : (
+                    <>
+                      <CreditCard size={16} />
+                      Comprar Avaliação Completa
+                    </>
+                  )}
                 </Button>
-              )}
-            </div>
 
-            <div className="mt-6 pt-4 border-t">
-              <Button
-                variant="secondary"
-                onClick={() => setShowCreditModal(false)}
-                className="w-full"
-              >
-                Fechar
-              </Button>
+                {canUseReavaliacao && (
+                  <Button
+                    onClick={() => purchaseCredit("reavaliacao")}
+                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600"
+                    noFocus
+                    disabled={purchaseLoading !== null}
+                  >
+                    {purchaseLoading === "reavaliacao" ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        Iniciando checkout...
+                      </div>
+                    ) : (
+                      <>
+                        <CreditCard size={16} />
+                        Comprar Reavaliação
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+
+              <div className="mt-6 pt-4 border-t">
+                <Button
+                  variant="secondary"
+                  onClick={() => setShowCreditModal(false)}
+                  className="w-full"
+                  noBorder
+                  noFocus
+                  noBackground
+                >
+                  Fechar
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
   );
 };

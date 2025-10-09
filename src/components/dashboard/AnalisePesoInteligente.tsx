@@ -2,6 +2,7 @@ import React from 'react';
 import Card from '../ui/Card';
 import { useWeightLogsInteligente } from '../../hooks/useWeightLogsInteligente';
 import { WeightIcon } from './icon';
+import { inferWeightObjective, WEIGHT_TOLERANCE_KG } from '../../utils/weightObjective';
 
 
 // Ícones SVG
@@ -51,6 +52,9 @@ export const AnalisePesoInteligente: React.FC = () => {
     logs
   } = useWeightLogsInteligente();
 
+  // Objetivo do usuário em relação ao peso
+  const objetivo = React.useMemo(() => inferWeightObjective(metasFinais?.pesoMeta, metasFinais?.pesoAtual, WEIGHT_TOLERANCE_KG), [metasFinais?.pesoMeta, metasFinais?.pesoAtual]);
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'saudavel': return 'from-green-400 to-green-600';
@@ -72,21 +76,24 @@ export const AnalisePesoInteligente: React.FC = () => {
   };
 
   const getTendenciaIcon = (direcao: string) => {
-    switch (direcao) {
-      case 'subindo': return <TrendingUpIcon className="w-5 h-5 text-red-500" />;
-      case 'descendo': return <TrendingDownIcon className="w-5 h-5 text-green-500" />;
-      case 'oscilando': return <ActivityIcon className="w-5 h-5 text-yellow-500" />;
-      default: return <div className="w-5 h-5 bg-gray-400 rounded-full" />;
+    // Cores baseadas no objetivo: ganhar -> subir verde, perder -> descer verde, manter -> oscilação/variação leve amarela
+    if (direcao === 'oscilando') return <ActivityIcon className="w-5 h-5 text-yellow-500" />;
+    if (direcao === 'subindo') {
+      const cls = objetivo === 'gain' ? 'text-green-500' : objetivo === 'lose' ? 'text-red-500' : 'text-amber-500';
+      return <TrendingUpIcon className={`w-5 h-5 ${cls}`} />;
     }
+    if (direcao === 'descendo') {
+      const cls = objetivo === 'lose' ? 'text-green-500' : objetivo === 'gain' ? 'text-red-500' : 'text-amber-500';
+      return <TrendingDownIcon className={`w-5 h-5 ${cls}`} />;
+    }
+    return <div className="w-5 h-5 bg-gray-400 rounded-full" />;
   };
 
   const getTendenciaColor = (direcao: string) => {
-    switch (direcao) {
-      case 'subindo': return 'text-red-600 bg-red-50';
-      case 'descendo': return 'text-green-600 bg-green-50';
-      case 'oscilando': return 'text-yellow-600 bg-yellow-50';
-      default: return 'text-gray-600 bg-gray-50';
-    }
+    if (direcao === 'oscilando') return 'text-yellow-600 bg-yellow-50';
+    if (direcao === 'subindo') return objetivo === 'gain' ? 'text-green-600 bg-green-50' : objetivo === 'lose' ? 'text-red-600 bg-red-50' : 'text-amber-600 bg-amber-50';
+    if (direcao === 'descendo') return objetivo === 'lose' ? 'text-green-600 bg-green-50' : objetivo === 'gain' ? 'text-red-600 bg-red-50' : 'text-amber-600 bg-amber-50';
+    return 'text-gray-600 bg-gray-50';
   };
 
   if (!logs || logs.length < 3) {

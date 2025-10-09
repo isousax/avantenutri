@@ -4,7 +4,8 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import { SEO } from '../../../components/comum/SEO';
 import { useWeightLogsInteligente } from '../../../hooks/useWeightLogsInteligente';
-import { useWeightData } from '../../../hooks/useWeightData';
+import { useWeightData, type WeightLog } from '../../../hooks/useWeightData';
+import { badgeForCurrentVsGoal, inferWeightObjective, WEIGHT_TOLERANCE_KG } from '../../../utils/weightObjective';
 import { AnalisePesoInteligente } from '../../../components/dashboard/AnalisePesoInteligente';
 import Sparkline from '../../../components/ui/Sparkline';
 import { usePermissions } from '../../../hooks/usePermissions';
@@ -18,7 +19,7 @@ const PesoRegistroPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'registrar' | 'analise' | 'historico'>('registrar');
   
   const inteligente = useWeightLogsInteligente(90);
-  const { latest, logs, series, goal, setGoal, upsert, patch } = useWeightData(90) as any;
+  const { latest, logs, series, goal, setGoal, upsert, patch } = useWeightData(90);
   const analiseTendencia = inteligente.analiseTendencia;
   const { t, locale } = useI18n();
   const { can } = usePermissions();
@@ -81,8 +82,9 @@ const PesoRegistroPage: React.FC = () => {
       await upsert({ weight_kg: w, date: localDate });
       setHasUserInput(false);
       setActiveTab('historico'); // Vai para a aba de histórico após salvar
-    } catch (e: any) { 
-      setError(e.message || t('common.error')); 
+    } catch (e: unknown) {
+  const msg = e instanceof Error ? e.message : t('common.error');
+  setError(msg);
     } finally { 
       setSaving(false); 
     }
@@ -287,7 +289,7 @@ const PesoRegistroPage: React.FC = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              {logs.map((log: any, index: number) => (
+              {logs.map((log: WeightLog, index: number) => (
                 <div 
                   key={log.id || log.log_date} 
                   className={`p-4 rounded-xl border transition-all duration-200 ${
@@ -307,13 +309,16 @@ const PesoRegistroPage: React.FC = () => {
                           <p className="sm:text-lg font-semibold text-gray-900">
                             {formatNumber(+log.weight_kg.toFixed(1), locale)} kg
                           </p>
-                          {goal && (
-                            <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${
-                              log.weight_kg > goal ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                            }`}>
-                              {goal > log.weight_kg ? '↓' : '↑'} {Math.abs(goal - log.weight_kg).toFixed(1)}kg
-                            </span>
-                          )}
+                          {goal && (() => {
+                            const obj = inferWeightObjective(goal, (latest?.weight_kg ?? log.weight_kg), WEIGHT_TOLERANCE_KG);
+                            const cls = badgeForCurrentVsGoal(obj, log.weight_kg > goal);
+                            const arrow = obj === 'maintain' ? '→' : (log.weight_kg > goal ? '↑' : '↓');
+                            return (
+                              <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${cls}`}>
+                                {arrow} {Math.abs(goal - log.weight_kg).toFixed(1)}kg
+                              </span>
+                            );
+                          })()}
                         </div>
                         <p className="text-xs text-gray-500 mt-1">
                           {formatDateSafe(log.log_date, locale)}
