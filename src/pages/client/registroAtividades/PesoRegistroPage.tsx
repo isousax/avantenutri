@@ -191,6 +191,7 @@ const PesoRegistroPage: React.FC = () => {
               <Button 
                 disabled={saving || !weight} 
                 className="w-full !py-4 !text-base font-semibold bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl active:scale-[0.98]"
+                noFocus
               >
                 {saving ? (
                   <span className="flex items-center justify-center gap-2">

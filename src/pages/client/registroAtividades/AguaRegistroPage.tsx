@@ -184,6 +184,7 @@ const AguaRegistroPage: React.FC = () => {
               variant="secondary"
               className="flex-1 h-12 flex items-center justify-center border-2 border-red-200 hover:border-red-400 hover:bg-red-50 transition-all rounded-xl"
               disabled={pendingCops === 0}
+              noFocus
             >
               <Minus size={24} className="text-red-500" />
             </Button>
@@ -192,6 +193,7 @@ const AguaRegistroPage: React.FC = () => {
               onClick={adicionarCopo}
               className="flex-1 h-12 flex items-center justify-center bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 shadow-lg hover:shadow-xl transition-all rounded-xl"
               disabled={coposHoje + pendingCops >= metaDiaria * 3}
+              noFocus
             >
               <Plus size={24} className="text-white" />
             </Button>
@@ -202,6 +204,7 @@ const AguaRegistroPage: React.FC = () => {
             onClick={handleSubmit}
             className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 shadow-lg hover:shadow-xl transition-all rounded-xl"
             disabled={isSaving || pendingCops === 0}
+            noFocus
           >
             {isSaving ? (
               <div className="flex items-center gap-2">

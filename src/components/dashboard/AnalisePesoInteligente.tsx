@@ -96,6 +96,15 @@ export const AnalisePesoInteligente: React.FC = () => {
     return 'text-gray-600 bg-gray-50';
   };
 
+  const getConsistenciaLabel = (cons: string) => {
+    switch (cons) {
+      case 'consistente': return 'Consistente';
+      case 'irregular': return 'Irregular';
+      case 'muito_irregular': return 'Muito irregular';
+      default: return '—';
+    }
+  };
+
   if (!logs || logs.length < 3) {
     return (
       <Card className="bg-gradient-to-br from-gray-50 to-gray-100 border-gray-200">
@@ -184,14 +193,14 @@ export const AnalisePesoInteligente: React.FC = () => {
               
               <div className="text-center p-2 bg-white/80 rounded">
                 <div className="font-medium text-green-700">
-                  {predicoes.tempoParaMeta < 999 ? `${predicoes.tempoParaMeta}d` : '∞'}
+                  {predicoes.tempoParaMeta < 999 ? `${predicoes.tempoParaMeta}d` : '—'}
                 </div>
                 <div className="text-gray-600">Para meta</div>
               </div>
               
               <div className="text-center p-2 bg-white/80 rounded">
                 <div className="font-medium text-purple-700">
-                  {analiseTendencia.consistencia}
+                  {getConsistenciaLabel(analiseTendencia.consistencia)}
                 </div>
                 <div className="text-gray-600">Consistência</div>
               </div>

@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import { useWeightData } from './useWeightData';
 import { useWeightLogs } from './useWeightLogs';
 import { useMetasAutomaticas } from './useMetasAutomaticas';
+import { WEIGHT_TOLERANCE_KG } from '../utils/weightObjective';
 
 export interface MetasPesoInteligentes {
   pesoAtual: number;
@@ -70,10 +71,12 @@ export interface PredicoesPeso {
  * Combina dados históricos com IA para insights e previsões
  */
 export function useWeightLogsInteligente(days: number = 90) {
-  // Primeiro tenta usar novo hook com cache compartilhado
+  // Hooks (sempre na mesma ordem)
   const weightData = useWeightData(Math.min(days, 120));
+  const weightLogsLegacy = useWeightLogs(days); // fallback disponível sem quebrar regras de Hooks
+
   // Adaptador para interface antiga esperada mais abaixo
-  const weightLogs = weightData.logs.length > 0 || weightData.loading || weightData.error == null ? {
+  const weightLogs = (weightData.logs.length > 0 || weightData.loading || weightData.error == null) ? {
     logs: weightData.logs.map(l => ({ id: l.id, log_date: l.log_date, weight_kg: l.weight_kg, note: l.note, created_at: l.created_at, updated_at: l.updated_at })),
     latest: weightData.latest ? { date: weightData.latest.date, weight_kg: weightData.latest.weight_kg } : null,
     goal: weightData.goal,
@@ -84,7 +87,7 @@ export function useWeightLogsInteligente(days: number = 90) {
     trend_slope: weightData.trend_slope,
     loading: weightData.loading,
     error: weightData.error,
-  } : useWeightLogs(days); // fallback (se nenhum dado e erro anterior)
+  } : weightLogsLegacy; // usa legado somente se necessário
   const { dadosPerfil, metasCalculadas } = useMetasAutomaticas();
 
   // Calcular IMC e status de saúde
@@ -141,7 +144,7 @@ export function useWeightLogsInteligente(days: number = 90) {
 
   // Análise de tendência avançada
   const analiseTendencia: AnaliseTendencia = useMemo(() => {
-    if (!weightLogs.logs || weightLogs.logs.length < 7) {
+    if (!weightLogs.logs || weightLogs.logs.length < 5) {
       return {
         direcao: 'estavel',
         velocidade: 'lenta',
@@ -151,83 +154,122 @@ export function useWeightLogsInteligente(days: number = 90) {
       };
     }
 
-    const logs = [...weightLogs.logs].sort((a, b) => a.log_date.localeCompare(b.log_date));
-    // const ultimos14 = logs.slice(-14); // Para futuras análises
-    const ultimos7 = logs.slice(-7);
+    const logsOrdenados = [...weightLogs.logs]
+      .sort((a, b) => a.log_date.localeCompare(b.log_date));
+    // Deduplicar por dia para evitar múltiplos registros no mesmo dia afetarem a regressão
+    const vistos = new Set<string>();
+    const logs = logsOrdenados.filter(l => {
+      if (vistos.has(l.log_date)) return false;
+      vistos.add(l.log_date);
+      return true;
+    });
 
-    // Calcular tendência usando regressão linear simples
-    const calcularTendencia = (dados: typeof logs) => {
-      const n = dados.length;
-      const sumX = dados.reduce((acc, _, i) => acc + i, 0);
-      const sumY = dados.reduce((acc, log) => acc + log.weight_kg, 0);
-      const sumXY = dados.reduce((acc, log, i) => acc + i * log.weight_kg, 0);
-      const sumX2 = dados.reduce((acc, _, i) => acc + i * i, 0);
-      
-      const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-      return slope * 7; // kg por semana
-    };
+    const janela = Math.max(5, Math.min(30, Math.floor(logs.length))); // entre 5 e 30 pontos
+    const pontos = logs.slice(-janela);
 
-    const tendencia7 = calcularTendencia(ultimos7);
-    // const tendencia14 = calcularTendencia(ultimos14); // Para futuras melhorias
+    // Converter datas em dias relativos (x) e pesos (y)
+    const t0 = new Date(`${pontos[0].log_date}T00:00:00`).getTime();
+    const xs = pontos.map(p => (new Date(`${p.log_date}T00:00:00`).getTime() - t0) / (1000 * 60 * 60 * 24));
+    const ys = pontos.map(p => p.weight_kg);
 
-    // Determinar direção
+    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const xBar = mean(xs);
+    const yBar = mean(ys);
+    const covXY = xs.reduce((acc, x, i) => acc + (x - xBar) * (ys[i] - yBar), 0);
+    const varX = xs.reduce((acc, x) => acc + (x - xBar) ** 2, 0);
+    const slopePerDay = varX !== 0 ? (covXY / varX) : 0; // kg por dia
+    const intercept = yBar - slopePerDay * xBar;
+    const yHat = xs.map(x => intercept + slopePerDay * x);
+    const ssRes = yHat.reduce((acc, y, i) => acc + (ys[i] - y) ** 2, 0);
+    const ssTot = ys.reduce((acc, y) => acc + (y - yBar) ** 2, 0);
+    const r2 = ssTot !== 0 ? Math.max(0, Math.min(1, 1 - ssRes / ssTot)) : 0;
+
+    const tendenciaSemana = slopePerDay * 7; // kg/semana
+
+    // Direção
     let direcao: AnaliseTendencia['direcao'] = 'estavel';
-    if (Math.abs(tendencia7) > 0.1) {
-      direcao = tendencia7 > 0 ? 'subindo' : 'descendo';
+    const limiarSemana = 0.1; // kg/semana
+    if (Math.abs(tendenciaSemana) > limiarSemana) {
+      direcao = tendenciaSemana > 0 ? 'subindo' : 'descendo';
     }
-    
-    // Verificar oscilação
+
+    // Verificar oscilação via mudanças de sinal
     const mudancasDiarias = logs.slice(1).map((log, i) => log.weight_kg - logs[i].weight_kg);
     const mudasPositivas = mudancasDiarias.filter(m => m > 0).length;
     const mudasNegativas = mudancasDiarias.filter(m => m < 0).length;
-    
     if (mudasPositivas > 0 && mudasNegativas > 0 && Math.abs(mudasPositivas - mudasNegativas) < 2) {
       direcao = 'oscilando';
     }
 
     // Velocidade
     let velocidade: AnaliseTendencia['velocidade'] = 'lenta';
-    const velocidadeAbs = Math.abs(tendencia7);
-    if (velocidadeAbs > 0.8) velocidade = 'rapida';
-    else if (velocidadeAbs > 0.3) velocidade = 'moderada';
+    const velAbs = Math.abs(tendenciaSemana);
+    if (velAbs > 0.8) velocidade = 'rapida';
+    else if (velAbs > 0.3) velocidade = 'moderada';
 
-    // Consistência
-    const variancia = mudancasDiarias.reduce((acc, m) => acc + Math.pow(m, 2), 0) / mudancasDiarias.length;
+    // Consistência combinando r2 e variância das mudanças
+    const varianciaMud = mudancasDiarias.reduce((acc, m) => acc + (m * m), 0) / Math.max(1, mudancasDiarias.length);
     let consistencia: AnaliseTendencia['consistencia'] = 'consistente';
-    if (variancia > 1) consistencia = 'muito_irregular';
-    else if (variancia > 0.3) consistencia = 'irregular';
+    if (r2 < 0.3 || varianciaMud > 1) consistencia = 'muito_irregular';
+    else if (r2 < 0.6 || varianciaMud > 0.3) consistencia = 'irregular';
 
-    // Confiabilidade baseada na quantidade de dados e consistência
-    const confiabilidade = Math.min(100, 
-      (logs.length / 30) * 50 + // 50% baseado na quantidade de dados
-      (consistencia === 'consistente' ? 50 : 
-       consistencia === 'irregular' ? 25 : 0) // 50% baseado na consistência
+  // Confiabilidade: datas suficientes + qualidade do ajuste + consistência
+  const n = xs.length;
+  const fatorDados = Math.min(1, n / 30); // até 30 pontos
+    const fatorAjuste = r2; // 0..1
+    const fatorConsistencia = consistencia === 'consistente' ? 1 : consistencia === 'irregular' ? 0.5 : 0.2;
+    const confiabilidade = Math.round(
+      Math.max(0, Math.min(100, (fatorDados * 40 + fatorAjuste * 40 + fatorConsistencia * 20)))
     );
 
-    // Próximo milestone
+    // Próximo milestone (meta)
     const diferencaParaMeta = metasFinais.pesoMeta - metasFinais.pesoAtual;
-    const proximoMilestone = {
-      peso: metasFinais.pesoMeta,
-      diasEstimados: tendencia7 !== 0 ? Math.abs(diferencaParaMeta / (tendencia7 / 7)) : 999,
-      probabilidade: Math.max(0, Math.min(100, confiabilidade - (Math.abs(diferencaParaMeta) * 10)))
-    };
+    const direcaoNecessaria = Math.sign(diferencaParaMeta); // 1 ganhar, -1 perder
+    const alinhado = Math.sign(tendenciaSemana || 0) === direcaoNecessaria && Math.abs(tendenciaSemana) > limiarSemana;
+    const confiavel = confiabilidade >= 35; // mínimo para estimar
+    const diasEstimados = (alinhado && confiavel)
+      ? Math.max(1, Math.round(Math.abs(diferencaParaMeta) / Math.abs(slopePerDay)))
+      : 999;
+    const probabilidade = Math.max(0, Math.min(100, confiabilidade - Math.max(0, (varianciaMud - 0.3)) * 30));
 
     return {
       direcao,
       velocidade,
       consistencia,
-      confiabilidade: Math.round(confiabilidade),
-      proximoMilestone
+      confiabilidade,
+      proximoMilestone: {
+        peso: metasFinais.pesoMeta,
+        diasEstimados,
+        probabilidade: Math.round(probabilidade)
+      }
     };
   }, [weightLogs.logs, metasFinais]);
 
   // Alertas inteligentes
   const alertas: AlertasPeso[] = useMemo(() => {
-    const alertas: AlertasPeso[] = [];
+    const lista: AlertasPeso[] = [];
+
+    // Sucesso/Proximidade da meta com tolerância
+    const diff = Math.abs(metasFinais.pesoAtual - metasFinais.pesoMeta);
+    if (diff <= WEIGHT_TOLERANCE_KG) {
+      lista.push({
+        tipo: 'sucesso',
+        titulo: 'Meta Atingida! 🎉',
+        mensagem: `Você alcançou sua meta de ${metasFinais.pesoMeta}kg. Excelente!`,
+        icone: '🎯'
+      });
+    } else if (diff <= Math.max(1, WEIGHT_TOLERANCE_KG * 2)) {
+      lista.push({
+        tipo: 'atencao',
+        titulo: 'Meta Quase Alcançada!',
+        mensagem: `Faltam apenas ${diff.toFixed(1)}kg para sua meta de ${metasFinais.pesoMeta}kg. Mantenha o ritmo!`,
+        icone: '🏁'
+      });
+    }
 
     // Alerta de IMC
     if (metasFinais.statusSaude === 'obesidade') {
-      alertas.push({
+      lista.push({
         tipo: 'critico',
         titulo: 'IMC Elevado',
         mensagem: `Seu IMC (${metasFinais.imc}) indica obesidade. Considere consultar um profissional de saúde.`,
@@ -235,7 +277,7 @@ export function useWeightLogsInteligente(days: number = 90) {
         acao: 'Buscar orientação médica'
       });
     } else if (metasFinais.statusSaude === 'sobrepeso') {
-      alertas.push({
+      lista.push({
         tipo: 'atencao',
         titulo: 'IMC Acima do Ideal',
         mensagem: `Seu IMC (${metasFinais.imc}) indica sobrepeso. Meta: reduzir para zona saudável.`,
@@ -243,7 +285,7 @@ export function useWeightLogsInteligente(days: number = 90) {
         acao: 'Planejar redução gradual'
       });
     } else if (metasFinais.statusSaude === 'abaixo_peso') {
-      alertas.push({
+      lista.push({
         tipo: 'atencao',
         titulo: 'IMC Abaixo do Ideal',
         mensagem: `Seu IMC (${metasFinais.imc}) está baixo. Considere ganho de peso saudável.`,
@@ -251,20 +293,32 @@ export function useWeightLogsInteligente(days: number = 90) {
       });
     }
 
-    // Alerta de tendência
+    // Alerta de tendência (objetivo-aware)
+    const precisaSubir = metasFinais.pesoMeta > metasFinais.pesoAtual + WEIGHT_TOLERANCE_KG;
+    const precisaDescer = metasFinais.pesoMeta < metasFinais.pesoAtual - WEIGHT_TOLERANCE_KG;
     if (analiseTendencia.velocidade === 'rapida') {
-      const tipo = analiseTendencia.direcao === 'subindo' ? 'atencao' : 'alerta';
-      alertas.push({
-        tipo,
-        titulo: 'Mudança Rápida de Peso',
-        mensagem: `Peso ${analiseTendencia.direcao === 'subindo' ? 'aumentando' : 'diminuindo'} rapidamente. Verifique se é intencional.`,
-        icone: analiseTendencia.direcao === 'subindo' ? '📈' : '📉'
-      });
+      if ((analiseTendencia.direcao === 'subindo' && precisaDescer) || (analiseTendencia.direcao === 'descendo' && precisaSubir)) {
+        // Rápido na direção contrária ao objetivo
+        lista.push({
+          tipo: 'alerta',
+          titulo: 'Tendência Contrária à Meta',
+          mensagem: `Seu peso está ${analiseTendencia.direcao === 'subindo' ? 'subindo' : 'descendo'} rapidamente, indo contra seu objetivo. Reavalie alimentação e rotina.`,
+          icone: analiseTendencia.direcao === 'subindo' ? '📈' : '📉'
+        });
+      } else {
+        // Rápido na direção alinhada — atenção para saúde/segurança
+        lista.push({
+          tipo: 'atencao',
+          titulo: 'Mudança Rápida de Peso',
+          mensagem: `Peso ${analiseTendencia.direcao === 'subindo' ? 'aumentando' : 'diminuindo'} rapidamente. Verifique se é intencional e saudável.`,
+          icone: analiseTendencia.direcao === 'subindo' ? '📈' : '📉'
+        });
+      }
     }
 
     // Alerta de irregularidade
     if (analiseTendencia.consistencia === 'muito_irregular') {
-      alertas.push({
+      lista.push({
         tipo: 'atencao',
         titulo: 'Peso Muito Irregular',
         mensagem: 'Suas pesagens estão muito irregulares. Tente manter rotina consistente.',
@@ -272,17 +326,16 @@ export function useWeightLogsInteligente(days: number = 90) {
       });
     }
 
-    // Sucesso na meta
-    if (Math.abs(metasFinais.pesoAtual - metasFinais.pesoMeta) < 1) {
-      alertas.push({
-        tipo: 'sucesso',
-        titulo: 'Meta Quase Alcançada!',
-        mensagem: `Você está muito próximo da sua meta de ${metasFinais.pesoMeta}kg!`,
-        icone: '🎯'
-      });
+    // Ordenar por severidade (critico > alerta > atencao > sucesso), mas priorizar sucesso se presente
+    const severidade = { critico: 3, alerta: 2, atencao: 1, sucesso: 0 } as const;
+    lista.sort((a, b) => severidade[b.tipo] - severidade[a.tipo]);
+    const temSucesso = lista.find(l => l.tipo === 'sucesso');
+    if (temSucesso) {
+      // Garante que sucesso apareça no topo visualmente quando fatiado na UI
+      const semSucesso = lista.filter(l => l.tipo !== 'sucesso');
+      return [temSucesso, ...semSucesso];
     }
-
-    return alertas;
+    return lista;
   }, [metasFinais, analiseTendencia]);
 
   // Estatísticas avançadas
@@ -389,7 +442,7 @@ export function useWeightLogsInteligente(days: number = 90) {
 
   // Previsões usando tendência atual
   const predicoes: PredicoesPeso = useMemo(() => {
-    if (!weightLogs.logs || weightLogs.logs.length < 7) {
+    if (!weightLogs.logs || weightLogs.logs.length < 5) {
       return {
         peso30Dias: metasFinais.pesoAtual,
         peso90Dias: metasFinais.pesoAtual,
@@ -403,48 +456,61 @@ export function useWeightLogsInteligente(days: number = 90) {
       };
     }
 
-    const logs = [...weightLogs.logs].sort((a, b) => a.log_date.localeCompare(b.log_date));
-    const ultimos14 = logs.slice(-14);
+    // Reutilizar mesma preparação de dados da análise
+    const logsOrdenados = [...weightLogs.logs].sort((a, b) => a.log_date.localeCompare(b.log_date));
+    const vistos = new Set<string>();
+    const logsUnicos = logsOrdenados.filter(l => {
+      if (vistos.has(l.log_date)) return false;
+      vistos.add(l.log_date);
+      return true;
+    });
+    const janela = Math.max(5, Math.min(30, Math.floor(logsUnicos.length)));
+    const pts = logsUnicos.slice(-janela);
+    const t0 = new Date(`${pts[0].log_date}T00:00:00`).getTime();
+    const xs = pts.map(p => (new Date(`${p.log_date}T00:00:00`).getTime() - t0) / (1000 * 60 * 60 * 24));
+  const ys = pts.map(p => p.weight_kg);
+    const mean = (arr: number[]) => arr.reduce((a, b) => a + b, 0) / arr.length;
+    const xBar = mean(xs);
+    const yBar = mean(ys);
+    const covXY = xs.reduce((acc, x, i) => acc + (x - xBar) * (ys[i] - yBar), 0);
+    const varX = xs.reduce((acc, x) => acc + (x - xBar) ** 2, 0);
+    const slopePerDay = varX !== 0 ? (covXY / varX) : 0;
 
-    // Calcular tendência (kg por dia)
-    const n = ultimos14.length;
-    const sumX = ultimos14.reduce((acc, _, i) => acc + i, 0);
-    const sumY = ultimos14.reduce((acc, log) => acc + log.weight_kg, 0);
-    const sumXY = ultimos14.reduce((acc, log, i) => acc + i * log.weight_kg, 0);
-    const sumX2 = ultimos14.reduce((acc, _, i) => acc + i * i, 0);
-    
-    const tendenciaDiaria = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
-
-    const peso30Dias = metasFinais.pesoAtual + (tendenciaDiaria * 30);
-    const peso90Dias = metasFinais.pesoAtual + (tendenciaDiaria * 90);
+    const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
+    const slopeWeek = clamp(slopePerDay * 7, -1.2, 1.2); // limitar a ±1.2 kg/semana
+    const peso30Dias = metasFinais.pesoAtual + (slopePerDay * 30);
+    const peso90Dias = metasFinais.pesoAtual + (slopePerDay * 90);
 
     const diferencaParaMeta = metasFinais.pesoMeta - metasFinais.pesoAtual;
-    const tempoParaMeta = tendenciaDiaria !== 0 ? Math.abs(diferencaParaMeta / tendenciaDiaria) : 999;
+    const direcaoNecessaria = Math.sign(diferencaParaMeta);
+    const alinhado = Math.sign(slopeWeek || 0) === direcaoNecessaria && Math.abs(slopeWeek) >= 0.14; // ~0.02 kg/dia
 
-    // Confiança baseada na consistência e quantidade de dados
     const confianca = Math.min(100, analiseTendencia.confiabilidade);
+    const confiavel = confianca >= 35;
+    const tempoParaMeta = (alinhado && confiavel && slopePerDay !== 0)
+      ? Math.max(1, Math.round(Math.abs(diferencaParaMeta) / Math.abs(slopePerDay)))
+      : 999;
 
-    // Cenários
     const variacao = estatisticasAvancadas.volatilidade * 2; // 2 desvios padrão
     const cenarios = {
       otimista: {
-        peso: peso30Dias + (diferencaParaMeta > 0 ? variacao : -variacao),
-        tempo: Math.max(1, tempoParaMeta * 0.7)
+        peso: (diferencaParaMeta > 0 ? peso30Dias + variacao : peso30Dias - variacao),
+        tempo: tempoParaMeta === 999 ? 999 : Math.max(1, Math.round(tempoParaMeta * 0.7))
       },
       realista: {
         peso: peso30Dias,
         tempo: tempoParaMeta
       },
       pessimista: {
-        peso: peso30Dias + (diferencaParaMeta > 0 ? -variacao : variacao),
-        tempo: tempoParaMeta * 1.5
+        peso: (diferencaParaMeta > 0 ? peso30Dias - variacao : peso30Dias + variacao),
+        tempo: tempoParaMeta === 999 ? 999 : Math.round(tempoParaMeta * 1.5)
       }
     };
 
     return {
       peso30Dias: Math.round(peso30Dias * 10) / 10,
       peso90Dias: Math.round(peso90Dias * 10) / 10,
-      tempoParaMeta: Math.round(tempoParaMeta),
+      tempoParaMeta,
       confianca: Math.round(confianca),
       cenarios
     };

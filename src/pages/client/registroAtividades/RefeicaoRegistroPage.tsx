@@ -412,6 +412,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             <Button
               disabled={saving || alimentosSelecionados.length === 0}
               className="w-full !py-4 !text-base font-semibold bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 shadow-lg hover:shadow-xl transition-all duration-200 rounded-xl active:scale-[0.98]"
+              noFocus
             >
               {saving ? (
                 <span className="flex items-center justify-center gap-2">
