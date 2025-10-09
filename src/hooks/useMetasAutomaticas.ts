@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { useAuth } from '../contexts/useAuth';
 import { useQuestionario } from '../contexts/useQuestionario';
+import { parseYMDToLocalDate } from '../utils/date';
 
 export interface MetasNutricionais {
   calorias: number;
@@ -38,12 +39,14 @@ export function useMetasAutomaticas(): {
       if (!birthDate) return undefined;
       try {
         const hoje = new Date();
-        const nascimento = new Date(birthDate);
+        const nascimento = /^(\d{4})-(\d{2})-(\d{2})$/.test(birthDate)
+          ? parseYMDToLocalDate(birthDate)
+          : new Date(birthDate);
         
         // Validar se a data é válida
         if (isNaN(nascimento.getTime())) return undefined;
         
-        let idade = hoje.getFullYear() - nascimento.getFullYear();
+  let idade = hoje.getFullYear() - nascimento.getFullYear();
         const mesAtual = hoje.getMonth();
         const mesNascimento = nascimento.getMonth();
         

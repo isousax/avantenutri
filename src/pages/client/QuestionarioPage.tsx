@@ -264,6 +264,15 @@ const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
     { id: "peso", pergunta: "Peso (kg)", tipo: "numero", icon: "⚖️" },
     { id: "altura", pergunta: "Altura (cm)", tipo: "numero", icon: "📏" },
     {
+      id: "restricao_alimentar",
+      pergunta: "Possui alguma restrição alimentar?",
+      tipo: "select",
+      icon: "🚫",
+      expansivel: true,
+      placeholderExt: "Descreva a restrição alimentar",
+      opcoes: ["Não", "Sim - Lactose", "Sim - Glúten", "Sim - Outras"],
+    },
+    {
       id: "objetivo_nutricional",
       pergunta: "Objetivo principal",
       tipo: "select",
