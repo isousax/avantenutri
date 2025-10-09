@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuestionnaireStatus } from '../../hooks/useQuestionnaireStatus';
 import { useI18n } from '../../i18n';
+import { useAuth } from '../../contexts';
 
 const BANNER_DISMISSAL_KEY = 'questionnaire-banner-dismissed';
 const BANNER_DISMISSAL_DURATION = 24 * 60 * 60 * 1000; // 24 hours
@@ -9,6 +10,7 @@ const BANNER_DISMISSAL_DURATION = 24 * 60 * 60 * 1000; // 24 hours
 export const QuestionnaireBanner: React.FC = () => {
   const { t } = useI18n();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { data: status, isLoading, isError } = useQuestionnaireStatus();
   const [isDismissed, setIsDismissed] = useState(false);
 
@@ -39,8 +41,8 @@ export const QuestionnaireBanner: React.FC = () => {
     navigate('/questionario');
   };
 
-  // Não mostrar enquanto carrega, em erro (não conseguimos confirmar), se dismiss recente, ou se completo
-  if (isLoading || isError || isDismissed || status?.is_complete) {
+  // Não mostrar sem usuário (sem token), enquanto carrega, em erro, sem status ainda, se dismiss recente, ou se completo
+  if (!user || isLoading || isError || !status || isDismissed || status.is_complete) {
     return null;
   }
 

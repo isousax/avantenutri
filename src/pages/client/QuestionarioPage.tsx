@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { useQuestionario } from "../../contexts/useQuestionario";
+import { useToast } from "../../components/ui/ToastProvider";
 import { SEO } from "../../components/comum/SEO";
 import { useI18n } from "../../i18n";
 import { useSaveQuestionnaire } from "../../hooks/useQuestionnaire";
@@ -308,6 +309,7 @@ const QuestionarioPage: React.FC = () => {
   const [erros, setErros] = useState<Record<string, string>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const saveQuestionnaire = useSaveQuestionnaire();
+  const { push } = useToast();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -381,14 +383,23 @@ const QuestionarioPage: React.FC = () => {
         categoria,
         respostas: respostasFiltradas,
       });
-
+      // Feedback imediato e redirecionamento rápido
+      try {
+        push({ type: "success", title: "Questionário salvo", message: "Vamos te redirecionar para o painel." });
+      } catch (e) {
+        console.warn('toast push failed', e);
+      }
+      // Opcional: atualizar step localmente caso permaneça na página por algum motivo
       updateQuestionario({ step: etapas.length - 1 });
-
-      setTimeout(() => {
-        navigate("/dashboard");
-      }, 3000);
+      // Redireciona sem atraso artificial
+      navigate("/dashboard", { replace: true });
     } catch (error) {
       console.error("Erro ao salvar questionário:", error);
+      try {
+        push({ type: "error", title: "Falha ao salvar", message: "Tente novamente em instantes." });
+      } catch (e) {
+        console.warn('toast push failed', e);
+      }
     }
   };
 

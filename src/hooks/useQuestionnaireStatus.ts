@@ -15,6 +15,7 @@ export function useQuestionnaireStatus() {
     queryFn: async (): Promise<QuestionnaireStatus> => {
       const response = await authenticatedFetch(API.QUESTIONNAIRE_STATUS);
       if (!response.ok) {
+        // Propaga erro para o hook; o banner não deve aparecer em caso de falha
         throw new Error('Failed to fetch questionnaire status');
       }
       const data = await response.json();
@@ -26,5 +27,6 @@ export function useQuestionnaireStatus() {
     enabled: !!user,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    retry: 1,
   });
 }
