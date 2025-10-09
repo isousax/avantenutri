@@ -13,6 +13,7 @@ export interface AtividadeSugerida {
   descricao: string;
   beneficios: string[];
   icone: string;
+  ambiente?: 'indoor' | 'outdoor' | 'ambos';
 }
 
 export interface PlanoExercicioSemanal {
@@ -31,7 +32,7 @@ export interface PlanoExercicioSemanal {
 }
 
 export interface RecomendacaoInteligente {
-  categoria: 'geral' | 'peso' | 'cardio' | 'energia' | 'humor';
+  categoria: 'geral' | 'peso' | 'cardio' | 'energia' | 'humor' | 'forca';
   titulo: string;
   descricao: string;
   motivacao: string;
@@ -50,7 +51,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Tênis'],
     descricao: 'Caminhada em ritmo acelerado ao ar livre ou esteira',
     beneficios: ['Melhora cardiovascular', 'Queima calorias', 'Baixo impacto'],
-    icone: '🚶‍♂️'
+    icone: '🚶‍♂️',
+    ambiente: 'outdoor'
   },
   {
     tipo: 'cardio',
@@ -61,7 +63,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Tênis'],
     descricao: 'Corrida em ritmo confortável',
     beneficios: ['Fortalece coração', 'Queima muitas calorias', 'Melhora resistência'],
-    icone: '🏃‍♂️'
+    icone: '🏃‍♂️',
+    ambiente: 'outdoor'
   },
   {
     tipo: 'cardio',
@@ -72,7 +75,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Nenhum'],
     descricao: 'Dança livre ou aulas online',
     beneficios: ['Divertido', 'Melhora coordenação', 'Queima calorias'],
-    icone: '💃'
+    icone: '💃',
+    ambiente: 'indoor'
   },
   
   // Força
@@ -85,7 +89,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Nenhum'],
     descricao: 'Flexões, agachamentos, pranchas',
     beneficios: ['Fortalece músculos', 'Melhora postura', 'Não precisa academia'],
-    icone: '💪'
+    icone: '💪',
+    ambiente: 'indoor'
   },
   {
     tipo: 'forca',
@@ -96,7 +101,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Halteres'],
     descricao: 'Exercícios para grupos musculares principais',
     beneficios: ['Aumenta massa muscular', 'Acelera metabolismo', 'Fortalece ossos'],
-    icone: '🏋️‍♂️'
+    icone: '🏋️‍♂️',
+    ambiente: 'indoor'
   },
   
   // Flexibilidade
@@ -109,7 +115,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Tapete'],
     descricao: 'Posturas básicas de yoga e respiração',
     beneficios: ['Reduz estresse', 'Melhora flexibilidade', 'Fortalece core'],
-    icone: '🧘‍♀️'
+    icone: '🧘‍♀️',
+    ambiente: 'indoor'
   },
   {
     tipo: 'flexibilidade',
@@ -120,7 +127,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Nenhum'],
     descricao: 'Alongamentos para todo o corpo',
     beneficios: ['Previne lesões', 'Alivia tensões', 'Melhora mobilidade'],
-    icone: '🤸‍♀️'
+    icone: '🤸‍♀️',
+    ambiente: 'indoor'
   },
   
   // Funcional
@@ -133,7 +141,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Nenhum'],
     descricao: 'Treino intervalado de alta intensidade',
     beneficios: ['Queima muitas calorias', 'Eficiente', 'Melhora condicionamento'],
-    icone: '⚡'
+    icone: '⚡',
+    ambiente: 'indoor'
   },
   {
     tipo: 'funcional',
@@ -144,7 +153,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Tapete'],
     descricao: 'Exercícios focados no core e postura',
     beneficios: ['Fortalece core', 'Melhora postura', 'Aumenta flexibilidade'],
-    icone: '🤸‍♂️'
+    icone: '🤸‍♂️',
+    ambiente: 'indoor'
   },
   
   // Recuperação
@@ -157,7 +167,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Nenhum'],
     descricao: 'Caminhada leve para recuperação',
     beneficios: ['Promove recuperação', 'Reduz estresse', 'Melhora circulação'],
-    icone: '🚶‍♀️'
+    icone: '🚶‍♀️',
+    ambiente: 'ambos'
   },
   {
     tipo: 'recuperacao',
@@ -168,7 +179,8 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
     equipamento: ['Nenhum'],
     descricao: 'Meditação com movimentos suaves',
     beneficios: ['Reduz estresse', 'Melhora foco', 'Recupera energia'],
-    icone: '🧘'
+    icone: '🧘',
+    ambiente: 'indoor'
   }
 ];
 
@@ -176,22 +188,25 @@ const ATIVIDADES_BASE: AtividadeSugerida[] = [
  * Hook inteligente para recomendações de exercícios
  * Baseado no perfil do usuário, objetivos e dados de saúde
  */
-export function useExerciciosInteligentes() {
+type Objetivo = 'perder' | 'ganhar' | 'manter';
+type NivelAtividade = 'sedentario' | 'leve' | 'moderado' | 'intenso';
+
+export function useExerciciosInteligentes(overrides?: { objetivo?: Objetivo; nivelAtividade?: NivelAtividade }) {
   const { dadosPerfil, metasCalculadas } = useMetasAutomaticas();
   const peso = useWeightLogsInteligente();
   const nutricao = useMealLogsInteligente();
 
   // Determinar nível de condicionamento
   const nivelCondicionamento = useMemo(() => {
-    const atividade = dadosPerfil.nivelAtividade;
+    const atividade = overrides?.nivelAtividade ?? dadosPerfil.nivelAtividade;
     if (atividade === 'sedentario' || atividade === 'leve') return 'iniciante';
     if (atividade === 'moderado') return 'intermediario';
     return 'avancado';
-  }, [dadosPerfil.nivelAtividade]);
+  }, [dadosPerfil.nivelAtividade, overrides?.nivelAtividade]);
 
   // Calcular calorias a queimar baseado no objetivo
   const caloriasAlvo = useMemo(() => {
-    const objetivo = dadosPerfil.objetivo;
+    const objetivo = overrides?.objetivo ?? dadosPerfil.objetivo;
     const pesoAtual = peso.metasFinais.pesoAtual;
     
     if (objetivo === 'perder') {
@@ -204,38 +219,79 @@ export function useExerciciosInteligentes() {
       // Manutenção: exercício moderado
       return Math.round(pesoAtual * 3); // 3 calorias por kg de peso
     }
-  }, [dadosPerfil.objetivo, peso.metasFinais.pesoAtual]);
+  }, [dadosPerfil.objetivo, overrides?.objetivo, peso.metasFinais.pesoAtual]);
 
   // Gerar recomendações inteligentes
   const recomendacoes: RecomendacaoInteligente[] = useMemo(() => {
     const recomendacoes: RecomendacaoInteligente[] = [];
+    const objetivoEfetivo = overrides?.objetivo ?? dadosPerfil.objetivo;
 
     // Baseado no IMC
     if (peso.metasFinais.statusSaude === 'sobrepeso' || peso.metasFinais.statusSaude === 'obesidade') {
-      recomendacoes.push({
-        categoria: 'peso',
-        titulo: 'Foco em Cardio para Perda de Peso',
-        descricao: 'Exercícios cardiovasculares ajudarão a queimar calorias e reduzir o peso.',
-        motivacao: 'Cada sessão te aproxima do seu peso ideal! 💪',
-        intensidade: 'moderada',
-        icone: '🏃‍♂️'
-      });
+      if (objetivoEfetivo === 'perder') {
+        recomendacoes.push({
+          categoria: 'peso',
+          titulo: 'Cardio Consistente para Reduzir Medidas',
+          descricao: 'Cardio regular e progressivo auxilia na redução de gordura corporal com segurança.',
+          motivacao: 'Constância > intensidade. Você está no caminho! 💪',
+          intensidade: 'moderada',
+          icone: '🏃‍♂️'
+        });
+      } else if (objetivoEfetivo === 'ganhar') {
+        recomendacoes.push({
+          categoria: 'peso',
+          titulo: 'Foque Força, Inclua Cardio Leve',
+          descricao: 'Treinos de força para ganho muscular, com cardio leve para saúde cardiovascular.',
+          motivacao: 'Construir músculo com qualidade também cuida do coração. 🫀',
+          intensidade: 'moderada',
+          icone: '💪'
+        });
+      } else {
+        recomendacoes.push({
+          categoria: 'peso',
+          titulo: 'Cardio Moderado para Manutenção',
+          descricao: 'Sessões de cardio moderadas ajudam a manter composição corporal saudável.',
+          motivacao: 'Equilíbrio e consistência geram resultado sustentável. ⚖️',
+          intensidade: 'moderada',
+          icone: '🚶‍♂️'
+        });
+      }
     }
 
     // Baseado na tendência de peso
-    if (peso.analiseTendencia.direcao === 'subindo' && dadosPerfil.objetivo === 'perder') {
+    if (peso.analiseTendencia.direcao === 'subindo') {
+      if (objetivoEfetivo === 'perder') {
+        recomendacoes.push({
+          categoria: 'peso',
+          titulo: 'Ajuste de Intensidade (Cardio + Funcional)',
+          descricao: 'Variações pra cima pedem reforço de cardio e funcional esta semana.',
+          motivacao: 'Pequenos ajustes = grandes resultados. 🔥',
+          intensidade: 'alta',
+          icone: '⚡'
+        });
+      } else if (objetivoEfetivo === 'ganhar') {
+        recomendacoes.push({
+          categoria: 'peso',
+          titulo: 'Boa! Sinal de Progresso em Massa',
+          descricao: 'Mantenha treinos de força consistentes e monitore a qualidade dos ganhos.',
+          motivacao: 'Força, técnica e descanso: trio do crescimento. 🧱',
+          intensidade: 'moderada',
+          icone: '🏋️‍♂️'
+        });
+      }
+    } else if (peso.analiseTendencia.direcao === 'descendo' && objetivoEfetivo === 'ganhar') {
       recomendacoes.push({
         categoria: 'peso',
-        titulo: 'Intensificar Atividades',
-        descricao: 'Seu peso está subindo. Hora de aumentar a intensidade dos exercícios.',
-        motivacao: 'Você tem força para reverter essa tendência! 🔥',
-        intensidade: 'alta',
-        icone: '⚡'
+        titulo: 'Refinar Carga e Volume',
+        descricao: 'Queda no peso? Aumente gradualmente volume de força e suporte proteico.',
+        motivacao: 'Ajuste fino mantém a evolução contínua. �',
+        intensidade: 'moderada',
+        icone: '📈'
       });
     }
 
     // Baseado no nível de atividade
-    if (dadosPerfil.nivelAtividade === 'sedentario') {
+    if ((overrides?.nivelAtividade ?? dadosPerfil.nivelAtividade) === 'sedentario') {
       recomendacoes.push({
         categoria: 'geral',
         titulo: 'Comece Devagar e Consistente',
@@ -248,14 +304,25 @@ export function useExerciciosInteligentes() {
 
     // Baseado na nutrição
     if (nutricao.progressoHoje && nutricao.progressoHoje.calorias > 120) {
-      recomendacoes.push({
-        categoria: 'cardio',
-        titulo: 'Queimar Calorias Extras',
-        descricao: 'Você consumiu mais calorias hoje. Um exercício cardio pode ajudar.',
-        motivacao: 'Transforme essas calorias em energia positiva! ⚡',
-        intensidade: 'moderada',
-        icone: '🔥'
-      });
+      if (objetivoEfetivo === 'perder' || objetivoEfetivo === 'manter') {
+        recomendacoes.push({
+          categoria: 'cardio',
+          titulo: 'Equilibrar com Cardio',
+          descricao: 'Excedeu calorias hoje? Uma sessão de cardio ajuda a balancear.',
+          motivacao: 'Consistência e balanço fazem a diferença. ⚖️',
+          intensidade: 'moderada',
+          icone: '🔥'
+        });
+      } else if (objetivoEfetivo === 'ganhar') {
+        recomendacoes.push({
+          categoria: 'forca',
+          titulo: 'Aproveite para Força',
+          descricao: 'Com energia extra, foque em treino de força para bons ganhos.',
+          motivacao: 'Energia bem usada vira progresso. 💥',
+          intensidade: 'moderada',
+          icone: '�'
+        });
+      }
     }
 
     // Baseado no dia da semana
@@ -281,11 +348,11 @@ export function useExerciciosInteligentes() {
     }
 
     return recomendacoes;
-  }, [peso, dadosPerfil, nutricao.progressoHoje]);
+  }, [peso, dadosPerfil, nutricao.progressoHoje, overrides?.objetivo, overrides?.nivelAtividade]);
 
   // Gerar plano semanal personalizado
   const planoSemanal: PlanoExercicioSemanal = useMemo(() => {
-    const objetivo = dadosPerfil.objetivo;
+    const objetivo = overrides?.objetivo ?? dadosPerfil.objetivo;
     const nivel = nivelCondicionamento;
     
     // Filtrar atividades apropriadas
@@ -351,7 +418,7 @@ export function useExerciciosInteligentes() {
 
     const plano: PlanoExercicioSemanal = { ...planoBase, totalSemanal };
     return plano;
-  }, [dadosPerfil.objetivo, nivelCondicionamento]);
+  }, [dadosPerfil.objetivo, overrides?.objetivo, nivelCondicionamento]);
 
   // Atividade recomendada para hoje
   const atividadeHoje = useMemo(() => {
@@ -367,6 +434,7 @@ export function useExerciciosInteligentes() {
     caloriasAlvo,
     metasCalculadas,
     dadosPerfil,
+    objetivoEfetivo: overrides?.objetivo ?? (dadosPerfil.objetivo as Objetivo | undefined),
     
     // Recomendações
     recomendacoes,
