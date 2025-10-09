@@ -564,6 +564,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   // Prefer the token-derived/user display_name if /me doesn't provide one
                   display_name: (me.display_name ?? derived.display_name ?? me.full_name ?? me.name ?? "") as string,
                   phone: (me.phone ?? me.phone_number ?? me.tel ?? derived.phone ?? "") as string,
+                  birthDate: (me.birth_date ?? derived.birthDate) as string | undefined,
+                  height: (me.height ?? derived.height) as number | undefined,
                 };
                 setUser(updated);
                 saveUserToStorage(updated, rememberFlag);
@@ -811,6 +813,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           // keep existing user.display_name when /me doesn't provide display_name
           display_name: (data.display_name ?? user?.display_name ?? data.full_name ?? data.name ?? user?.full_name ?? "") as string,
           phone: (data.phone ?? user?.phone ?? "") as string,
+          birthDate: (data.birth_date ?? user?.birthDate) as string | undefined,
+          height: (data.height ?? user?.height) as number | undefined,
         };
         const changed = JSON.stringify(updated) !== JSON.stringify(user);
         if (changed) {
