@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthenticatedFetch } from "./useApi";
 import { API } from "../config/api";
+import type { StructuredDietData } from "../types/structuredDiet";
 
 // Types
 export interface DietPlanSummary {
@@ -16,13 +17,20 @@ export interface DietPlanSummary {
   updated_at: string;
 }
 
+export interface PdfDietData {
+  format: "pdf";
+  file?: { key?: string; base64?: string; name?: string };
+}
+
+export type DietPlanVersionData = StructuredDietData | PdfDietData | { pending?: boolean } | Record<string, unknown>;
+
 export interface DietPlanVersion {
   id: string;
   version_number: number;
   generated_by: string;
   created_at: string;
   notes?: string | null;
-  data?: unknown;
+  data?: DietPlanVersionData;
 }
 
 export interface DietPlanDetail extends DietPlanSummary {

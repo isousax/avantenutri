@@ -19,24 +19,30 @@ export interface QuestionnaireResponse {
 }
 
 // Hook para buscar questionário do usuário
+type ApiErrorShape = { error?: string; message?: string; detail?: string };
+const getApiErrorMessage = (data: unknown, fallback: string): string => {
+  if (data && typeof data === 'object') {
+    const d = data as ApiErrorShape;
+    return d.error || d.message || d.detail || fallback;
+  }
+  return fallback;
+};
+
 export const useGetQuestionnaire = () => {
   const authenticatedFetch = useAuthenticatedFetch();
   return useQuery({
     queryKey: ['questionnaire'],
     queryFn: async (): Promise<QuestionnaireResponse | null> => {
-      try {
-        // authenticatedFetch já retorna JSON; garantir formato esperado
-        const data = await authenticatedFetch(
-          API.QUESTIONNAIRE,
-        );
-        // Backend deve retornar objeto ou erro 404 (capturado e tratado)
-        if (!data) return null;
-        return data as QuestionnaireResponse;
-      } catch (e: unknown) {
-        // Se 404 ou não encontrado, tratamos como inexistente
-        if (e instanceof Error && e.message?.includes('404')) return null;
-        throw e; // outros erros sobem para permitir UI mostrar problema
+      const res = await authenticatedFetch(API.QUESTIONNAIRE);
+      let data: unknown = null;
+      try { data = await res.json(); } catch { /* sem dados ou inválido */ }
+      if (!res.ok) {
+        // 404: não há questionário salvo ainda → tratamos como null
+        if (res.status === 404) return null;
+        const msg = getApiErrorMessage(data, `Erro ${res.status}`);
+        throw new Error(msg);
       }
+      return (data || null) as QuestionnaireResponse | null;
     },
     retry: 1,
   });
@@ -50,8 +56,7 @@ export const useSaveQuestionnaire = () => {
 
   return useMutation({
     mutationFn: async (input: QuestionnaireData): Promise<QuestionnaireResponse> => {
-      // authenticatedFetch já lança em caso de !ok
-      const data = await authenticatedFetch(API.QUESTIONNAIRE, {
+      const res = await authenticatedFetch(API.QUESTIONNAIRE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -60,6 +65,8 @@ export const useSaveQuestionnaire = () => {
           submit: true,
         }),
       });
+      const data: unknown = await res.json().catch(()=>({}));
+      if (!res.ok) throw new Error(getApiErrorMessage(data, 'Falha ao salvar questionário'));
       return data as QuestionnaireResponse;
     },
     onSuccess: (data) => {
@@ -89,7 +96,7 @@ export const useSaveQuestionnaireDraft = () => {
 
   return useMutation({
     mutationFn: async (partial: Partial<QuestionnaireData>): Promise<QuestionnaireResponse> => {
-      const data = await authenticatedFetch(API.QUESTIONNAIRE, {
+      const res = await authenticatedFetch(API.QUESTIONNAIRE, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -98,6 +105,8 @@ export const useSaveQuestionnaireDraft = () => {
             is_complete: false,
         }),
       });
+      const data: unknown = await res.json().catch(()=>({}));
+      if (!res.ok) throw new Error(getApiErrorMessage(data, 'Falha ao salvar rascunho'));
       return data as QuestionnaireResponse;
     },
     onSuccess: (data) => {

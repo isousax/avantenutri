@@ -49,6 +49,7 @@ import { shouldShowSkeleton } from "../../utils/loadingHelpers";
 import { useIntersectionPrefetch } from "../../hooks/useIntersectionPrefetch";
 import { API } from "../../config/api";
 import { useWaterLogsInteligente } from "../../hooks/useWaterLogsInteligente";
+import type { PdfDietData } from "../../hooks/useDietPlansOptimized";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -1824,6 +1825,24 @@ const DetailContent: React.FC<DetailContentProps> = ({
   revising,
   locale,
 }) => {
+  const isPdfData = (d: unknown): d is PdfDietData => {
+    return (
+      typeof d === "object" &&
+      d !== null &&
+      "format" in d &&
+      (d as { format?: unknown }).format === "pdf"
+    );
+  };
+  const isStructuredDietData = (d: unknown): d is StructuredDietData => {
+    return (
+      typeof d === "object" &&
+      d !== null &&
+      "versao" in d &&
+      (d as { versao?: unknown }).versao === 1 &&
+      "meals" in d &&
+      Array.isArray((d as { meals?: unknown }).meals)
+    );
+  };
   const cached = detailJson;
   if (!cached) return <div className="text-sm text-gray-500">Sem dados.</div>;
 
@@ -1847,6 +1866,8 @@ const DetailContent: React.FC<DetailContentProps> = ({
         <div className="max-h-64 overflow-y-auto border rounded divide-y bg-white/50">
           {cached.versions.map((v: DietPlanVersion, idx: number) => {
             const isTemp = String(v.id).startsWith("temp-rev-");
+            const pdf = isPdfData(v.data) ? v.data : null;
+            const structured = isStructuredDietData(v.data) ? v.data : null;
             return (
               <div
                 key={v.id}
@@ -1877,15 +1898,13 @@ const DetailContent: React.FC<DetailContentProps> = ({
                 {v.notes && (
                   <div className="text-gray-500 italic">{v.notes}</div>
                 )}
-                {includeData &&
-                  v.data?.format === "pdf" &&
-                  (v.data?.file?.base64 || v.data?.file?.key) && (
+                {includeData && pdf && (pdf.file?.base64 || pdf.file?.key) && (
                     <div>
                       <button
                         type="button"
                         className="text-[11px] text-blue-600 underline"
                         onClick={() => {
-                          if (v.data.file?.key && cached?.id) {
+                          if (pdf?.file?.key && cached?.id) {
                             const url = `${API.API_AUTH_BASE}/diet/plans/${cached.id}/version/${v.id}/file`;
                             fetch(url, {
                               headers: {
@@ -1905,7 +1924,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
                                 const a = document.createElement("a");
                                 a.href = dlUrl;
                                 a.download =
-                                  v.data.file.name ||
+                                  pdf.file?.name ||
                                   `plano_v${v.version_number}.pdf`;
                                 document.body.appendChild(a);
                                 a.click();
@@ -1921,9 +1940,9 @@ const DetailContent: React.FC<DetailContentProps> = ({
                               });
                             return;
                           }
-                          if (v.data.file?.base64) {
+                          if (pdf?.file?.base64) {
                             try {
-                              const base64 = v.data.file.base64 as string;
+                              const base64 = pdf.file.base64 as string;
                               const byteStr = atob(base64);
                               const bytes = new Uint8Array(byteStr.length);
                               for (let i = 0; i < byteStr.length; i++)
@@ -1935,7 +1954,7 @@ const DetailContent: React.FC<DetailContentProps> = ({
                               const a = document.createElement("a");
                               a.href = url;
                               a.download =
-                                v.data.file.name ||
+                                pdf.file?.name ||
                                 `plano_v${v.version_number}.pdf`;
                               document.body.appendChild(a);
                               a.click();
@@ -1952,21 +1971,19 @@ const DetailContent: React.FC<DetailContentProps> = ({
                       </button>
                     </div>
                   )}
-                {includeData &&
-                  v.data &&
-                  (v.data.versao === 1 && Array.isArray(v.data.meals) ? (
+                {includeData && structured ? (
                     <div className="mt-2 space-y-1">
-                      <StructuredDietView data={v.data} compact />
+                      <StructuredDietView data={structured} compact />
                       <DietVersionExportControls
-                        data={v.data}
+                        data={structured}
                         version={v.version_number}
                       />
                     </div>
-                  ) : (
+                  ) : includeData && v.data ? (
                     <pre className="mt-1 bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">
                       {JSON.stringify(v.data, null, 2)}
                     </pre>
-                  ))}
+                  ) : null}
               </div>
             );
           })}
