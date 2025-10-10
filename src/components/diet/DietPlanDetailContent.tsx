@@ -72,10 +72,9 @@ const DietVersionExportControls: React.FC<{
             let latestWeight: number | undefined;
 
             try {
-              const [qRes, meRes, pRes, wRes] = await Promise.all([
+              const [qRes, meRes, pRes] = await Promise.all([
                 authenticatedFetch(Routes.QUESTIONNAIRE),
                 authenticatedFetch(Routes.ME, { method: "GET" }),
-                authenticatedFetch(Routes.PROFILE),
                 authenticatedFetch(`${Routes.WEIGHT_SUMMARY}?days=120`),
               ]);
               // Me (preferido para nome)
@@ -139,24 +138,6 @@ const DietVersionExportControls: React.FC<{
               } catch (err) {
                 void err; // no-op
               }
-              // Weight summary
-              try {
-                const wJson: unknown = await wRes.json();
-                if (typeof wJson === "object" && wJson !== null) {
-                  const stats = (wJson as Record<string, unknown>).stats;
-                  if (typeof stats === "object" && stats !== null) {
-                    const latest = (stats as Record<string, unknown>).latest;
-                    if (typeof latest === "object" && latest !== null) {
-                      const wk = (latest as Record<string, unknown>).weight_kg;
-                      if (typeof wk === "number") {
-                        latestWeight = wk;
-                      }
-                    }
-                  }
-                }
-              } catch (err) {
-                void err; // no-op
-              }
             } catch (err) {
               void err; // no-op
             }
@@ -193,18 +174,14 @@ const DietVersionExportControls: React.FC<{
             const height = qCategory === "infantil" ? qHeight : (profileHeight ?? qHeight);
 
             // Peso atual (kg)
-            const qPesoAtual = getNum(pick(qAnswers, "peso_atual", "peso"));
+            const qPesoAtual = getNum(pick(qAnswers, "peso"));
             const weight = latestWeight ?? qPesoAtual;
 
             // Objetivo
             const goal =
               pickString(
                 qAnswers,
-                "objetivo_nutricional",
-                "objetivoNutricional",
-                "objetivo",
-                "objetivo_principal",
-                "meta"
+                "objetivo_nutricional"
               ) ??
               undefined;
 
