@@ -68,14 +68,30 @@ const DietVersionExportControls: React.FC<{
             let qCategory: string | undefined;
             let qAnswers: Record<string, unknown> = {};
             let profileObj: Record<string, unknown> = {};
+            let meObj: Record<string, unknown> = {};
             let latestWeight: number | undefined;
 
             try {
-              const [qRes, pRes, wRes] = await Promise.all([
+              const [qRes, meRes, pRes, wRes] = await Promise.all([
                 authenticatedFetch(Routes.QUESTIONNAIRE),
+                authenticatedFetch(Routes.ME, { method: "GET" }),
                 authenticatedFetch(Routes.PROFILE),
                 authenticatedFetch(`${Routes.WEIGHT_SUMMARY}?days=120`),
               ]);
+              // Me (preferido para nome)
+              try {
+                const meJson: unknown = await meRes.json();
+                const meData =
+                  typeof meJson === "object" && meJson !== null && "data" in meJson
+                    ? (meJson as Record<string, unknown>).data
+                    : meJson;
+                meObj =
+                  typeof meData === "object" && meData !== null
+                    ? (meData as Record<string, unknown>)
+                    : {};
+              } catch (err) {
+                void err; // no-op
+              }
               // Questionnaire
               try {
                 const qJson: unknown = await qRes.json();
@@ -100,7 +116,26 @@ const DietVersionExportControls: React.FC<{
               }
               // Profile
               try {
-                profileObj = (await pRes.json()) as Record<string, unknown>;
+                const pJson: unknown = await pRes.json();
+                let pData: unknown = pJson;
+                if (typeof pJson === "object" && pJson !== null) {
+                  const root = pJson as Record<string, unknown>;
+                  if (typeof root.data === "object" && root.data !== null) {
+                    pData = root.data as Record<string, unknown>;
+                  } else if (
+                    typeof root.user === "object" && root.user !== null
+                  ) {
+                    pData = root.user as Record<string, unknown>;
+                  } else if (
+                    typeof root.profile === "object" && root.profile !== null
+                  ) {
+                    pData = root.profile as Record<string, unknown>;
+                  }
+                }
+                profileObj =
+                  typeof pData === "object" && pData !== null
+                    ? (pData as Record<string, unknown>)
+                    : {};
               } catch (err) {
                 void err; // no-op
               }
@@ -196,7 +231,19 @@ const DietVersionExportControls: React.FC<{
                   "Seguir o plano alimentar conforme orientado, com boa hidratação e prática regular de exercícios.",
                 date: new Date(),
                 clientInfo: {
-                  name: pickString(profileObj, "full_name", "name") || "Paciente",
+                  name:
+                    // Preferir /me (display_name, depois full_name)
+                    pickString(meObj, "display_name", "full_name") ||
+                    // Fallback ao profile
+                    pickString(
+                      profileObj,
+                      "display_name",
+                      "full_name",
+                      "name",
+                      "fullName",
+                      "displayName"
+                    ) ||
+                    "Paciente",
                   age,
                   gender,
                   weight,
