@@ -14,6 +14,9 @@ import NotificationBellReal from "../../components/NotificationBellReal";
 import Progress from "../../components/ui/Progress";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
+import { exportDietPdf } from "../../utils/structuredDietPdf";
+import { useAuthenticatedFetch } from "../../hooks/useApi";
+import { API as Routes, API } from "../../config/api";
 import Perfil from "../../components/dashboard/Perfil";
 import Consultas from "../../components/dashboard/Consultas";
 import Suporte from "../../components/dashboard/Suporte";
@@ -34,7 +37,11 @@ import { SkeletonCard } from "../../components/ui/Loading";
 import DataSection from "../../components/ui/DataSection";
 import { useWeightData } from "../../hooks/useWeightData"; // mantido para WeightSection isolada
 import type { StructuredDietData } from "../../types/structuredDiet";
-import { colorForWeightDiff, inferWeightObjective, WEIGHT_TOLERANCE_KG } from "../../utils/weightObjective";
+import {
+  colorForWeightDiff,
+  inferWeightObjective,
+  WEIGHT_TOLERANCE_KG,
+} from "../../utils/weightObjective";
 import { useDietPlans } from "../../hooks/useDietPlans";
 import type { DietPlanDetail } from "../../hooks/useDietPlans";
 import { useDashboardData } from "../../hooks/useDashboardData";
@@ -43,6 +50,7 @@ import Prefetch, { logPrefetchMetrics } from "../../utils/prefetch";
 import { shouldShowSkeleton } from "../../utils/loadingHelpers";
 import { useIntersectionPrefetch } from "../../hooks/useIntersectionPrefetch";
 import { useWaterLogsInteligente } from "../../hooks/useWaterLogsInteligente";
+import { Download, LoaderCircle } from "lucide-react";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -63,22 +71,20 @@ const DietPlanCard: React.FC<{
   onRevise?: (id: string) => void;
   canEdit: boolean;
   locale: Locale;
-}> = ({ diet, onView, onRevise, canEdit, locale }) => {
+  onDownloadLatest: (id: string) => void;
+  downloading?: boolean;
+}> = ({
+  diet,
+  onView,
+  onRevise,
+  canEdit,
+  locale,
+  onDownloadLatest,
+  downloading,
+}) => {
   const isCurrent = diet.status === "active";
 
-  // Detectar formato da dieta
-  const formatLabel = diet.format
-    ? diet.format === "pdf"
-      ? "PDF"
-      : diet.format === "structured"
-      ? "Estruturado"
-      : diet.format
-    : (() => {
-        if (/^\s*\[PDF\]/i.test(diet.description || "")) return "PDF";
-        if (/^\s*\[(STR|STRUCT)\]/i.test(diet.description || ""))
-          return "Estruturado";
-        return null;
-      })();
+  // Detectar formato da dieta (não exibido por enquanto)
 
   return (
     <Card className="p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
@@ -94,20 +100,32 @@ const DietPlanCard: React.FC<{
               {diet.name}
             </h3>
           </div>
-          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
+          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed truncate">
             {diet.description || "Sem descrição"}
           </p>
         </div>
-      </div>
-
-      {/* Badge de formato */}
-      {formatLabel && (
-        <div className="mb-3 -mt-1">
-          <span className="inline-block text-[10px] tracking-wide font-semibold px-2 py-0.5 rounded bg-amber-100 text-amber-700 border border-amber-200">
-            {formatLabel}
-          </span>
+        <div className="flex items-start gap-2 ml-3">
+          <button
+            className={`p-2 rounded-xl border border-gray-200/80 bg-white/80 backdrop-blur-sm text-sm font-medium transition-all duration-200 ${
+              downloading
+                ? "bg-gray-100/50 text-gray-400 cursor-wait shadow-inner"
+                : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-800 hover:shadow-md hover:border-gray-300/80 shadow-sm"
+            }`}
+            title="Baixar versão mais recente"
+            onClick={(e) => {
+              e.stopPropagation();
+              onDownloadLatest(diet.id);
+            }}
+            disabled={!!downloading}
+          >
+            {downloading ? (
+              <LoaderCircle className="w-5 h-5 animate-spin" />
+            ) : (
+              <Download className="w-5 h-5" />
+            )}
+          </button>
         </div>
-      )}
+      </div>
 
       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
         <div className="space-y-1">
@@ -179,7 +197,12 @@ const DietPlanCard: React.FC<{
 
 // Modern Bottom Navigation
 type BottomTabId = "overview" | "dietas" | "consultas" | "perfil" | "suporte";
-interface BottomTab { id: BottomTabId; label: string; icon: string; navigate?: string }
+interface BottomTab {
+  id: BottomTabId;
+  label: string;
+  icon: string;
+  navigate?: string;
+}
 const BottomNav: React.FC<{
   activeTab: BottomTabId;
   onTabChange: (tab: BottomTabId) => void;
@@ -272,8 +295,15 @@ const WeightSection: React.FC<{
     : undefined;
 
   // Cor da variação baseada no objetivo de peso do usuário
-  const objective = React.useMemo(() => inferWeightObjective(goal, latestWeight?.weight_kg, WEIGHT_TOLERANCE_KG), [goal, latestWeight?.weight_kg]);
-  const weightDiffClass = React.useMemo(() => colorForWeightDiff(objective, weightDiff, WEIGHT_TOLERANCE_KG), [objective, weightDiff]);
+  const objective = React.useMemo(
+    () =>
+      inferWeightObjective(goal, latestWeight?.weight_kg, WEIGHT_TOLERANCE_KG),
+    [goal, latestWeight?.weight_kg]
+  );
+  const weightDiffClass = React.useMemo(
+    () => colorForWeightDiff(objective, weightDiff, WEIGHT_TOLERANCE_KG),
+    [objective, weightDiff]
+  );
 
   return (
     <DataSection
@@ -300,7 +330,9 @@ const WeightSection: React.FC<{
                   {weightDiff >= 0 ? "+" : ""}
                   {weightDiff.toFixed(1)} kg
                   {weightDiffPct != null &&
-                    ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(1)}%)`}
+                    ` (${weightDiffPct >= 0 ? "+" : ""}${weightDiffPct.toFixed(
+                      1
+                    )}%)`}
                 </div>
               )}
               {bmi && bmiClass && (
@@ -386,26 +418,26 @@ const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const qc = useQueryClient();
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  
+
   // Handle body scroll lock when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen) {
-      document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
+      document.body.style.overflow = "hidden";
+      document.body.style.position = "fixed";
+      document.body.style.width = "100%";
     } else {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
     }
 
     return () => {
-      document.body.style.overflow = '';
-      document.body.style.position = '';
-      document.body.style.width = '';
+      document.body.style.overflow = "";
+      document.body.style.position = "";
+      document.body.style.width = "";
     };
   }, [sidebarOpen]);
-  
+
   // Hover timers for deep (includeData) diet plan prefetch
   const dietHoverTimers = useRef<Record<string, number>>({});
 
@@ -416,7 +448,6 @@ const DashboardPage: React.FC = () => {
       dietHoverTimers.current = {};
     };
   }, []);
-
 
   const handleLogout = async () => {
     await logout();
@@ -451,7 +482,20 @@ const DashboardPage: React.FC = () => {
     revise,
     revising,
     error: dietError,
+    load: reloadDietPlans,
   } = useDietPlans();
+
+  // Ao entrar na aba "dietas": refetch imediato e polling leve (30s)
+  useEffect(() => {
+    if (activeTab !== "dietas") return;
+    // Refetch imediato
+    void reloadDietPlans();
+    // Polling leve enquanto a aba estiver ativa
+    const id = setInterval(() => {
+      void reloadDietPlans();
+    }, 30_000);
+    return () => clearInterval(id);
+  }, [activeTab, reloadDietPlans]);
   const {
     meals,
     water,
@@ -465,7 +509,7 @@ const DashboardPage: React.FC = () => {
   // Calorias consumidas hoje (não o percentual)
   const todayStrForMeals = (() => {
     const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
+    const pad = (n: number) => String(n).padStart(2, "0");
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
   })();
   type MealDay = { date: string; calories: number };
@@ -478,8 +522,8 @@ const DashboardPage: React.FC = () => {
   // Meta inteligente de água (clima/histórico/IMC + arredondamento por copo)
   // Usa o mesmo hook da tela de registro para manter consistência
   const { metasFinais: waterIntelGoal } = useWaterLogsInteligente(7);
-  const waterTargetMl = waterIntelGoal?.metaML
-    ?? ((dailyGoalCups ? dailyGoalCups * cupSize : null));
+  const waterTargetMl =
+    waterIntelGoal?.metaML ?? (dailyGoalCups ? dailyGoalCups * cupSize : null);
   const latestWeight = weightAgg.latest;
   const goal = weightAgg.goal;
   // progressPercent era usado para trend visual; removido ao padronizar LoadingState
@@ -487,7 +531,8 @@ const DashboardPage: React.FC = () => {
   // Altura para IMC - usar perfil como prioridade, questionário como fallback
   const { questionarioData } = useQuestionario();
   const heightCmRaw = questionarioData?.respostas?.["Altura (cm)"];
-  const heightCm = user?.height || // Prioridade: perfil do usuário
+  const heightCm =
+    user?.height || // Prioridade: perfil do usuário
     (heightCmRaw ? parseFloat(heightCmRaw.replace(",", ".")) : undefined); // Fallback: questionário
 
   const canEditDiets = false; // Pacientes não editam dietas, apenas admin
@@ -502,11 +547,16 @@ const DashboardPage: React.FC = () => {
   );
   const [pdfBase64, setPdfBase64] = useState<string>("");
   const [pdfName, setPdfName] = useState<string>("");
-  const [structuredData, setStructuredData] = useState<StructuredDietData | null>(null);
+  const [structuredData, setStructuredData] =
+    useState<StructuredDietData | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailJson, setDetailJson] = useState<DietPlanDetail | null>(null);
+  const [downloadingMap, setDownloadingMap] = useState<Record<string, boolean>>(
+    {}
+  );
+  const authenticatedFetch = useAuthenticatedFetch();
 
   // Fetch automático via React Query – sem efeito manual.
 
@@ -515,14 +565,254 @@ const DashboardPage: React.FC = () => {
     setShowDetail(true);
   };
 
+  // Helpers para identificar formato da versão
+  const isPdfData = (
+    d: unknown
+  ): d is {
+    format: string;
+    file?: { key?: string; base64?: string; name?: string };
+  } => {
+    if (!d || typeof d !== "object") return false;
+    const obj = d as Record<string, unknown>;
+    return typeof obj.format === "string" && obj.format === "pdf";
+  };
+  const isStructuredDietData = (d: unknown): d is StructuredDietData => {
+    if (!d || typeof d !== "object") return false;
+    const obj = d as Record<string, unknown>;
+    const versao = obj["versao"];
+    const meals = obj["meals"];
+    return versao === 1 && Array.isArray(meals);
+  };
+
+  const handleDownloadLatest = async (planId: string) => {
+    setDownloadingMap((m) => ({ ...m, [planId]: true }));
+    try {
+      // Garante dados atualizados do plano (includeData=1 já é padrão)
+      await qc.invalidateQueries({ queryKey: ["diet-plan-detail", planId] });
+      const d = await getDetail(planId);
+      if (!d || !d.versions?.length) throw new Error("Plano sem versões");
+      const v = d.versions[d.versions.length - 1];
+      // Se for PDF nativo, baixa do backend (key) ou do base64
+      if (isPdfData(v.data)) {
+        const pdf = v.data;
+        try {
+          if (pdf.file?.key && d?.id) {
+            const url = `${API.API_AUTH_BASE}/diet/plans/${d.id}/version/${v.id}/file`;
+            const r = await fetch(url, {
+              headers: {
+                authorization: localStorage.getItem("access_token")
+                  ? `Bearer ${localStorage.getItem("access_token")}`
+                  : "",
+              },
+            });
+            if (!r.ok) throw new Error("Falha no download");
+            const blob = await r.blob();
+            const dlUrl = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = dlUrl;
+            a.download =
+              pdf.file?.name ||
+              `${d.name}_v${v.version_number}.pdf`.replace(/[^a-z0-9]/gi, "_");
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(dlUrl), 1500);
+          } else if (pdf.file?.base64) {
+            const base64 = pdf.file.base64 as string;
+            const byteStr = atob(base64);
+            const bytes = new Uint8Array(byteStr.length);
+            for (let i = 0; i < byteStr.length; i++)
+              bytes[i] = byteStr.charCodeAt(i);
+            const blob = new Blob([bytes], { type: "application/pdf" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download =
+              pdf.file?.name ||
+              `${d.name}_v${v.version_number}.pdf`.replace(/[^a-z0-9]/gi, "_");
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+          } else {
+            throw new Error("Arquivo PDF indisponível");
+          }
+        } catch (err) {
+          console.error(err);
+          alert("Falha ao baixar PDF");
+        }
+        return;
+      }
+
+      // Se for estruturada, gerar PDF no cliente com dados dinâmicos
+      if (isStructuredDietData(v.data)) {
+        try {
+          // Coleta dados dinâmicos mínimos (nome do /me, objetivo do questionário, peso)
+          const [qRes, meRes, wRes] = await Promise.all([
+            authenticatedFetch(Routes.QUESTIONNAIRE),
+            authenticatedFetch(Routes.ME, { method: "GET" }),
+            authenticatedFetch(`${Routes.WEIGHT_SUMMARY}?days=120`),
+          ]);
+
+          let qAnswers: Record<string, unknown> = {};
+          try {
+            const qJson: unknown = await qRes.json();
+            const qData =
+              typeof qJson === "object" && qJson !== null && "data" in qJson
+                ? (qJson as Record<string, unknown>)["data"]
+                : qJson;
+            if (
+              typeof qData === "object" &&
+              qData !== null &&
+              "answers" in qData
+            ) {
+              const ans = (qData as Record<string, unknown>)["answers"];
+              if (typeof ans === "object" && ans !== null)
+                qAnswers = ans as Record<string, unknown>;
+            }
+          } catch (err) {
+            void err;
+          }
+
+          let meObj: Record<string, unknown> = {};
+          try {
+            const meJson: unknown = await meRes.json();
+            const meData =
+              typeof meJson === "object" && meJson !== null && "data" in meJson
+                ? (meJson as Record<string, unknown>)["data"]
+                : meJson;
+            meObj =
+              typeof meData === "object" && meData !== null
+                ? (meData as Record<string, unknown>)
+                : {};
+          } catch (err) {
+            void err;
+          }
+
+          let latestWeight: number | undefined;
+          try {
+            const wJson: unknown = await wRes.json();
+            const wData =
+              typeof wJson === "object" && wJson !== null && "data" in wJson
+                ? (wJson as Record<string, unknown>)["data"]
+                : wJson;
+            if (typeof wData === "object" && wData !== null) {
+              const latest = (wData as Record<string, unknown>)["latest"] as
+                | Record<string, unknown>
+                | undefined;
+              const wk = latest?.["weight_kg"] as unknown;
+              if (typeof wk === "number") latestWeight = wk;
+            }
+          } catch (err) {
+            void err;
+          }
+
+          const pick = (
+            obj: Record<string, unknown>,
+            ...keys: string[]
+          ): unknown => {
+            for (const k of keys) {
+              const v = obj[k];
+              if (v !== undefined && v !== null && v !== "") return v;
+            }
+            return undefined;
+          };
+          const pickString = (
+            obj: Record<string, unknown>,
+            ...keys: string[]
+          ): string | undefined => {
+            const v = pick(obj, ...keys);
+            return typeof v === "string" && v.trim() !== "" ? v : undefined;
+          };
+          const getNum = (v: unknown): number | undefined => {
+            if (v == null || v === "") return undefined;
+            const n =
+              typeof v === "number"
+                ? v
+                : parseFloat(String(v).replace(",", "."));
+            return Number.isFinite(n) ? n : undefined;
+          };
+
+          const age = getNum(pick(qAnswers, "idade"));
+          const gender = pickString(qAnswers, "sexo");
+          const height = getNum(pick(qAnswers, "altura"));
+          const weight = latestWeight ?? getNum(pick(qAnswers, "peso"));
+          const goal =
+            pickString(qAnswers, "objetivo_nutricional") ?? undefined;
+
+          await exportDietPdf(v.data, {
+            filename: `${d.name}_v${v.version_number}.pdf`.replace(
+              /[^a-z0-9]/gi,
+              "_"
+            ),
+            title: `${d.name} - v${v.version_number}`,
+            showAlternatives: true,
+            headerText: "Plano Nutricional Personalizado",
+            footerText: "Avante Nutri - Nutrindo hábitos, transformando vidas",
+            showPageNumbers: true,
+            watermarkText: "Avante Nutri",
+            watermarkRepeat: true,
+            watermarkOpacity: 0.05,
+            cover: {
+              title: `${d.name}`,
+              subtitle: `Versão ${v.version_number}`,
+              showTotals: true,
+              notes:
+                v.notes ??
+                "Seguir o plano alimentar conforme orientado, com boa hidratação e prática regular de exercícios.",
+              date: new Date(),
+              clientInfo: {
+                name:
+                  pickString(meObj, "display_name", "full_name") || "Paciente",
+                age,
+                gender,
+                weight,
+                height,
+                goal,
+                nutritionist: "Dra. Andreina Cawanne",
+                crn: "43669/P",
+              },
+              showMacronutrientChart: true,
+              signature: {
+                name: "Avante Nutri",
+                role: "Nutricionista",
+                license: "CRN-PE 43669",
+              },
+            },
+            company: {
+              logoUrl: "/logoName.png",
+              logoheader: "/logoHeader.png",
+              name: "Avante Nutri",
+              contact: "souzacawanne@gmail.com",
+              address: "Online",
+            },
+          });
+        } catch (err) {
+          console.error(err);
+          alert("Falha ao gerar PDF");
+        }
+        return;
+      }
+
+      alert("Formato de dieta não suportado para download");
+    } catch (e) {
+      console.error(e);
+      alert("Não foi possível baixar a dieta");
+    } finally {
+      setDownloadingMap((m) => ({ ...m, [planId]: false }));
+    }
+  };
+
   // Busca detalhes quando a modal abre (ou muda de plano)
   useEffect(() => {
     (async () => {
       if (!showDetail || !selectedPlanId) return;
       setDetailLoading(true);
       try {
-  await qc.invalidateQueries({ queryKey: ["diet-plan-detail", selectedPlanId] });
-  const d = await getDetail(selectedPlanId);
+        await qc.invalidateQueries({
+          queryKey: ["diet-plan-detail", selectedPlanId],
+        });
+        const d = await getDetail(selectedPlanId);
         if (d) setDetailJson(d as DietPlanDetail);
       } finally {
         setDetailLoading(false);
@@ -1121,9 +1411,17 @@ const DashboardPage: React.FC = () => {
                                   <div>+ 15% Engajamento (pesagens)</div>
                                   {adherence?.components && (
                                     <div className="mt-2 text-[10px] text-gray-300 space-y-1">
-                                      <div>Refeições: {adherence.components.meals}%</div>
-                                      <div>Hidratação: {adherence.components.water}%</div>
-                                      <div>Engajamento: {adherence.components.consistency}%</div>
+                                      <div>
+                                        Refeições: {adherence.components.meals}%
+                                      </div>
+                                      <div>
+                                        Hidratação: {adherence.components.water}
+                                        %
+                                      </div>
+                                      <div>
+                                        Engajamento:{" "}
+                                        {adherence.components.consistency}%
+                                      </div>
                                     </div>
                                   )}
                                 </div>
@@ -1219,7 +1517,7 @@ const DashboardPage: React.FC = () => {
                     </Button>
                   </div>
                   <div className="space-y-4">
-                    {plans.slice(0, 3).map((p) => (
+                    {plans.slice(0, 2).map((p) => (
                       <div
                         key={p.id}
                         data-plan-id={p.id}
@@ -1241,6 +1539,8 @@ const DashboardPage: React.FC = () => {
                           onRevise={handleRevise}
                           canEdit={canEditDiets}
                           locale={locale}
+                          onDownloadLatest={handleDownloadLatest}
+                          downloading={!!downloadingMap[p.id]}
                         />
                       </div>
                     ))}
@@ -1389,6 +1689,8 @@ const DashboardPage: React.FC = () => {
                         onRevise={handleRevise}
                         canEdit={canEditDiets}
                         locale={locale}
+                        onDownloadLatest={handleDownloadLatest}
+                        downloading={!!downloadingMap[diet.id]}
                       />
                     </div>
                   ))}
@@ -1575,6 +1877,5 @@ const DashboardPage: React.FC = () => {
     </div>
   );
 };
-
 
 export default DashboardPage;

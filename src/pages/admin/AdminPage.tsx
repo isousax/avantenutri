@@ -13,14 +13,7 @@ import AdminCreditsPanel from "../../components/admin/AdminCreditsPanel";
 import StructuredDietBuilder from "../../components/diet/StructuredDietBuilder";
 import StructuredDietView from "../../components/diet/StructuredDietView";
 import type { StructuredDietData } from "../../types/structuredDiet";
-import {
-  downloadDietJson,
-  printDiet,
-  dietHasItems,
-  copyDietJson,
-  copyDietHtml,
-} from "../../utils/structuredDietExport";
-import { exportDietPdf } from "../../utils/structuredDietPdf";
+import { dietHasItems, copyDietJson } from "../../utils/structuredDietExport";
 import { User } from "lucide-react";
 
 /* --- Types --- */
@@ -55,57 +48,25 @@ interface PlanDetail {
 /* --- Component: AdminVersionsSelector --- */
 const AdminVersionsSelector: React.FC<{
   detail: PlanDetail;
-  onDownloadPdf: (planId: string, version: any) => void;
-  exportShowAlternatives: boolean;
-  setExportShowAlternatives: (v: boolean) => void;
-  pdfIncludeCover: boolean;
-  setPdfIncludeCover: (v: boolean) => void;
-  pdfIncludeTotalsOnCover: boolean;
-  setPdfIncludeTotalsOnCover: (v: boolean) => void;
-  pdfWatermarkRepeat: boolean;
-  setPdfWatermarkRepeat: (v: boolean) => void;
-  pdfWatermarkOpacity: number;
-  setPdfWatermarkOpacity: (v: number) => void;
-  pdfIncludeQr: boolean;
-  setPdfIncludeQr: (v: boolean) => void;
-  showPdfOptions: boolean;
-  setShowPdfOptions: (v: boolean) => void;
-  pdfExportingVersion: string | null;
-  setPdfExportingVersion: (id: string | null) => void;
-  pdfExportPhase: string;
-  setPdfExportPhase: (s: string) => void;
-}> = ({
-  detail,
-  onDownloadPdf,
-  exportShowAlternatives,
-  setExportShowAlternatives,
-  pdfIncludeCover,
-  setPdfIncludeCover,
-  pdfIncludeTotalsOnCover,
-  setPdfIncludeTotalsOnCover,
-  pdfWatermarkRepeat,
-  setPdfWatermarkRepeat,
-  pdfWatermarkOpacity,
-  setPdfWatermarkOpacity,
-  pdfIncludeQr,
-  setPdfIncludeQr,
-  showPdfOptions,
-  setShowPdfOptions,
-  pdfExportingVersion,
-  setPdfExportingVersion,
-  pdfExportPhase,
-  setPdfExportPhase,
-}) => {
+}> = ({ detail }) => {
   const [selectedId, setSelectedId] = useState<string | null>(
-    detail.versions.length ? detail.versions[detail.versions.length - 1].id : null
+    detail.versions.length
+      ? detail.versions[detail.versions.length - 1].id
+      : null
   );
 
   // Atualiza seleção quando mudar o detalhe
   useEffect(() => {
-    setSelectedId(detail.versions.length ? detail.versions[detail.versions.length - 1].id : null);
+    setSelectedId(
+      detail.versions.length
+        ? detail.versions[detail.versions.length - 1].id
+        : null
+    );
   }, [detail.id, detail.versions]);
 
-  const sel = detail.versions.find((v) => v.id === selectedId) || detail.versions[detail.versions.length - 1];
+  const sel =
+    detail.versions.find((v) => v.id === selectedId) ||
+    detail.versions[detail.versions.length - 1];
 
   return (
     <div>
@@ -120,7 +81,9 @@ const AdminVersionsSelector: React.FC<{
               key={v.id}
               onClick={() => setSelectedId(v.id)}
               className={`flex-none px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
-                active ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
+                active
+                  ? "bg-green-600 text-white border-green-600"
+                  : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
               }`}
               title={fmtDate(v.created_at, "pt", { dateStyle: "short" })}
             >
@@ -140,7 +103,9 @@ const AdminVersionsSelector: React.FC<{
             <div className="flex items-center gap-2">
               <span className="font-semibold">v{sel.version_number}</span>
               {String(sel.id).startsWith("temp-rev-") && (
-                <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">Sincronizando...</span>
+                <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">
+                  Sincronizando...
+                </span>
               )}
             </div>
             <span>{fmtDate(sel.created_at, "pt", { dateStyle: "short" })}</span>
@@ -148,127 +113,37 @@ const AdminVersionsSelector: React.FC<{
           {sel.notes && (
             <div className="italic text-gray-600 text-xs mb-2">{sel.notes}</div>
           )}
-          {sel.data?.format === "pdf" && (sel.data?.file?.key || sel.data?.file?.base64) && (
-            <button
-              type="button"
-              className="text-blue-600 underline mb-2"
-              onClick={() => onDownloadPdf(detail.id, sel)}
-            >
-              Baixar PDF
-            </button>
-          )}
-          {sel.data && sel.data.versao === 1 && Array.isArray(sel.data.meals) && (
-            <div className="space-y-1">
-              <StructuredDietView data={sel.data} compact />
-              <div className="flex gap-2 flex-wrap text-[10px] items-center">
-                <button
-                  type="button"
-                  className="px-2 py-1 bg-emerald-600 text-white rounded"
-                  onClick={() => downloadDietJson(sel.data, `dieta_v${sel.version_number}.json`)}
-                >
-                  JSON
-                </button>
-                <button
-                  type="button"
-                  className="px-2 py-1 bg-blue-600 text-white rounded"
-                  onClick={() => printDiet(sel.data, `Dieta v${sel.version_number}`, { showAlternatives: exportShowAlternatives })}
-                >
-                  Imprimir / PDF
-                </button>
-                <button
-                  type="button"
-                  disabled={pdfExportingVersion === sel.id}
-                  className={`px-2 py-1 rounded text-white ${pdfExportingVersion === sel.id ? "bg-indigo-400 cursor-wait" : "bg-indigo-600 hover:bg-indigo-700"}`}
-                  onClick={async () => {
-                    if (pdfExportingVersion) return;
-                    setPdfExportingVersion(sel.id);
-                    setPdfExportPhase("preparando");
-                    try {
-                      await exportDietPdf(sel.data, {
-                        filename: `dieta_v${sel.version_number}.pdf`,
-                        title: `Dieta v${sel.version_number}`,
-                        showAlternatives: exportShowAlternatives,
-                        headerText: "Plano Nutricional",
-                        footerText: "AvanteNutri - Confidencial",
-                        watermarkText: "AvanteNutri",
-                        watermarkRepeat: pdfWatermarkRepeat,
-                        watermarkOpacity: pdfWatermarkOpacity,
-                        cover: pdfIncludeCover
-                          ? {
-                              title: `Plano Nutricional v${sel.version_number}`,
-                              subtitle: detail?.name || "Paciente",
-                              showTotals: pdfIncludeTotalsOnCover,
-                              notes: sel.notes || detail?.description || "",
-                              date: new Date(sel.created_at),
-                              qrUrl: pdfIncludeQr ? `${location.origin}/plan/${detail?.id || ""}` : undefined,
-                            }
-                          : undefined,
-                        phaseLabels: {
-                          prepare: "Preparando",
-                          render: "Renderizando",
-                          cover: "Capa",
-                          paginate: "Paginando",
-                          finalize: "Finalizando",
-                          done: "Concluído",
-                        },
-                        onProgress: (ph) => setPdfExportPhase(ph),
-                      });
-                    } catch (err) {
-                      console.error(err);
-                      alert("Falha ao gerar PDF");
-                    } finally {
-                      setPdfExportingVersion(null);
-                      setPdfExportPhase("");
+          {sel.data &&
+            sel.data.versao === 1 &&
+            Array.isArray(sel.data.meals) && (
+              <div className="space-y-1">
+                <StructuredDietView data={sel.data} compact />
+                <div className="flex gap-2 flex-wrap text-[10px] items-center">
+                  <button
+                    type="button"
+                    className="px-2 py-1 bg-blue-600 text-white rounded"
+                    onClick={() =>
+                      console.log("Baixar PDF", {
+                        alert: "Função desabilitada temporariamente",
+                      })
                     }
-                  }}
-                >
-                  {pdfExportingVersion === sel.id ? `Gerando (${pdfExportPhase})...` : "PDF Direto"}
-                </button>
-                <button type="button" className="px-2 py-1 bg-amber-600 text-white rounded" onClick={() => copyDietJson(sel.data)}>
-                  Copiar JSON
-                </button>
-                <button
-                  type="button"
-                  className="px-2 py-1 bg-amber-700 text-white rounded"
-                  onClick={() => copyDietHtml(sel.data, `Dieta v${sel.version_number}`, { showAlternatives: exportShowAlternatives })}
-                >
-                  Copiar HTML
-                </button>
-                <label className="flex items-center gap-1 cursor-pointer select-none ml-2">
-                  <input type="checkbox" checked={exportShowAlternatives} onChange={(e) => setExportShowAlternatives(e.target.checked)} /> Alternativas
-                </label>
-                <button type="button" className="px-2 py-1 bg-gray-500 text-white rounded" onClick={() => setShowPdfOptions(!showPdfOptions)}>
-                  {showPdfOptions ? "Fechar Opções" : "Opções PDF"}
-                </button>
-              </div>
-              {showPdfOptions && (
-                <div className="mt-2 p-2 border rounded bg-gray-50 space-y-2 text-[10px]">
-                  <div className="flex flex-wrap gap-4">
-                    <label className="flex items-center gap-1">
-                      <input type="checkbox" checked={pdfIncludeCover} onChange={(e) => setPdfIncludeCover(e.target.checked)} /> Capa
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input type="checkbox" checked={pdfIncludeTotalsOnCover} disabled={!pdfIncludeCover} onChange={(e) => setPdfIncludeTotalsOnCover(e.target.checked)} /> Totais na capa
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input type="checkbox" checked={pdfWatermarkRepeat} onChange={(e) => setPdfWatermarkRepeat(e.target.checked)} /> Repetir watermark
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input type="checkbox" checked={pdfIncludeQr} onChange={(e) => setPdfIncludeQr(e.target.checked)} /> QR Link
-                    </label>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <label className="text-[10px]">Opacidade watermark</label>
-                    <input type="range" min={0.02} max={0.3} step={0.01} value={pdfWatermarkOpacity} onChange={(e) => setPdfWatermarkOpacity(parseFloat(e.target.value))} />
-                    <span>{pdfWatermarkOpacity.toFixed(2)}</span>
-                  </div>
-                  <p className="text-gray-500">Essas opções afetam apenas a geração do PDF Direto.</p>
+                  >
+                    Baixar PDF
+                  </button>
+                  <button
+                    type="button"
+                    className="px-2 py-1 bg-amber-600 text-white rounded"
+                    onClick={() => copyDietJson(sel.data)}
+                  >
+                    Copiar JSON
+                  </button>
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
           {sel.data && sel.data.versao !== 1 && (
-            <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">{JSON.stringify(sel.data, null, 2)}</pre>
+            <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">
+              {JSON.stringify(sel.data, null, 2)}
+            </pre>
           )}
         </div>
       )}
@@ -289,13 +164,9 @@ const DietManagement: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [creatingName, setCreatingName] = useState("");
   const [creatingDesc, setCreatingDesc] = useState("");
-  const [planFormat, setPlanFormat] = useState<"structured" | "pdf">(
-    "structured"
-  );
+  const [planFormat, setPlanFormat] = useState<"structured">("structured");
   const [structuredCreateData, setStructuredCreateData] =
     useState<StructuredDietData | null>(null);
-  const [pdfBase64, setPdfBase64] = useState("");
-  const [pdfName, setPdfName] = useState("");
   const [targetUserQuery, setTargetUserQuery] = useState("");
   const [targetUserId, setTargetUserId] = useState("");
   const [targetUserLabel, setTargetUserLabel] = useState("");
@@ -308,25 +179,26 @@ const DietManagement: React.FC = () => {
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<PlanDetail | null>(null);
   const [revNotes, setRevNotes] = useState("");
-  const [revMode, setRevMode] = useState<"json" | "pdf" | "structured">("json");
+  const [revMode, setRevMode] = useState<"json" | "structured">("json");
   const [revStructuredData, setRevStructuredData] =
     useState<StructuredDietData | null>(null);
   const [revPatchJson, setRevPatchJson] = useState("{}");
-  const [revPdfName, setRevPdfName] = useState("");
-  const [revPdfBase64, setRevPdfBase64] = useState("");
   const [revising, setRevising] = useState(false);
   const [exportShowAlternatives, setExportShowAlternatives] = useState(true);
-  const [pdfExportingVersion, setPdfExportingVersion] = useState<string | null>(
-    null
-  );
-  const [pdfExportPhase, setPdfExportPhase] = useState<string>("");
-  // PDF advanced options
-  const [pdfIncludeCover, setPdfIncludeCover] = useState(true);
-  const [pdfIncludeTotalsOnCover, setPdfIncludeTotalsOnCover] = useState(true);
-  const [pdfWatermarkRepeat, setPdfWatermarkRepeat] = useState(true);
-  const [pdfWatermarkOpacity, setPdfWatermarkOpacity] = useState(0.08);
-  const [pdfIncludeQr, setPdfIncludeQr] = useState(false);
-  const [showPdfOptions, setShowPdfOptions] = useState(false);
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // Evita que botões internos do StructuredDietBuilder (sem type explícito)
+  // submetam o formulário pai acidentalmente
+  const preventFormSubmitFromBuilder = (e: React.MouseEvent) => {
+    const target = e.target as HTMLElement;
+    const btn = target?.closest?.("button");
+    if (btn) {
+      const type = (btn.getAttribute("type") || "").toLowerCase();
+      if (!type || type === "submit") {
+        e.preventDefault();
+      }
+    }
+  };
 
   // Search patients (debounced)
   useEffect(() => {
@@ -354,7 +226,7 @@ const DietManagement: React.FC = () => {
       } finally {
         setSearchingUsers(false);
       }
-    }, 300);
+    }, 1000);
     return () => {
       clearTimeout(t);
       ctrl.abort();
@@ -419,26 +291,10 @@ const DietManagement: React.FC = () => {
       const access = await getAccessToken();
       if (!access) return;
       let dataObj: any;
-      if (planFormat === "pdf" && pdfBase64) {
-        dataObj = {
-          format: "pdf",
-          file: {
-            name: pdfName || creatingName + ".pdf",
-            mime: "application/pdf",
-            base64: pdfBase64,
-          },
-          observacoes: creatingDesc || null,
-        };
-      } else if (planFormat === "structured" && structuredCreateData) {
+      if (planFormat === "structured" && structuredCreateData) {
         dataObj = structuredCreateData;
       }
-      let finalDesc = creatingDesc;
-      if (
-        planFormat === "pdf" &&
-        finalDesc &&
-        !/^[ \t]*\[PDF\]/i.test(finalDesc)
-      )
-        finalDesc = `[PDF] ${finalDesc}`;
+      const finalDesc = creatingDesc;
       const body = {
         name: creatingName,
         description: finalDesc,
@@ -466,60 +322,12 @@ const DietManagement: React.FC = () => {
       } catch {
         // ignore cleanup error
       }
-      setPdfBase64("");
-      setPdfName("");
       setTargetUserId("");
       setTargetUserLabel("");
     } catch (e: any) {
       setError(e.message || "Erro criar");
     } finally {
       setCreating(false);
-    }
-  };
-
-  const downloadPdf = (planId: string, version: any) => {
-    if (version?.data?.file?.key) {
-      const url = `${API.API_AUTH_BASE}/diet/plans/${planId}/version/${version.id}/file`;
-      fetch(url, {
-        headers: {
-          authorization: localStorage.getItem("access_token")
-            ? `Bearer ${localStorage.getItem("access_token")}`
-            : "",
-        },
-      })
-        .then(async (r) => {
-          if (!r.ok) throw new Error();
-          const blob = await r.blob();
-          const o = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = o;
-          a.download =
-            version.data.file.name || `plano_v${version.version_number}.pdf`;
-          document.body.appendChild(a);
-          a.click();
-          a.remove();
-          setTimeout(() => URL.revokeObjectURL(o), 1500);
-        })
-        .catch(() => alert("Falha PDF"));
-      return;
-    }
-    if (version?.data?.file?.base64) {
-      try {
-        const b64 = version.data.file.base64;
-        const bytes = Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
-        const blob = new Blob([bytes], { type: "application/pdf" });
-        const o = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = o;
-        a.download =
-          version.data.file.name || `plano_v${version.version_number}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(() => URL.revokeObjectURL(o), 1500);
-      } catch {
-        alert("Falha PDF");
-      }
     }
   };
 
@@ -536,16 +344,7 @@ const DietManagement: React.FC = () => {
       const access = await getAccessToken();
       if (!access) return;
       let dataPatch: any;
-      if (revMode === "pdf" && revPdfBase64) {
-        dataPatch = {
-          format: "pdf",
-          file: {
-            name: revPdfName || "plano_rev.pdf",
-            mime: "application/pdf",
-            base64: revPdfBase64,
-          },
-        };
-      } else if (revMode === "json") {
+      if (revMode === "json") {
         try {
           dataPatch = JSON.parse(revPatchJson || "{}");
         } catch {
@@ -565,12 +364,10 @@ const DietManagement: React.FC = () => {
       });
       const resp = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(resp.error || "Falha revisão");
-  await openDetail(detailId);
+      await openDetail(detailId);
       await load();
       setRevNotes("");
       setRevPatchJson("{}");
-      setRevPdfBase64("");
-      setRevPdfName("");
     } catch (e: any) {
       setError(e.message || "Erro revisão");
     } finally {
@@ -578,514 +375,1156 @@ const DietManagement: React.FC = () => {
     }
   };
 
+  const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
+  const totalPlans = plans.length;
+  const activePlans = plans.filter(p => p.status === 'active').length;
+
   return (
-    <Card className="p-0 overflow-hidden">
-      <div className="p-4 border-b flex flex-col md:flex-row gap-4 md:items-center">
-        <div className="flex items-center gap-2 flex-1">
-          <div className="relative text-xs">
-            <input
-              value={targetUserQuery}
-              onChange={(e) => setTargetUserQuery(e.target.value)}
-              placeholder="Buscar paciente..."
-              className="border rounded px-2 py-1"
-            />
-            {targetUserQuery && (searchingUsers || userOptions.length > 0) && (
-              <div className="absolute z-20 mt-1 bg-white border rounded shadow w-64 max-h-60 overflow-auto">
-                {searchingUsers && (
-                  <div className="p-2 text-gray-500 text-xs">Buscando...</div>
-                )}
-                {!searchingUsers &&
-                  userOptions.map((u) => (
-                    <button
-                      type="button"
-                      key={u.id}
-                      onClick={() => {
-                        setFilterUserId(u.id);
-                        setFilterUserLabel(u.display_name || u.email);
-                        setTargetUserQuery("");
-                      }}
-                      className="block w-full text-left px-2 py-1 hover:bg-green-50 text-[11px]"
-                    >
-                      {u.display_name || u.email}{" "}
-                      <span className="text-gray-400">
-                        · {u.id.slice(0, 6)}
-                      </span>
-                    </button>
-                  ))}
-                {!searchingUsers && userOptions.length === 0 && (
-                  <div className="p-2 text-gray-400 text-[11px]">
-                    Sem resultados
-                  </div>
-                )}
+    <Card className="p-0 overflow-hidden" padding="p-3 sm:p-6">
+      <div className="min-h-screen bg-gray-50">
+      {/* Header Principal */}
+      <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center gap-3">
+              <div>
+                <h1 className="text-lg font-bold text-gray-900">Gerenciar Dietas</h1>
+                <p className="text-xs text-gray-600">
+                  {totalPlans} plano{totalPlans !== 1 ? 's' : ''} • {activePlans} ativo{activePlans !== 1 ? 's' : ''}
+                </p>
               </div>
-            )}
-          </div>
-          {filterUserId && (
-            <div className="flex items-center gap-1 text-[11px] bg-green-50 px-2 py-1 rounded">
-              <span>{filterUserLabel || filterUserId.slice(0, 8)}</span>
-              <button
-                onClick={() => {
-                  setFilterUserId("");
-                  setFilterUserLabel("");
-                }}
-                className="text-red-500"
-              >
-                ×
-              </button>
             </div>
-          )}
-        </div>
-              <div className="flex gap-2 items-center">
-          <Button variant="secondary" onClick={load} disabled={loading}>
-            Atualizar
-          </Button>
-          <Button onClick={() => setShowCreate(true)}>Nova Dieta</Button>
+            <Button 
+              onClick={() => setShowCreate(true)}
+              className="bg-green-600 hover:bg-green-700 text-white flex items-center justify-center text-sm"
+              noBorder
+              noFocus
+            >
+              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+              Nova
+            </Button>
+          </div>
         </div>
       </div>
 
-      {error && <div className="p-4 text-sm text-red-600">{error}</div>}
-
-      <div className="p-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-        {loading && <div className="text-sm text-gray-500">Carregando...</div>}
-        {!loading &&
-          plans.map((p) => (
-            <Card key={p.id} className="p-4 space-y-1">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-semibold text-sm">{p.name}</h4>
-                  <p className="text-[11px] text-gray-500 line-clamp-2">
-                    {p.description || "Sem descrição"}
-                  </p>
+      {/* Filtros e Busca */}
+      <div className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+          <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
+            {/* Busca de Pacientes */}
+            <div className="flex-1 w-full">
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <svg className="h-4 w-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
                 </div>
-                <span
-                  className={`px-2 py-0.5 rounded-full text-[10px] font-medium ${
+                <input
+                  value={targetUserQuery}
+                  onChange={(e) => setTargetUserQuery(e.target.value)}
+                  onFocus={() => setSearchFocused(true)}
+                  onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+                  placeholder="Buscar paciente por nome ou email..."
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                />
+                
+                {/* Resultados da Busca */}
+                {(searchFocused || targetUserQuery) && targetUserQuery && (
+                  <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full max-h-60 overflow-y-auto">
+                    {searchingUsers ? (
+                      <div className="p-4 text-center text-gray-500">
+                        <div className="flex items-center justify-center gap-2">
+                          <svg className="w-4 h-4 animate-spin text-green-600" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                          Buscando pacientes...
+                        </div>
+                      </div>
+                    ) : userOptions.length > 0 ? (
+                      userOptions.map((u) => (
+                        <button
+                          key={u.id}
+                          type="button"
+                          onClick={() => {
+                            setFilterUserId(u.id);
+                            setFilterUserLabel(u.display_name || u.email);
+                            setTargetUserQuery("");
+                            setSearchFocused(false);
+                          }}
+                          className="flex items-center gap-3 w-full p-3 hover:bg-green-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                        >
+                          <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                            {u.display_name?.charAt(0).toUpperCase() || u.email.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="text-left flex-1 min-w-0">
+                            <div className="font-medium text-gray-900 truncate text-sm">
+                              {u.display_name || "Sem nome"}
+                            </div>
+                            <div className="text-xs text-gray-500 truncate">{u.email}</div>
+                          </div>
+                        </button>
+                      ))
+                    ) : (
+                      <div className="p-4 text-center text-gray-500">
+                        <div className="flex flex-col items-center gap-2">
+                          <svg className="w-8 h-8 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                          <span className="text-sm">Nenhum paciente encontrado</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                
+              </div>
+            </div>
+
+            {/* Filtro Ativo e Ações */}
+            <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+              {filterUserId && (
+                <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+                  <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                    {filterUserLabel.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm text-green-800 font-medium truncate max-w-32">
+                    {filterUserLabel}
+                  </span>
+                  <button
+                    onClick={() => {
+                      setFilterUserId("");
+                      setFilterUserLabel("");
+                    }}
+                    className="text-green-600 hover:text-green-800 p-1"
+                  >
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+              
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Conteúdo Principal */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <svg className="w-5 h-5 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <div className="font-medium text-red-800">Erro</div>
+                <div className="text-sm text-red-600 mt-1">{error}</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Grid de Planos */}
+        {loading && plans.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <svg className="w-12 h-12 animate-spin text-green-600 mb-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p className="text-gray-600">Carregando planos...</p>
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md mx-auto">
+              <svg className="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Nenhum plano de dieta</h3>
+              <p className="text-gray-600 mb-6">Comece criando seu primeiro plano nutricional.</p>
+              <Button 
+                onClick={() => setShowCreate(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Criar Primeira Dieta
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {plans.map((p) => (
+              <div key={p.id} className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-bold text-gray-900 text-lg truncate">{p.name}</h3>
+                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                      {p.description || "Plano nutricional personalizado"}
+                    </p>
+                  </div>
+                  <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${
                     p.status === "active"
-                      ? "bg-green-100 text-green-700"
+                      ? "bg-green-100 text-green-800"
                       : "bg-gray-100 text-gray-600"
-                  }`}
-                >
-                  {p.status}
-                </span>
-              </div>
-              <div className="flex gap-2 text-[10px] pt-1 flex-wrap">
-                {p.format && (
-                  <span className="px-2 py-0.5 bg-amber-100 text-amber-700 rounded">
-                    {p.format}
+                  }`}>
+                    {p.status === "active" ? "Ativo" : "Inativo"}
                   </span>
-                )}
-                {p.start_date && (
-                  <span>Início: {p.start_date.slice(0, 10)}</span>
-                )}
-                {p.user_id && (
-                  <span className="text-gray-500">
-                    User: {p.user_id.slice(0, 6)}
-                  </span>
-                )}
+                </div>
+
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {p.format && (
+                    <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-medium">
+                      {p.format}
+                    </span>
+                  )}
+                  {p.start_date && (
+                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs">
+                      Início: {new Date(p.start_date).toLocaleDateString('pt-BR')}
+                    </span>
+                  )}
+                  {p.user_id && (
+                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
+                      Paciente: {p.user_id.slice(0, 6)}...
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex gap-2">
+                  <Button
+                    variant="secondary"
+                    className="flex-1 text-sm flex items-center justify-center"
+                    noFocus
+                    onClick={() => openDetail(p.id)}
+                  >
+                    <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    Detalhes
+                  </Button>
+                </div>
               </div>
-              <div className="pt-2">
-                <Button
-                  variant="secondary"
-                  className="w-full text-xs"
-                  onClick={() => openDetail(p.id)}
-                >
-                  Detalhes
-                </Button>
-              </div>
-            </Card>
-          ))}
-        {!loading && plans.length === 0 && (
-          <div className="text-sm text-gray-500 col-span-full">
-            Nenhum plano ainda.
+            ))}
           </div>
         )}
       </div>
+    </div>
 
       {/* Create modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-2 md:p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-6xl my-4 p-4 md:p-6 space-y-4 max-h-[95vh] overflow-y-auto">
-            <h2 className="text-lg font-semibold">Criar Dieta</h2>
-            <form onSubmit={handleCreate} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-medium mb-1">Paciente</label>
-                <div className="flex gap-2 items-center">
-                  <input
-                    value={targetUserLabel}
-                    readOnly
-                    placeholder="Selecione abaixo"
-                    className="flex-1 border rounded px-2 py-1 bg-gray-50"
-                  />
-                  {targetUserId && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTargetUserId("");
-                        setTargetUserLabel("");
-                      }}
-                      className="text-red-600"
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-1 md:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-2 max-h-[98vh] overflow-hidden flex flex-col">
+            {/* Header Fixo */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-2 sm:p-3 text-white sticky top-0 z-10">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      Limpar
-                    </button>
-                  )}
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M12 4v16m8-8H4"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Criar Nova Dieta</h2>
+                  </div>
                 </div>
-                <div className="mt-2 relative">
-                  <input
-                    value={targetUserQuery}
-                    onChange={(e) => setTargetUserQuery(e.target.value)}
-                    placeholder="Buscar..."
-                    className="w-full border rounded px-2 py-1"
-                  />
-                  {targetUserQuery &&
-                    (searchingUsers || userOptions.length > 0) && (
-                      <div className="absolute z-20 mt-1 bg-white border rounded shadow w-full max-h-48 overflow-auto">
-                        {searchingUsers && (
-                          <div className="p-2 text-gray-500">Buscando...</div>
-                        )}
-                        {!searchingUsers &&
-                          userOptions.map((u) => (
-                            <button
-                              type="button"
-                              key={u.id}
-                              onClick={() => {
-                                setTargetUserId(u.id);
-                                setTargetUserLabel(u.display_name || u.email);
-                                setTargetUserQuery("");
-                              }}
-                              className="block w-full text-left px-2 py-1 hover:bg-green-50 text-[11px]"
-                            >
-                              {u.display_name || u.email}{" "}
-                              <span className="text-gray-400">
-                                · {u.id.slice(0, 6)}
-                              </span>
-                            </button>
-                          ))}
-                        {!searchingUsers && userOptions.length === 0 && (
-                          <div className="p-2 text-gray-400 text-[11px]">
-                            Sem resultados
-                          </div>
-                        )}
-                      </div>
-                    )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-medium mb-1">Nome</label>
-                <input
-                  value={creatingName}
-                  onChange={(e) => setCreatingName(e.target.value)}
-                  required
-                  className="w-full border rounded px-3 py-2 text-sm"
-                />
-              </div>
-
-              <div>
-                <label className="block font-medium mb-1">Descrição</label>
-                <textarea
-                  value={creatingDesc}
-                  onChange={(e) => setCreatingDesc(e.target.value)}
-                  className="w-full border rounded px-3 py-2 h-20 resize-none text-sm"
-                />
-              </div>
-
-              <div className="flex gap-4 items-center">
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    value="structured"
-                    checked={planFormat === "structured"}
-                    onChange={() => setPlanFormat("structured")}
-                  />{" "}
-                  Estruturado
-                </label>
-                <label className="flex items-center gap-1">
-                  <input
-                    type="radio"
-                    value="pdf"
-                    checked={planFormat === "pdf"}
-                    onChange={() => setPlanFormat("pdf")}
-                  />{" "}
-                  PDF
-                </label>
-              </div>
-
-              {planFormat === "pdf" && (
-                <div className="space-y-2">
-                  <label className="block font-medium mb-1">Arquivo PDF</label>
-                  <input
-                    type="file"
-                    accept="application/pdf"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (!f) {
-                        setPdfBase64("");
-                        setPdfName("");
-                        return;
-                      }
-                      if (f.size > 5 * 1024 * 1024) {
-                        alert("Limite 5MB");
-                        return;
-                      }
-                      setPdfName(f.name);
-                      const reader = new FileReader();
-                      reader.onload = () => {
-                        const res = reader.result as string;
-                        setPdfBase64(res.split(",")[1] || "");
-                      };
-                      reader.readAsDataURL(f);
-                    }}
-                  />
-                  {pdfName && (
-                    <p className="text-[11px] text-gray-600">
-                      Selecionado: {pdfName}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {planFormat === "structured" && (
-                <div className="border rounded p-2 bg-white/60">
-                  <h5 className="text-xs font-semibold mb-2">
-                    Montar Dieta Estruturada
-                  </h5>
-                  <StructuredDietBuilder
-                    value={structuredCreateData}
-                    onChange={setStructuredCreateData}
-                    showAlternatives={exportShowAlternatives}
-                    onToggleAlternatives={setExportShowAlternatives}
-                  />
-                  {!structuredCreateData && (
-                    <p className="text-[10px] text-amber-700 mt-1">
-                      Adicione pelo menos um alimento antes de criar.
-                    </p>
-                  )}
-                </div>
-              )}
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="secondary"
+                <button
                   onClick={() => setShowCreate(false)}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            {/* Conteúdo com Scroll */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              <form onSubmit={handleCreate} className="space-y-6">
+                {/* Seção Paciente */}
+                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-1.5 bg-blue-100 rounded-lg">
+                      <svg
+                        className="w-4 h-4 text-blue-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="font-semibold text-blue-900">Paciente</h3>
+                  </div>
+
+                  {/* Paciente Selecionado */}
+                  {targetUserId ? (
+                    <div className="bg-white rounded-lg border border-blue-300 p-3 mb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {targetUserLabel.charAt(0).toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="font-medium text-gray-900">
+                              {targetUserLabel}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              ID: {targetUserId.slice(0, 8)}...
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setTargetUserId("");
+                            setTargetUserLabel("");
+                          }}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <svg
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <svg
+                            className="h-4 w-4 text-gray-400"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                            />
+                          </svg>
+                        </div>
+                        <input
+                          value={targetUserQuery}
+                          onChange={(e) => setTargetUserQuery(e.target.value)}
+                          placeholder="Buscar paciente por nome ou email..."
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        />
+                      </div>
+
+                      {/* Resultados da Busca */}
+                      {targetUserQuery && (
+                        <div className="bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                          {searchingUsers ? (
+                            <div className="p-4 text-center text-gray-500">
+                              <div className="flex items-center justify-center gap-2">
+                                <svg
+                                  className="w-4 h-4 animate-spin text-blue-600"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Buscando pacientes...
+                              </div>
+                            </div>
+                          ) : userOptions.length > 0 ? (
+                            userOptions.map((u) => (
+                              <button
+                                type="button"
+                                key={u.id}
+                                onClick={() => {
+                                  setTargetUserId(u.id);
+                                  setTargetUserLabel(u.display_name || u.email);
+                                  setTargetUserQuery("");
+                                }}
+                                className="flex items-center gap-3 w-full p-3 hover:bg-blue-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                              >
+                                <div className="w-8 h-8 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                                  {u.display_name?.charAt(0).toUpperCase() ||
+                                    u.email.charAt(0).toUpperCase()}
+                                </div>
+                                <div className="text-left flex-1 min-w-0">
+                                  <div className="font-medium text-gray-900 truncate">
+                                    {u.display_name || "Sem nome"}
+                                  </div>
+                                  <div className="text-xs text-gray-500 truncate">
+                                    {u.email}
+                                  </div>
+                                </div>
+                                <svg
+                                  className="w-4 h-4 text-green-500 flex-shrink-0"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                              </button>
+                            ))
+                          ) : (
+                            <div className="p-4 text-center text-gray-500">
+                              <div className="flex flex-col items-center gap-2">
+                                <svg
+                                  className="w-8 h-8 text-gray-300"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1}
+                                    d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                                  />
+                                </svg>
+                                <span className="text-sm">
+                                  Nenhum paciente encontrado
+                                </span>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Informações Básicas */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-gray-100 rounded-lg">
+                      <svg
+                        className="w-4 h-4 text-gray-600"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                        />
+                      </svg>
+                    </div>
+                    <h3 className="font-semibold text-gray-900">
+                      Informações da Dieta
+                    </h3>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Nome da Dieta *
+                      </label>
+                      <input
+                        value={creatingName}
+                        onChange={(e) => setCreatingName(e.target.value)}
+                        required
+                        placeholder="Ex: Dieta Low Carb - Fase 1"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Descrição
+                      </label>
+                      <textarea
+                        value={creatingDesc}
+                        onChange={(e) => setCreatingDesc(e.target.value)}
+                        placeholder="Descreva os objetivos desta dieta..."
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Construtor de Dieta Estruturada */}
+                {planFormat === "structured" && (
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-emerald-600 to-green-600 p-4 text-white">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 bg-white/20 rounded-lg">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Montar Dieta</h3>
+                            <p className="text-emerald-100 text-sm">
+                              Adicione refeições e alimentos
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="p-4">
+                      <div onClickCapture={preventFormSubmitFromBuilder}>
+                        <StructuredDietBuilder
+                          value={structuredCreateData}
+                          onChange={setStructuredCreateData}
+                          showAlternatives={exportShowAlternatives}
+                          onToggleAlternatives={setExportShowAlternatives}
+                          compact={true}
+                        />
+                      </div>
+
+                      {!structuredCreateData && (
+                        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 text-center">
+                          <svg
+                            className="w-8 h-8 text-amber-500 mx-auto mb-2"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1}
+                              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"
+                            />
+                          </svg>
+                          <p className="text-amber-800 font-medium text-sm">
+                            Adicione pelo menos uma refeição
+                          </p>
+                          <p className="text-amber-600 text-xs mt-1">
+                            Clique em "+ Adicionar Refeição" para começar
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </form>
+            </div>
+
+            {/* Footer Fixo */}
+            <div className="bg-gray-50 border-t border-gray-200 p-4 sticky bottom-0">
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowCreate(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-100 transition-colors"
                 >
                   Cancelar
-                </Button>
-                <Button type="submit" disabled={creating}>
-                  {creating ? "Criando..." : "Criar"}
-                </Button>
+                </button>
+                <button
+                  type="submit"
+                  onClick={handleCreate}
+                  disabled={
+                    creating ||
+                    !targetUserId ||
+                    !creatingName ||
+                    (planFormat === "structured" && !structuredCreateData)
+                  }
+                  className="flex-1 px-4 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-green-700 hover:to-emerald-700 transition-all flex items-center justify-center gap-2"
+                >
+                  {creating ? (
+                    <>
+                      <svg
+                        className="w-4 h-4 animate-spin"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Criando...
+                    </>
+                  ) : (
+                    <>
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M5 13l4 4L19 7"
+                        />
+                      </svg>
+                      Criar Dieta
+                    </>
+                  )}
+                </button>
               </div>
-            </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Detail modal */}
+      {/* Diet Detail modal */}
       {detailId && (
-        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-4 overflow-y-auto">
-          <div className="bg-white rounded-xl shadow-lg w-full max-w-4xl p-6 space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="text-lg font-semibold">Plano de Dieta</h2>
-              <button
-                onClick={() => {
-                  setDetailId(null);
-                  setDetail(null);
-                }}
-                className="text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
+        <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-2 md:p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-2 max-h-[98vh] overflow-hidden flex flex-col">
+            {/* Header Fixo */}
+            <div className="bg-gradient-to-r from-green-600 to-emerald-600 p-2 sm:p-3 text-white sticky top-0 z-20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-white/20 rounded-lg">
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-bold">Detalhes do Plano</h2>
+                    <p className="text-emerald-100 text-xs">
+                      Visualizar e gerenciar versões
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => {
+                    setDetailId(null);
+                    setDetail(null);
+                  }}
+                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
 
-            {/* Controles removidos: sempre buscamos com includeData=1 */}
-
-            {detailLoading && (
-              <div className="text-sm text-gray-500">Carregando...</div>
-            )}
-
-            {!detailLoading && detail && (
-              <div className="space-y-4 text-xs">
-                <div>
-                  <h3 className="font-semibold text-lg">{detail.name}</h3>
+            {/* Conteúdo com Scroll */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-6">
+              {detailLoading && (
+                <div className="flex flex-col items-center justify-center py-12">
+                  <svg
+                    className="w-8 h-8 animate-spin text-green-600 mb-3"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
                   <p className="text-sm text-gray-600">
-                    {detail.description || "Sem descrição"}
-                  </p>
-                  <p className="text-[11px] text-gray-400">
-                    Criado em{" "}
-                    {fmtDate(detail.created_at, "pt", {
-                      dateStyle: "short",
-                      timeStyle: "short",
-                    })}
+                    Carregando detalhes...
                   </p>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-2">Versões</h4>
-                  {/* Seletor horizontal */}
-                  <AdminVersionsSelector
-                    detail={detail}
-                    onDownloadPdf={downloadPdf}
-                    exportShowAlternatives={exportShowAlternatives}
-                    setExportShowAlternatives={setExportShowAlternatives}
-                    pdfIncludeCover={pdfIncludeCover}
-                    setPdfIncludeCover={setPdfIncludeCover}
-                    pdfIncludeTotalsOnCover={pdfIncludeTotalsOnCover}
-                    setPdfIncludeTotalsOnCover={setPdfIncludeTotalsOnCover}
-                    pdfWatermarkRepeat={pdfWatermarkRepeat}
-                    setPdfWatermarkRepeat={setPdfWatermarkRepeat}
-                    pdfWatermarkOpacity={pdfWatermarkOpacity}
-                    setPdfWatermarkOpacity={setPdfWatermarkOpacity}
-                    pdfIncludeQr={pdfIncludeQr}
-                    setPdfIncludeQr={setPdfIncludeQr}
-                    showPdfOptions={showPdfOptions}
-                    setShowPdfOptions={setShowPdfOptions}
-                    pdfExportingVersion={pdfExportingVersion}
-                    setPdfExportingVersion={setPdfExportingVersion}
-                    pdfExportPhase={pdfExportPhase}
-                    setPdfExportPhase={setPdfExportPhase}
-                  />
-                </div>
+              )}
 
-                <form
-                  onSubmit={handleRevise}
-                  className="space-y-3 border-t pt-4"
-                >
-                  <h4 className="font-semibold">Nova Revisão</h4>
-                  <div>
-                    <label className="block font-medium mb-1">Notas</label>
-                    <textarea
-                      value={revNotes}
-                      onChange={(e) => setRevNotes(e.target.value)}
-                      className="w-full border rounded px-2 py-1 h-16 resize-none"
-                    />
+              {!detailLoading && detail && (
+                <div className="space-y-6">
+                  {/* Informações Principais */}
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl p-2">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+                        <svg
+                          className="w-5 h-5 text-blue-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-4 mt-2 text-xs text-blue-700">
+                          <span className="flex items-center gap-1">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            Criado em{" "}
+                            {new Date(detail.created_at).toLocaleDateString(
+                              "pt-BR"
+                            )}
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                              />
+                            </svg>
+                            {detail.versions.length} versão
+                            {detail.versions.length !== 1 ? "es" : ""}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
 
-                  <div className="flex gap-4 items-center">
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        value="json"
-                        checked={revMode === "json"}
-                        onChange={() => setRevMode("json")}
-                      />{" "}
-                      Patch JSON
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        value="structured"
-                        checked={revMode === "structured"}
-                        onChange={() => {
-                          setRevMode("structured");
-                          if (detail?.versions?.[0]?.data?.versao === 1)
-                            setRevStructuredData(detail.versions[0].data);
-                        }}
-                      />{" "}
-                      Estruturado
-                    </label>
-                    <label className="flex items-center gap-1">
-                      <input
-                        type="radio"
-                        value="pdf"
-                        checked={revMode === "pdf"}
-                        onChange={() => setRevMode("pdf")}
-                      />{" "}
-                      Novo PDF
-                    </label>
+                  {/* Seletor de Versões */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    {/* Header Cliqueável */}
+                    <button
+                      onClick={() => setMostrarDetalhes(!mostrarDetalhes)}
+                      className="flex items-center justify-between w-full p-3 hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`p-2 rounded-lg transition-colors ${
+                            mostrarDetalhes
+                              ? "bg-green-100 text-green-600"
+                              : "bg-gray-100 text-gray-600"
+                          }`}
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d={
+                                mostrarDetalhes
+                                  ? "M5 15l7-7 7 7"
+                                  : "M19 9l-7 7-7-7"
+                              }
+                            />
+                          </svg>
+                        </div>
+                        <div className="text-left">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-gray-900">
+                              Histórico de Versões
+                            </h3>
+                          </div>
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Conteúdo Expandido */}
+                    {mostrarDetalhes && (
+                      <div className="border-t border-gray-200">
+                        {/* Componente de Versões */}
+                        <div className="max-h-96 overflow-y-auto p-1">
+                          <AdminVersionsSelector detail={detail} />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {revMode === "json" && (
-                    <div>
-                      <label className="block font-medium mb-1">
-                        Patch (JSON)
-                      </label>
-                      <textarea
-                        value={revPatchJson}
-                        onChange={(e) => setRevPatchJson(e.target.value)}
-                        className="w-full border rounded px-2 py-1 font-mono h-40 resize-none"
-                      />
+                  {/* Nova Revisão - Accordion */}
+                  <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                    <div className="bg-gradient-to-r from-orange-50 to-amber-100 border-b border-amber-200 p-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="p-1.5 bg-amber-100 rounded-lg">
+                            <svg
+                              className="w-5 h-5 text-amber-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                              />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="font-semibold text-amber-900">
+                              Nova Revisão
+                            </h3>
+                            <p className="text-amber-700 text-sm">
+                              Atualizar plano nutricional
+                            </p>
+                          </div>
+                        </div>
+                        <div className="px-3 py-1 bg-amber-500 text-white rounded-full text-xs font-medium">
+                          Opcional
+                        </div>
+                      </div>
                     </div>
-                  )}
 
-                  {revMode === "pdf" && (
-                    <div className="space-y-2">
-                      <label className="block font-medium mb-1">
-                        Arquivo PDF
-                      </label>
-                      <input
-                        type="file"
-                        accept="application/pdf"
-                        onChange={(e) => {
-                          const f = e.target.files?.[0];
-                          if (!f) {
-                            setRevPdfBase64("");
-                            setRevPdfName("");
-                            return;
-                          }
-                          if (f.size > 5 * 1024 * 1024) {
-                            alert("Limite 5MB");
-                            return;
-                          }
-                          setRevPdfName(f.name);
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            const res = reader.result as string;
-                            setRevPdfBase64(res.split(",")[1] || "");
-                          };
-                          reader.readAsDataURL(f);
-                        }}
-                      />
-                      {revPdfName && (
-                        <p className="text-[11px] text-gray-600">
-                          Selecionado: {revPdfName}
-                        </p>
-                      )}
-                    </div>
-                  )}
+                    <div className="p-4 space-y-4">
+                      <form onSubmit={handleRevise} className="space-y-4">
+                        {/* Campo de Notas */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            📝 Notas da Revisão
+                          </label>
+                          <textarea
+                            value={revNotes}
+                            onChange={(e) => setRevNotes(e.target.value)}
+                            placeholder="Descreva as alterações realizadas nesta revisão..."
+                            rows={3}
+                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                          />
+                        </div>
 
-                  {revMode === "structured" && (
-                    <div className="border rounded p-2 bg-white/60">
-                      <div className="flex items-center justify-between mb-1">
-                        <h5 className="font-semibold text-xs">
-                          Editar Dieta Estruturada
-                        </h5>
-                        {detail?.versions?.[detail.versions.length - 1]?.data?.versao === 1 && (
+                        {/* Seletor de Modo */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            🛠️ Método de Edição
+                          </label>
+                          <div className="grid grid-cols-1 gap-2">
+                            <label className="flex items-center gap-3 p-3 bg-white border-2 border-orange-200 rounded-lg cursor-pointer hover:border-orange-300 transition-colors">
+                              <input
+                                type="radio"
+                                value="structured"
+                                checked={revMode === "structured"}
+                                onChange={() => {
+                                  setRevMode("structured");
+                                  if (detail?.versions?.[0]?.data?.versao === 1)
+                                    setRevStructuredData(
+                                      detail.versions[0].data
+                                    );
+                                }}
+                                className="text-orange-600 focus:ring-orange-500"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">
+                                  Editor Visual
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Modifique a dieta usando o construtor visual
+                                  (recomendado)
+                                </div>
+                              </div>
+                              <div className="p-2 bg-orange-100 rounded-lg">
+                                <svg
+                                  className="w-4 h-4 text-orange-600"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                                  />
+                                </svg>
+                              </div>
+                            </label>
+
+                            <label className="flex items-center gap-3 p-3 bg-white border-2 border-gray-200 rounded-lg cursor-pointer hover:border-gray-300 transition-colors">
+                              <input
+                                type="radio"
+                                value="json"
+                                checked={revMode === "json"}
+                                onChange={() => setRevMode("json")}
+                                className="text-gray-600 focus:ring-gray-500"
+                              />
+                              <div className="flex-1">
+                                <div className="font-medium text-gray-900">
+                                  JSON (Avançado)
+                                </div>
+                                <div className="text-xs text-gray-600 mt-1">
+                                  Edite manualmente o JSON
+                                </div>
+                              </div>
+                              <div className="p-2 bg-gray-100 rounded-lg">
+                                <svg
+                                  className="w-4 h-4 text-gray-600"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                                  />
+                                </svg>
+                              </div>
+                            </label>
+                          </div>
+                        </div>
+
+                        {/* Editor JSON */}
+                        {revMode === "json" && (
+                          <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <div className="flex items-center justify-between mb-3">
+                              <label className="text-sm font-medium text-gray-700">
+                                📄 JSON de Modificação
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => setRevPatchJson("{}")}
+                                className="text-xs text-orange-600 hover:text-orange-700 font-medium"
+                              >
+                                Limpar
+                              </button>
+                            </div>
+                            <textarea
+                              value={revPatchJson}
+                              onChange={(e) => setRevPatchJson(e.target.value)}
+                              placeholder='{"key": "value"} - Insira as modificações em formato JSON'
+                              rows={6}
+                              className="w-full px-3 py-2 border border-gray-300 rounded text-sm font-mono resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                            />
+                            <div className="text-xs text-gray-500 mt-2">
+                              💡 Use apenas se souber manipular JSON
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Editor Estruturado */}
+                        {revMode === "structured" && (
+                          <div
+                            className="border border-gray-200 rounded-lg bg-white overflow-hidden"
+                            onClickCapture={preventFormSubmitFromBuilder}
+                          >
+                            <div className="bg-gradient-to-r from-green-50 to-emerald-100 border-b border-emerald-200 p-4">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <svg
+                                    className="w-5 h-5 text-emerald-600"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01"
+                                    />
+                                  </svg>
+                                  <span className="font-semibold text-emerald-900">
+                                    Editor de Dieta
+                                  </span>
+                                </div>
+                                {detail?.versions?.[detail.versions.length - 1]
+                                  ?.data?.versao === 1 && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      setRevStructuredData(
+                                        detail.versions[
+                                          detail.versions.length - 1
+                                        ].data
+                                      )
+                                    }
+                                    className="px-3 py-1 bg-emerald-600 text-white rounded text-xs font-medium hover:bg-emerald-700 transition-colors"
+                                  >
+                                    Carregar Atual
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                            <div className="p-4 max-h-96 overflow-y-auto">
+                              <StructuredDietBuilder
+                                value={revStructuredData}
+                                onChange={setRevStructuredData}
+                                compact={true}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Ações */}
+                        <div className="flex gap-3 pt-4 border-t border-gray-200">
                           <button
                             type="button"
-                            className="text-[10px] underline text-green-700"
-                            onClick={() =>
-                              setRevStructuredData(detail.versions[detail.versions.length - 1].data)
-                            }
+                            onClick={() => {
+                              setRevNotes("");
+                              setRevPatchJson("{}");
+                              setRevStructuredData(null);
+                            }}
+                            className="flex items-center justify-center px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                           >
-                            Carregar Atual
+                            Limpar
                           </button>
-                        )}
-                      </div>
-                      <StructuredDietBuilder
-                        value={revStructuredData}
-                        onChange={setRevStructuredData}
-                      />
+                          <button
+                            type="submit"
+                            disabled={
+                              revising ||
+                              (!revNotes.trim() &&
+                                revMode === "structured" &&
+                                !revStructuredData)
+                            }
+                            className="flex-1 px-4 py-3 bg-gradient-to-r from-orange-600 to-amber-600 text-white rounded-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:from-orange-700 hover:to-amber-700 transition-all flex items-center justify-center gap-2"
+                          >
+                            {revising ? (
+                              <>
+                                <svg
+                                  className="w-4 h-4 animate-spin"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Aplicando...
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                  stroke="currentColor"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M5 13l4 4L19 7"
+                                  />
+                                </svg>
+                                Aplicar Revisão
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </form>
                     </div>
-                  )}
-
-                  <div className="flex justify-end gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      onClick={() => {
-                        setRevNotes("");
-                        setRevPatchJson("{}");
-                        setRevPdfBase64("");
-                        setRevPdfName("");
-                      }}
-                    >
-                      Limpar
-                    </Button>
-                    <Button type="submit" disabled={revising}>
-                      {revising ? "Salvando..." : "Aplicar Revisão"}
-                    </Button>
                   </div>
-                </form>
-              </div>
-            )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

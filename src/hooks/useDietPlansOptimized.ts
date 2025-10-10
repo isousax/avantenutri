@@ -39,11 +39,11 @@ export interface DietPlanDetail extends DietPlanSummary {
 }
 
 // Query para buscar planos de dieta
-export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
+export const useDietPlansQuery = (options: { archived?: boolean; refetchInterval?: number; staleTimeMs?: number } = {}) => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
-    queryKey: ["diet-plans", options],
+    queryKey: ["diet-plans", { archived: options.archived === true }],
     queryFn: async (): Promise<DietPlanSummary[]> => {
       const endpoint = API.DIET_PLANS;
       const params = new URLSearchParams();
@@ -61,8 +61,9 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
   return data.results || [];
     },
     enabled: true, // Mudamos para sempre enabled, mas verificamos permissão dentro da queryFn
-    staleTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: options.staleTimeMs ?? 60 * 1000, // 60s
     refetchOnWindowFocus: false,
+    refetchInterval: options.refetchInterval ?? false,
   });
 };
 
@@ -89,7 +90,7 @@ export const useDietPlanDetailQuery = (planId: string) => {
   return data.plan;
     },
     enabled: !!planId,
-    staleTime: 10 * 60 * 1000, // 10 minutos
+    staleTime: 60 * 1000, // 60s
     refetchOnWindowFocus: false,
   });
 };
@@ -280,7 +281,7 @@ export const useDietPlans = () => {
         if (!response.ok) throw new Error(data.error || "Falha ao carregar detalhes do plano");
         return data.plan;
       },
-      staleTime: 10 * 60 * 1000,
+      staleTime: 60 * 1000,
     });
   }, [queryClient, authenticatedFetch]);
 
@@ -310,7 +311,7 @@ export function prefetchDietPlans(
     params.append("archived", "1");
   const url = params.toString() ? `${endpoint}?${params}` : endpoint;
   qc.prefetchQuery({
-    queryKey: ["diet-plans", options],
+    queryKey: ["diet-plans", { archived: options.archived === true }],
     queryFn: async () => {
   // debug: prefetch detalhe
   // console.debug('[prefetchDietPlanDetail] GET', url);
@@ -320,7 +321,7 @@ export function prefetchDietPlans(
         throw new Error(data.error || "Falha ao carregar planos de dieta");
       return data.results || [];
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 }
 
@@ -345,6 +346,6 @@ export function prefetchDietPlanDetail(
         throw new Error(data.error || "Falha ao carregar detalhes do plano");
       return data.plan;
     },
-    staleTime: 10 * 60 * 1000,
+    staleTime: 60 * 1000,
   });
 }

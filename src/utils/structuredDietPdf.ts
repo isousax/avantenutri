@@ -509,7 +509,7 @@ export async function exportDietPdf(
 
       // Duas colunas para informações
       const col1X = marginMm + 10;
-      const col2X = pageWidth / 2;
+      const col2X = pageWidth / 1.7;
 
       if (client.name) pdf.text(`Nome: ${client.name}`, col1X, currentY);
       if (client.age) pdf.text(`Idade: ${client.age} anos`, col2X, currentY);
@@ -519,18 +519,16 @@ export async function exportDietPdf(
       if (client.weight) pdf.text(`Peso: ${client.weight} kg`, col2X, currentY);
       currentY += 6;
 
-      if (client.height)
-        pdf.text(`Altura: ${client.height} cm`, col1X, currentY);
-      currentY += 6;
+      
 
       if (client.goal) {
-        pdf.text(`Objetivo Nutricional:`, col1X, currentY);
-        const goalLines = pdf.splitTextToSize(client.goal, pageWidth / 2 - 20);
-        pdf.text(goalLines, col1X + 32.5, currentY);
-        currentY += goalLines.length * 4;
+        pdf.text(`Objetivo Nutricional: ${client.goal}`, col1X, currentY);
       }
 
-      currentY += 15;
+      if (client.height)
+        pdf.text(`Altura: ${client.height} cm`, col2X, currentY);
+
+      currentY += 21;
     }
     // --- Observações / Notes na capa
     if (cover.notes) {

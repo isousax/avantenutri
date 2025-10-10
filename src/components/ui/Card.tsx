@@ -3,10 +3,11 @@ import React from 'react';
 interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode;
   className?: string;
+  padding?: string;
 }
 
-const Card: React.FC<CardProps> = ({ children, className = '' }) => (
-  <div className={`bg-white rounded-xl shadow-sm p-6 ${className}`}>
+const Card: React.FC<CardProps> = ({ children, className = '', padding = 'p-6' }) => (
+  <div className={`bg-white rounded-xl shadow-sm ${padding} ${className}`}>
     {children}
   </div>
 );
