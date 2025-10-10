@@ -238,6 +238,7 @@ const DietVersionExportControls: React.FC<{
               },
               company: {
                 logoUrl: "/logoName.png",
+                logoheader: "/logoHeader.png",
                 name: "Avante Nutri",
                 contact: "souzacawanne@gmail.com",
                 address: "Online",

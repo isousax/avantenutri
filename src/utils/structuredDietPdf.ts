@@ -101,6 +101,7 @@ interface ExportPdfOptions extends DietExportOptions {
   };
   company?: {
     logoUrl?: string;
+    logoheader?: string;
     name?: string;
     contact?: string;
     address?: string;
@@ -348,28 +349,35 @@ export async function exportDietPdf(
 
   // Carregar logo da empresa
   let companyLogo: string | null = null;
+  let companyLogoHeader: string | null = null;
   if (company?.logoUrl) {
     try {
       emit("carregando-logo");
       companyLogo = await loadImageAsBase64(company.logoUrl);
+      if (company.logoheader) {
+        companyLogoHeader = await loadImageAsBase64(company.logoheader);
+      }
     } catch (error) {
       console.warn("Não foi possível carregar o logo:", error);
     }
   }
 
-  // Função para adicionar header
+  // Função para adicionar Header
   const addHeader = (pageNumber: number) => {
     const totalPages = pdf.getNumberOfPages();
 
-    // Header mais clean
     const headerH = 14;
     pdf.setFillColor(colors.light[0], colors.light[1], colors.light[2]);
     pdf.rect(0, 0, pageWidth, headerH, "F");
 
-    if (companyLogo) {
-      // Ajustar logo para caber no header
+    if (companyLogoHeader) {
+      const logoH = 6;
+      const logoY = 4;
+      const logoW = 23;
+      pdf.addImage(companyLogoHeader, "PNG", marginMm, logoY, logoW, logoH);
+    } else if (companyLogo) {
       const logoH = 11;
-      const logoY = 3; // Centrando dentro do header de 14mm
+      const logoY = 3;
       const logoW = 15;
       pdf.addImage(companyLogo, "PNG", marginMm, logoY, logoW, logoH);
     } else if (company?.name) {
@@ -905,87 +913,110 @@ export async function exportDietPdf(
   // Página de resumo nutricional (nova)
   if (data.total) {
     pdf.addPage();
-    drawWatermarkOnPage();
-    currentY = marginMm + 5;
+  drawWatermarkOnPage();
+  currentY = marginMm + 5;
 
-    // Título do resumo
-    pdf.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    pdf.rect(marginMm, currentY, pageWidth - marginMm * 2, 10, "F");
+  // Título das recomendações
+  pdf.setFillColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+  pdf.rect(marginMm, currentY, pageWidth - marginMm * 2, 10, "F");
 
-    pdf.setFontSize(12);
-    pdf.setTextColor(255, 255, 255);
-    pdf.setFont("helvetica", "bold");
-    pdf.text("RESUMO NUTRICIONAL TOTAL", marginMm + 8, currentY + 6.5);
+  pdf.setFontSize(12);
+  pdf.setTextColor(255, 255, 255);
+  pdf.setFont("helvetica", "bold");
+  pdf.text("RECOMENDAÇÕES GERAIS E NUTRICIONAIS", marginMm + 8, currentY + 6.5);
 
-    currentY += 15;
+  currentY += 15;
 
-    // Card de totais
-    const total = data.total;
-    pdf.setFillColor(colors.light[0], colors.light[1], colors.light[2]);
-    pdf.rect(marginMm, currentY, pageWidth - marginMm * 2, 40, "F");
-    pdf.setDrawColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    pdf.rect(marginMm, currentY, pageWidth - marginMm * 2, 40, "S");
+  // Conteúdo das recomendações
+  const recommendations = [
+  {
+    title: "1. HIGIENIZAÇÃO DE FRUTAS, VERDURAS E HORTALIÇAS",
+    content:
+      "Utilizar preferencialmente produto específico para higienização de alimentos ou água sanitária sem fragrância, seguindo as instruções do fabricante. Como referência: diluir 1 colher de sopa (~15 mL) de água sanitária em 1 L de água, deixar de molho por ~15 minutos e enxaguar em água corrente. Verificar sempre o rótulo do fabricante."
+  },
+  {
+    title: "2. PREFERÊNCIAS E SUBSTITUIÇÕES DE ALIMENTOS",
+    content: [
+      "Substituir, quando possível, óleo de soja por azeite extra-virgem, canola ou girassol.",
+      "Prefira açúcar mascavo ou demerara no lugar do refinado. Em caso de diabetes, utilizar adoçantes conforme orientação médica (ex.: sucralose, aspartame, esteviol glicosídeos, acessulfame K).",
+      "Escolher produtos lácteos desnatados ou semidesnatados de boa procedência.",
+      "Optar por molho de tomate caseiro e temperos naturais.",
+      "Preferir preparações grelhadas, assadas ou cozidas, evitando excesso de gordura."
+    ]
+  },
+  {
+    title: "3. EVITAR O CONSUMO",
+    content: [
+      "Alimentos com alto teor de gordura (especialmente gorduras saturadas e trans).",
+      "Produtos ultraprocessados: refrigerantes, sorvetes, biscoitos industrializados, embutidos (linguiça, mortadela, presunto, salame).",
+      "Bebidas alcoólicas.",
+      "Excesso de doces e salgados."
+    ]
+  },
+  {
+    title: "4. ORIENTAÇÕES GERAIS",
+    content: [
+      "Fazer as refeições em locais tranquilos, longe de TV e celular; concentre-se ao alimentar-se.",
+      "Mastigar devagar e saborear os alimentos.",
+      "Evitar líquidos durante as refeições; preferir ingestão de água 1h–1h30 antes ou depois.",
+      "Consumir, no mínimo, 2 litros de água por dia (ajustar conforme orientação profissional).",
+      "Escolher frutas e verduras de cores variadas para obter diferentes vitaminas e antioxidantes.",
+      "Consumir frutas diariamente; atenção com frutas de alto índice glicêmico em jejum (ajustar conforme caso clínico).",
+      "Incluir salada no almoço diariamente e, sempre que possível, no jantar.",
+      "Quando comer fora, optar por carnes magras e preparações semelhantes às sugeridas no plano."
+    ]
+  }
+];
 
-    pdf.setFontSize(16);
-    pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
-    pdf.setFont("helvetica", "bold");
-    pdf.text(
-      `${Math.round(total.calorias)} kcal`,
-      pageWidth / 2,
-      currentY + 12,
-      { align: "center" }
-    );
 
+  pdf.setFont("helvetica", "normal");
+  pdf.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
+
+  recommendations.forEach((rec) => {
+    // Verificar se precisa de nova página
+    if (currentY > pageHeight - marginMm - 50) {
+      pdf.addPage();
+      drawWatermarkOnPage();
+      currentY = marginMm + 5;
+    }
+
+    // Título da seção
     pdf.setFontSize(10);
-    pdf.setTextColor(100, 100, 100);
-    pdf.text("Total de Calorias", pageWidth / 2, currentY + 17, {
-      align: "center",
+    pdf.setFont("helvetica", "bold");
+    const titleLines = pdf.splitTextToSize(rec.title, pageWidth - marginMm * 2 - 10);
+    titleLines.forEach((line: string) => {
+      pdf.text(line, marginMm + 5, currentY);
+      currentY += 5;
     });
 
-    currentY += 25;
+    // Conteúdo
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(9);
 
-    // Macros em colunas
-    const colWidth = (pageWidth - marginMm * 2) / 3;
-    const macros = [
-      {
-        label: "Proteínas",
-        value: total.proteina,
-        unit: "g",
-        color: colors.primary,
-      },
-      {
-        label: "Carboidratos",
-        value: total.carboidratos,
-        unit: "g",
-        color: colors.secondary,
-      },
-      {
-        label: "Gorduras",
-        value: total.gordura,
-        unit: "g",
-        color: colors.accent,
-      },
-    ];
-
-    macros.forEach((macro, index) => {
-      const x = marginMm + colWidth * index;
-
-      pdf.setFontSize(12);
-      pdf.setTextColor(macro.color[0], macro.color[1], macro.color[2]);
-      pdf.setFont("helvetica", "bold");
-      pdf.text(
-        `${macro.value.toFixed(1)}${macro.unit}`,
-        x + colWidth / 2,
-        currentY,
-        { align: "center" }
-      );
-
-      pdf.setFontSize(9);
-      pdf.setTextColor(100, 100, 100);
-      pdf.text(macro.label, x + colWidth / 2, currentY + 5, {
-        align: "center",
+    let contentLines: string[] = [];
+    if (typeof rec.content === "string") {
+      contentLines = pdf.splitTextToSize(rec.content, pageWidth - marginMm * 2 - 10);
+    } else {
+      // Se for array, processar cada item
+      rec.content.forEach(item => {
+        const itemLines = pdf.splitTextToSize(item, pageWidth - marginMm * 2 - 10);
+        contentLines = contentLines.concat(itemLines);
       });
+    }
+
+    contentLines.forEach((line: string) => {
+      // Verificar se precisa de nova página durante o conteúdo
+      if (currentY > pageHeight - marginMm - 10) {
+        pdf.addPage();
+        drawWatermarkOnPage();
+        currentY = marginMm + 5;
+      }
+      pdf.text(line, marginMm + 5, currentY);
+      currentY += 4.5;
     });
+
+    currentY += 8; // Espaço entre seções
+  });
   }
 
   // Adicionar headers e footers em todas as páginas
