@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useCallback } from "react";
 import { useAuthenticatedFetch } from "./useApi";
 import { API } from "../config/api";
 import type { StructuredDietData } from "../types/structuredDiet";
@@ -51,6 +52,8 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
       }
 
       const url = params.toString() ? `${endpoint}?${params}` : endpoint;
+  // debug: detalhe GET
+  // console.debug('[diet-plan-detail] GET', url);
   const response = await authenticatedFetch(url);
   let data;
   try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor"); }
@@ -64,28 +67,28 @@ export const useDietPlansQuery = (options: { archived?: boolean } = {}) => {
 };
 
 // Query para buscar detalhes de um plano específico
-export const useDietPlanDetailQuery = (planId: string, includeData = false) => {
+export const useDietPlanDetailQuery = (planId: string) => {
   const authenticatedFetch = useAuthenticatedFetch();
 
   return useQuery({
-    queryKey: ["diet-plan-detail", planId, includeData],
+    queryKey: ["diet-plan-detail", planId],
     queryFn: async (): Promise<DietPlanDetail> => {
       const endpoint = API.DIET_PLANS;
       const params = new URLSearchParams();
-      if (includeData) {
-        params.append("include_data", "true");
-      }
+      params.append("includeData", "1");
 
       const url = params.toString()
         ? `${endpoint}/${planId}?${params}`
         : `${endpoint}/${planId}`;
+  // debug: getDetail fetch
+  // console.debug('[getDetail] fetch', url);
   const response = await authenticatedFetch(url);
   let data;
   try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor"); }
   if (!response.ok) throw new Error(data.error || "Falha ao carregar detalhes do plano");
   return data.plan;
     },
-    enabled: !!planId, // Removemos a verificação de permissão do enabled
+    enabled: !!planId,
     staleTime: 10 * 60 * 1000, // 10 minutos
     refetchOnWindowFocus: false,
   });
@@ -206,26 +209,17 @@ export const useDietPlans = () => {
     },
     onMutate: async (vars) => {
       await queryClient.cancelQueries({
-        queryKey: ["diet-plan-detail", vars.planId, false],
+        queryKey: ["diet-plan-detail", vars.planId],
       });
-      await queryClient.cancelQueries({
-        queryKey: ["diet-plan-detail", vars.planId, true],
-      });
-      const prevDetailFalse = queryClient.getQueryData<DietPlanDetail>([
+      const prevDetail = queryClient.getQueryData<DietPlanDetail>([
         "diet-plan-detail",
         vars.planId,
-        false,
       ]);
-      const prevDetailTrue = queryClient.getQueryData<DietPlanDetail>([
-        "diet-plan-detail",
-        vars.planId,
-        true,
-      ]);
-      const base = prevDetailTrue || prevDetailFalse;
+      const base = prevDetail;
       if (base) {
         const optimisticVersion: DietPlanVersion = {
           id: "temp-rev-" + Date.now(),
-          version_number: (base.versions[0]?.version_number || 0) + 1,
+          version_number: (base.versions[base.versions.length-1]?.version_number || 0) + 1,
           generated_by: "you",
           created_at: new Date().toISOString(),
           notes: vars.notes || "Revisão em andamento...",
@@ -233,32 +227,23 @@ export const useDietPlans = () => {
         };
         const updated: DietPlanDetail = {
           ...base,
-          // assumindo ordem desc (mais recente primeiro)
-          versions: [optimisticVersion, ...base.versions],
+          // ordem crescente: anexar no final como mais recente
+          versions: [...base.versions, optimisticVersion],
           current_version_id: optimisticVersion.id,
           updated_at: new Date().toISOString(),
         };
         queryClient.setQueryData(
-          ["diet-plan-detail", vars.planId, false],
-          updated
-        );
-        queryClient.setQueryData(
-          ["diet-plan-detail", vars.planId, true],
+          ["diet-plan-detail", vars.planId],
           updated
         );
       }
-      return { prevDetailFalse, prevDetailTrue };
+      return { prevDetail };
     },
     onError: (_err, vars, ctx) => {
-      if (ctx?.prevDetailFalse)
+      if (ctx?.prevDetail)
         queryClient.setQueryData(
-          ["diet-plan-detail", vars.planId, false],
-          ctx.prevDetailFalse
-        );
-      if (ctx?.prevDetailTrue)
-        queryClient.setQueryData(
-          ["diet-plan-detail", vars.planId, true],
-          ctx.prevDetailTrue
+          ["diet-plan-detail", vars.planId],
+          ctx.prevDetail
         );
     },
     onSuccess: (_, variables) => {
@@ -269,44 +254,35 @@ export const useDietPlans = () => {
     },
     onSettled: (_data, _err, vars) => {
       queryClient.invalidateQueries({
-        queryKey: ["diet-plan-detail", vars.planId, false],
-      });
-      queryClient.invalidateQueries({
-        queryKey: ["diet-plan-detail", vars.planId, true],
+        queryKey: ["diet-plan-detail", vars.planId],
       });
     },
   });
 
   // Função para buscar detalhes de um plano específico
-  const getDetail = async (planId: string, includeData = false) => {
-    const queryKey = ["diet-plan-detail", planId, includeData];
-    const cached = queryClient.getQueryData(queryKey);
-
-    if (cached) {
-      return cached;
-    }
-
+  const getDetail = useCallback(async (planId: string) => {
+    const queryKey = ["diet-plan-detail", planId] as const;
     return await queryClient.fetchQuery({
       queryKey,
       queryFn: async () => {
         const endpoint = API.DIET_PLANS;
         const params = new URLSearchParams();
-        if (includeData) {
-          params.append("include_data", "true");
-        }
+        params.append("includeData", "1");
 
         const url = params.toString()
           ? `${endpoint}/${planId}?${params}`
           : `${endpoint}/${planId}`;
-  const response = await authenticatedFetch(url);
-  let data;
-  try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor"); }
-  if (!response.ok) throw new Error(data.error || "Falha ao carregar detalhes do plano");
-  return data.plan;
+        // debug: getDetail fetch
+        // console.debug('[getDetail] fetch', url);
+        const response = await authenticatedFetch(url);
+        let data;
+        try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor"); }
+        if (!response.ok) throw new Error(data.error || "Falha ao carregar detalhes do plano");
+        return data.plan;
       },
       staleTime: 10 * 60 * 1000,
     });
-  };
+  }, [queryClient, authenticatedFetch]);
 
   return {
     plans: plansQuery.data || [],
@@ -336,7 +312,9 @@ export function prefetchDietPlans(
   qc.prefetchQuery({
     queryKey: ["diet-plans", options],
     queryFn: async () => {
-      const r = await fetcher(url);
+  // debug: prefetch detalhe
+  // console.debug('[prefetchDietPlanDetail] GET', url);
+  const r = await fetcher(url);
       const data = await r.json();
       if (!r.ok)
         throw new Error(data.error || "Falha ao carregar planos de dieta");
@@ -349,18 +327,17 @@ export function prefetchDietPlans(
 export function prefetchDietPlanDetail(
   qc: ReturnType<typeof useQueryClient>,
   fetcher: (input: RequestInfo, init?: RequestInit) => Promise<Response>,
-  planId: string,
-  includeData = false
+  planId: string
 ) {
   if (!planId) return;
   const endpoint = API.DIET_PLANS;
   const params = new URLSearchParams();
-  if (includeData) params.append("include_data", "true");
+  params.append("includeData", "1");
   const url = params.toString()
     ? `${endpoint}/${planId}?${params}`
     : `${endpoint}/${planId}`;
   qc.prefetchQuery({
-    queryKey: ["diet-plan-detail", planId, includeData],
+    queryKey: ["diet-plan-detail", planId],
     queryFn: async () => {
       const r = await fetcher(url);
       const data = await r.json();

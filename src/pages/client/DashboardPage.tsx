@@ -5,14 +5,9 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import StatsCard from "../../components/StatsCard";
 import StructuredDietBuilder from "../../components/diet/StructuredDietBuilder";
-import StructuredDietView from "../../components/diet/StructuredDietView";
-import {
-  downloadDietJson,
-  printDiet,
-  copyDietJson,
-  copyDietHtml,
-} from "../../utils/structuredDietExport";
-import { exportDietPdf } from "../../utils/structuredDietPdf";
+import DietPlanDetailContent from "../../components/diet/DietPlanDetailContent";
+// export minimal apenas PDF
+// import { downloadDietJson, printDiet, copyDietJson, copyDietHtml } from "../../utils/structuredDietExport";
 import ErrorBoundary from "../../components/ui/ErrorBoundary";
 import Tooltip from "../../components/ui/Tooltip";
 import NotificationBellReal from "../../components/NotificationBellReal";
@@ -41,15 +36,13 @@ import { useWeightData } from "../../hooks/useWeightData"; // mantido para Weigh
 import type { StructuredDietData } from "../../types/structuredDiet";
 import { colorForWeightDiff, inferWeightObjective, WEIGHT_TOLERANCE_KG } from "../../utils/weightObjective";
 import { useDietPlans } from "../../hooks/useDietPlans";
-import type { DietPlanDetail, DietPlanVersion } from "../../hooks/useDietPlans";
+import type { DietPlanDetail } from "../../hooks/useDietPlans";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useQueryClient } from "@tanstack/react-query";
 import Prefetch, { logPrefetchMetrics } from "../../utils/prefetch";
 import { shouldShowSkeleton } from "../../utils/loadingHelpers";
 import { useIntersectionPrefetch } from "../../hooks/useIntersectionPrefetch";
-import { API } from "../../config/api";
 import { useWaterLogsInteligente } from "../../hooks/useWaterLogsInteligente";
-import type { PdfDietData } from "../../hooks/useDietPlansOptimized";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -182,181 +175,7 @@ const DietPlanCard: React.FC<{
   );
 };
 
-// Export controls for structured diet versions (user dashboard)
-const DietVersionExportControls: React.FC<{ data: StructuredDietData; version: number }> = ({
-  data,
-  version,
-}) => {
-  const [showAlternatives, setShowAlternatives] = useState(true);
-  const [exporting, setExporting] = useState(false);
-  const [phase, setPhase] = useState("");
-  const [optOpen, setOptOpen] = useState(false);
-  const [includeCover, setIncludeCover] = useState(true);
-  const [includeTotals, setIncludeTotals] = useState(true);
-  const [wmRepeat, setWmRepeat] = useState(true);
-  const [wmOpacity, setWmOpacity] = useState(0.08);
-  const [includeQr, setIncludeQr] = useState(false);
-  return (
-    <div className="flex gap-2 flex-wrap text-[10px] items-center">
-      <button
-        type="button"
-        className="px-2 py-1 bg-emerald-600 text-white rounded"
-        onClick={() => downloadDietJson(data, `dieta_v${version}.json`)}
-      >
-        JSON
-      </button>
-      <button
-        type="button"
-        className="px-2 py-1 bg-blue-600 text-white rounded"
-        onClick={() =>
-          printDiet(data, `Dieta v${version}`, { showAlternatives })
-        }
-      >
-        Imprimir
-      </button>
-      <button
-        type="button"
-        disabled={exporting}
-        className={`px-2 py-1 rounded text-white ${
-          exporting
-            ? "bg-indigo-400 cursor-wait"
-            : "bg-indigo-600 hover:bg-indigo-700"
-        }`}
-        onClick={async () => {
-          if (exporting) return;
-          setExporting(true);
-          setPhase("preparando");
-          try {
-            await exportDietPdf(data, {
-              filename: `dieta_v${version}.pdf`,
-              title: `Dieta v${version}`,
-              showAlternatives,
-              headerText: "Plano Nutricional",
-              footerText: "AvanteNutri - Uso Pessoal",
-              watermarkText: "AvanteNutri",
-              watermarkRepeat: wmRepeat,
-              watermarkOpacity: wmOpacity,
-              cover: includeCover
-                ? {
-                    title: `Plano Nutricional v${version}`,
-                    subtitle: "Uso Pessoal",
-                    showTotals: includeTotals,
-                    notes: "",
-                    date: new Date(),
-                    qrUrl: includeQr
-                      ? location.origin + "/dashboard"
-                      : undefined,
-                  }
-                : undefined,
-              phaseLabels: {
-                prepare: "Preparando",
-                render: "Renderizando",
-                cover: "Capa",
-                paginate: "Paginando",
-                finalize: "Finalizando",
-                done: "Concluído",
-              },
-              onProgress: (p) => setPhase(p),
-            });
-          } catch (e) {
-            console.error(e);
-            alert("Falha ao gerar PDF");
-          } finally {
-            setExporting(false);
-            setPhase("");
-          }
-        }}
-      >
-        {exporting ? `Gerando (${phase})...` : "PDF Direto"}
-      </button>
-      <button
-        type="button"
-        className="px-2 py-1 bg-amber-600 text-white rounded"
-        onClick={() => copyDietJson(data)}
-      >
-        Copiar JSON
-      </button>
-      <button
-        type="button"
-        className="px-2 py-1 bg-amber-700 text-white rounded"
-        onClick={() =>
-          copyDietHtml(data, `Dieta v${version}`, { showAlternatives })
-        }
-      >
-        Copiar HTML
-      </button>
-      <label className="flex items-center gap-1 cursor-pointer select-none ml-1">
-        <input
-          type="checkbox"
-          checked={showAlternatives}
-          onChange={(e) => setShowAlternatives(e.target.checked)}
-        />{" "}
-        Alt
-      </label>
-      <button
-        type="button"
-        className="px-2 py-1 bg-gray-500 text-white rounded"
-        onClick={() => setOptOpen((o) => !o)}
-      >
-        {optOpen ? "Fechar" : "Opções"}
-      </button>
-      {optOpen && (
-        <div className="basis-full mt-2 p-2 border rounded bg-gray-50 space-y-2">
-          <div className="flex flex-wrap gap-4">
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={includeCover}
-                onChange={(e) => setIncludeCover(e.target.checked)}
-              />{" "}
-              Capa
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={includeTotals}
-                disabled={!includeCover}
-                onChange={(e) => setIncludeTotals(e.target.checked)}
-              />{" "}
-              Totais
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={wmRepeat}
-                onChange={(e) => setWmRepeat(e.target.checked)}
-              />{" "}
-              Repetir WM
-            </label>
-            <label className="flex items-center gap-1">
-              <input
-                type="checkbox"
-                checked={includeQr}
-                onChange={(e) => setIncludeQr(e.target.checked)}
-              />{" "}
-              QR
-            </label>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[10px]">Opacidade WM</span>
-            <input
-              type="range"
-              min={0.02}
-              max={0.3}
-              step={0.01}
-              value={wmOpacity}
-              onChange={(e) => setWmOpacity(parseFloat(e.target.value))}
-            />
-            <span className="text-[10px]">{wmOpacity.toFixed(2)}</span>
-          </div>
-          <p className="text-gray-500 text-[10px]">
-            Ajustes aplicados ao PDF Direto.
-          </p>
-        </div>
-      )}
-    </div>
-  );
-};
+// (removido) DietVersionExportControls agora está no componente extraído
 
 // Modern Bottom Navigation
 type BottomTabId = "overview" | "dietas" | "consultas" | "perfil" | "suporte";
@@ -686,7 +505,6 @@ const DashboardPage: React.FC = () => {
   const [structuredData, setStructuredData] = useState<StructuredDietData | null>(null);
   const [selectedPlanId, setSelectedPlanId] = useState<string | null>(null);
   const [showDetail, setShowDetail] = useState(false);
-  const [includeData, setIncludeData] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailJson, setDetailJson] = useState<DietPlanDetail | null>(null);
 
@@ -695,13 +513,22 @@ const DashboardPage: React.FC = () => {
   const openDetail = async (id: string) => {
     setSelectedPlanId(id);
     setShowDetail(true);
-    setDetailLoading(true);
-    const d = await getDetail(id, includeData);
-    if (d && includeData) {
-      setDetailJson(d);
-    }
-    setDetailLoading(false);
   };
+
+  // Busca detalhes quando a modal abre (ou muda de plano)
+  useEffect(() => {
+    (async () => {
+      if (!showDetail || !selectedPlanId) return;
+      setDetailLoading(true);
+      try {
+  await qc.invalidateQueries({ queryKey: ["diet-plan-detail", selectedPlanId] });
+  const d = await getDetail(selectedPlanId);
+        if (d) setDetailJson(d as DietPlanDetail);
+      } finally {
+        setDetailLoading(false);
+      }
+    })();
+  }, [showDetail, selectedPlanId, getDetail, qc]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1398,22 +1225,8 @@ const DashboardPage: React.FC = () => {
                         data-plan-id={p.id}
                         onMouseEnter={() => {
                           const ctx = { qc, fetcher: fetch } as const;
-                          // Basic detail (metadata & versions list)
+                          // Sempre prefetch com includeData=1
                           Prefetch.dietPlanDetail(ctx, p.id);
-                          // Schedule deep detail (includeData) after sustained hover if not already cached
-                          if (
-                            !qc.getQueryState(["diet-plan-detail", p.id, true])
-                          ) {
-                            if (dietHoverTimers.current[p.id])
-                              clearTimeout(dietHoverTimers.current[p.id]);
-                            dietHoverTimers.current[p.id] = window.setTimeout(
-                              () => {
-                                Prefetch.dietPlanDetail(ctx, p.id, true);
-                                delete dietHoverTimers.current[p.id];
-                              },
-                              700
-                            );
-                          }
                         }}
                         onMouseLeave={() => {
                           if (dietHoverTimers.current[p.id]) {
@@ -1562,19 +1375,6 @@ const DashboardPage: React.FC = () => {
                       onMouseEnter={() => {
                         const ctx = { qc, fetcher: fetch } as const;
                         Prefetch.dietPlanDetail(ctx, diet.id);
-                        if (
-                          !qc.getQueryState(["diet-plan-detail", diet.id, true])
-                        ) {
-                          if (dietHoverTimers.current[diet.id])
-                            clearTimeout(dietHoverTimers.current[diet.id]);
-                          dietHoverTimers.current[diet.id] = window.setTimeout(
-                            () => {
-                              Prefetch.dietPlanDetail(ctx, diet.id, true);
-                              delete dietHoverTimers.current[diet.id];
-                            },
-                            700
-                          );
-                        }
                       }}
                       onMouseLeave={() => {
                         if (dietHoverTimers.current[diet.id]) {
@@ -1746,52 +1546,19 @@ const DashboardPage: React.FC = () => {
                   ✕
                 </button>
               </div>
-              <div className="flex items-center gap-2 text-xs">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={includeData}
-                    onChange={async (e) => {
-                      setIncludeData(e.target.checked);
-                      if (selectedPlanId) {
-                        setDetailLoading(true);
-                        const d = await getDetail(
-                          selectedPlanId,
-                          e.target.checked
-                        );
-                        if (d && e.target.checked) setDetailJson(d);
-                        setDetailLoading(false);
-                      }
-                    }}
-                  />
-                  Incluir dados completos
-                </label>
-                <button
-                  className="text-green-700 text-xs underline"
-                  onClick={async () =>
-                    selectedPlanId && openDetail(selectedPlanId)
-                  }
-                >
-                  Recarregar
-                </button>
-              </div>
+              {/* Controles removidos: sempre buscamos com includeData=1 */}
               {detailLoading && (
                 <div className="text-sm text-gray-500 text-center py-4">
                   Carregando detalhes...
                 </div>
               )}
               {!detailLoading && selectedPlanId && (
-                <DetailContent
-                  includeData={includeData}
+                <DietPlanDetailContent
                   detailJson={detailJson}
                   canEdit={canEditDiets}
                   onRevise={async (notes) => {
                     try {
-                      await revise({
-                        planId: selectedPlanId,
-                        notes,
-                        includeData,
-                      });
+                      await revise({ planId: selectedPlanId, notes });
                       await openDetail(selectedPlanId);
                     } catch (err) {
                       console.error(err);
@@ -1809,224 +1576,5 @@ const DashboardPage: React.FC = () => {
   );
 };
 
-interface DetailContentProps {
-  includeData: boolean;
-  detailJson: DietPlanDetail | null;
-  canEdit: boolean;
-  onRevise: (notes: string) => Promise<void>;
-  revising: boolean;
-  locale: Locale;
-}
-const DetailContent: React.FC<DetailContentProps> = ({
-  includeData,
-  detailJson,
-  canEdit,
-  onRevise,
-  revising,
-  locale,
-}) => {
-  const isPdfData = (d: unknown): d is PdfDietData => {
-    return (
-      typeof d === "object" &&
-      d !== null &&
-      "format" in d &&
-      (d as { format?: unknown }).format === "pdf"
-    );
-  };
-  const isStructuredDietData = (d: unknown): d is StructuredDietData => {
-    return (
-      typeof d === "object" &&
-      d !== null &&
-      "versao" in d &&
-      (d as { versao?: unknown }).versao === 1 &&
-      "meals" in d &&
-      Array.isArray((d as { meals?: unknown }).meals)
-    );
-  };
-  const cached = detailJson;
-  if (!cached) return <div className="text-sm text-gray-500">Sem dados.</div>;
-
-  return (
-    <div className="space-y-4">
-      <div>
-        <h3 className="font-semibold text-lg">{cached.name}</h3>
-        <p className="text-sm text-gray-600">
-          {cached.description || "Sem descrição"}
-        </p>
-        <p className="text-xs text-gray-400">
-          Criado em{" "}
-          {fmtDate(cached.created_at, locale, {
-            dateStyle: "short",
-            timeStyle: "short",
-          })}
-        </p>
-      </div>
-      <div>
-        <h4 className="font-semibold mb-2">Versões</h4>
-        <div className="max-h-64 overflow-y-auto border rounded divide-y bg-white/50">
-          {cached.versions.map((v: DietPlanVersion, idx: number) => {
-            const isTemp = String(v.id).startsWith("temp-rev-");
-            const pdf = isPdfData(v.data) ? v.data : null;
-            const structured = isStructuredDietData(v.data) ? v.data : null;
-            return (
-              <div
-                key={v.id}
-                className={`p-2 text-xs space-y-1 ${
-                  isTemp ? "opacity-70 animate-pulse" : ""
-                }`}
-              >
-                <div className="flex justify-between items-center gap-2">
-                  <span className="flex items-center gap-2">
-                    v{v.version_number}
-                    {idx === 0 && (
-                      <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">
-                        Mais Recente
-                      </span>
-                    )}
-                    {isTemp && (
-                      <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">
-                        Sincronizando...
-                      </span>
-                    )}
-                  </span>
-                  <span>
-                    {fmtDate(v.created_at, locale, {
-                      dateStyle: "short",
-                    })}
-                  </span>
-                </div>
-                {v.notes && (
-                  <div className="text-gray-500 italic">{v.notes}</div>
-                )}
-                {includeData && pdf && (pdf.file?.base64 || pdf.file?.key) && (
-                    <div>
-                      <button
-                        type="button"
-                        className="text-[11px] text-blue-600 underline"
-                        onClick={() => {
-                          if (pdf?.file?.key && cached?.id) {
-                            const url = `${API.API_AUTH_BASE}/diet/plans/${cached.id}/version/${v.id}/file`;
-                            fetch(url, {
-                              headers: {
-                                authorization: localStorage.getItem(
-                                  "access_token"
-                                )
-                                  ? `Bearer ${localStorage.getItem(
-                                      "access_token"
-                                    )}`
-                                  : "",
-                              },
-                            })
-                              .then(async (r) => {
-                                if (!r.ok) throw new Error("HTTP " + r.status);
-                                const blob = await r.blob();
-                                const dlUrl = URL.createObjectURL(blob);
-                                const a = document.createElement("a");
-                                a.href = dlUrl;
-                                a.download =
-                                  pdf.file?.name ||
-                                  `plano_v${v.version_number}.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                a.remove();
-                                setTimeout(
-                                  () => URL.revokeObjectURL(dlUrl),
-                                  1500
-                                );
-                              })
-                              .catch((err) => {
-                                console.error(err);
-                                alert("Falha ao baixar PDF");
-                              });
-                            return;
-                          }
-                          if (pdf?.file?.base64) {
-                            try {
-                              const base64 = pdf.file.base64 as string;
-                              const byteStr = atob(base64);
-                              const bytes = new Uint8Array(byteStr.length);
-                              for (let i = 0; i < byteStr.length; i++)
-                                bytes[i] = byteStr.charCodeAt(i);
-                              const blob = new Blob([bytes], {
-                                type: "application/pdf",
-                              });
-                              const url = URL.createObjectURL(blob);
-                              const a = document.createElement("a");
-                              a.href = url;
-                              a.download =
-                                pdf.file?.name ||
-                                `plano_v${v.version_number}.pdf`;
-                              document.body.appendChild(a);
-                              a.click();
-                              a.remove();
-                              setTimeout(() => URL.revokeObjectURL(url), 1500);
-                            } catch (err) {
-                              console.error(err);
-                              alert("Falha ao gerar download do PDF");
-                            }
-                          }
-                        }}
-                      >
-                        Baixar PDF
-                      </button>
-                    </div>
-                  )}
-                {includeData && structured ? (
-                    <div className="mt-2 space-y-1">
-                      <StructuredDietView data={structured} compact />
-                      <DietVersionExportControls
-                        data={structured}
-                        version={v.version_number}
-                      />
-                    </div>
-                  ) : includeData && v.data ? (
-                    <pre className="mt-1 bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">
-                      {JSON.stringify(v.data, null, 2)}
-                    </pre>
-                  ) : null}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-      {canEdit && <RevisionForm revising={revising} onSubmit={onRevise} />}
-    </div>
-  );
-};
-
-const RevisionForm: React.FC<{
-  revising: boolean;
-  onSubmit: (notes: string) => Promise<void>;
-}> = ({ revising, onSubmit }) => {
-  const [notes, setNotes] = useState("");
-  return (
-    <form
-      className="space-y-2 border-t pt-4"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        await onSubmit(notes);
-        setNotes("");
-      }}
-    >
-      <h4 className="font-semibold">Nova Revisão</h4>
-      <div>
-        <label className="block text-xs font-medium mb-1">
-          Notas da Revisão
-        </label>
-        <textarea
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          className="w-full border rounded px-2 py-1 text-xs h-16 resize-none"
-          placeholder="Notas da revisão"
-        />
-      </div>
-      <div className="flex justify-end gap-2">
-        <Button type="submit" disabled={revising}>
-          {revising ? "Revisando..." : "Aplicar Revisão"}
-        </Button>
-      </div>
-    </form>
-  );
-};
 
 export default DashboardPage;

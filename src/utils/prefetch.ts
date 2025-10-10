@@ -27,7 +27,7 @@ function shouldRun(key: string) {
 }
 
 // Verifica se já existe dado (cache hit) - se sim, pula prefetch para economizar rede
-function isCached(qc: QueryClient, key: any[], metricsKey?: string): boolean {
+function isCached(qc: QueryClient, key: unknown[], metricsKey?: string): boolean {
   const cached = qc.getQueryState(key) != null;
   if (cached && metricsKey) markCache(metricsKey);
   return cached; // basta ter state (mesmo stale) para não forçar prefetch imediato
@@ -58,11 +58,11 @@ export const Prefetch = {
     if (!shouldRun(mk)) { markCooldown(mk); return; }
     if (!isCached(ctx.qc, ['diet-plans', {}], mk)) { prefetchDietPlans(ctx.qc, ctx.fetcher); markExec(mk); }
   },
-  dietPlanDetail(ctx: PrefetchCtx, id: string, includeData = false) {
-    if (!id) return; const mk = `dietPlanDetail:${id}:${includeData?'deep':'basic'}`; markAttempt(mk);
-    const key = ['diet-plan-detail', id, includeData];
+  dietPlanDetail(ctx: PrefetchCtx, id: string) {
+    if (!id) return; const mk = `dietPlanDetail:${id}:deep`; markAttempt(mk);
+    const key = ['diet-plan-detail', id];
     if (!shouldRun(key.join(':'))) { markCooldown(mk); return; }
-    if (!isCached(ctx.qc, key, mk)) { prefetchDietPlanDetail(ctx.qc, ctx.fetcher, id, includeData); markExec(mk); }
+    if (!isCached(ctx.qc, key, mk)) { prefetchDietPlanDetail(ctx.qc, ctx.fetcher, id); markExec(mk); }
   },
   notificacoes(ctx: PrefetchCtx) {
     const mk = 'notificacoes'; markAttempt(mk);
@@ -85,11 +85,11 @@ export const Prefetch = {
 };
 
 export function getPrefetchMetrics(){ return metrics; }
-export function logPrefetchMetrics(){ // eslint-disable-next-line no-console
+export function logPrefetchMetrics(){
   console.log('[Prefetch Metrics]', metrics);
 }
-if (typeof window !== 'undefined' && (import.meta as any).env?.DEV) {
-  (window as any).__PREFETCH_METRICS__ = metrics;
+if (typeof window !== 'undefined' && (import.meta as ImportMeta).env?.DEV) {
+  (window as unknown as { __PREFETCH_METRICS__?: PrefetchMetrics }).__PREFETCH_METRICS__ = metrics;
 }
 
 export default Prefetch;

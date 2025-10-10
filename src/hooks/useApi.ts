@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { useAuth } from '../contexts';
 import { API } from '../config/api';
 
@@ -6,7 +7,7 @@ import { API } from '../config/api';
 export const useAuthenticatedFetch = () => {
   const { getAccessToken } = useAuth();
 
-  const authenticatedFetch = async (endpoint: string, options: RequestInit = {}) => {
+  const authenticatedFetch = useCallback(async (endpoint: string, options: RequestInit = {}) => {
     const token = await getAccessToken();
     if (!token) {
       throw new Error('Token de acesso não disponível');
@@ -23,7 +24,7 @@ export const useAuthenticatedFetch = () => {
 
     // Não lançamos aqui; deixamos os hooks chamadores decidirem como tratar response.ok e parsing
     return response;
-  };
+  }, [getAccessToken]);
 
   return authenticatedFetch;
 };

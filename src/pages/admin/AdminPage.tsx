@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useMemo, useState } from "react";
 import Skeleton from "../../components/ui/Skeleton";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
@@ -51,6 +52,230 @@ interface PlanDetail {
   created_at: string;
 }
 
+/* --- Component: AdminVersionsSelector --- */
+const AdminVersionsSelector: React.FC<{
+  detail: PlanDetail;
+  onDownloadPdf: (planId: string, version: any) => void;
+  exportShowAlternatives: boolean;
+  setExportShowAlternatives: (v: boolean) => void;
+  pdfIncludeCover: boolean;
+  setPdfIncludeCover: (v: boolean) => void;
+  pdfIncludeTotalsOnCover: boolean;
+  setPdfIncludeTotalsOnCover: (v: boolean) => void;
+  pdfWatermarkRepeat: boolean;
+  setPdfWatermarkRepeat: (v: boolean) => void;
+  pdfWatermarkOpacity: number;
+  setPdfWatermarkOpacity: (v: number) => void;
+  pdfIncludeQr: boolean;
+  setPdfIncludeQr: (v: boolean) => void;
+  showPdfOptions: boolean;
+  setShowPdfOptions: (v: boolean) => void;
+  pdfExportingVersion: string | null;
+  setPdfExportingVersion: (id: string | null) => void;
+  pdfExportPhase: string;
+  setPdfExportPhase: (s: string) => void;
+}> = ({
+  detail,
+  onDownloadPdf,
+  exportShowAlternatives,
+  setExportShowAlternatives,
+  pdfIncludeCover,
+  setPdfIncludeCover,
+  pdfIncludeTotalsOnCover,
+  setPdfIncludeTotalsOnCover,
+  pdfWatermarkRepeat,
+  setPdfWatermarkRepeat,
+  pdfWatermarkOpacity,
+  setPdfWatermarkOpacity,
+  pdfIncludeQr,
+  setPdfIncludeQr,
+  showPdfOptions,
+  setShowPdfOptions,
+  pdfExportingVersion,
+  setPdfExportingVersion,
+  pdfExportPhase,
+  setPdfExportPhase,
+}) => {
+  const [selectedId, setSelectedId] = useState<string | null>(
+    detail.versions.length ? detail.versions[detail.versions.length - 1].id : null
+  );
+
+  // Atualiza seleção quando mudar o detalhe
+  useEffect(() => {
+    setSelectedId(detail.versions.length ? detail.versions[detail.versions.length - 1].id : null);
+  }, [detail.id, detail.versions]);
+
+  const sel = detail.versions.find((v) => v.id === selectedId) || detail.versions[detail.versions.length - 1];
+
+  return (
+    <div>
+      {/* Pills */}
+      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        {detail.versions.map((v: any, idx: number) => {
+          const lastId = detail.versions[detail.versions.length - 1]?.id;
+          const active = (selectedId ?? lastId) === v.id;
+          const isTemp = String(v.id).startsWith("temp-rev-");
+          return (
+            <button
+              key={v.id}
+              onClick={() => setSelectedId(v.id)}
+              className={`flex-none px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors whitespace-nowrap ${
+                active ? "bg-green-600 text-white border-green-600" : "bg-white text-gray-700 border-gray-200 hover:border-gray-300"
+              }`}
+              title={fmtDate(v.created_at, "pt", { dateStyle: "short" })}
+            >
+              v{v.version_number}
+              {idx === detail.versions.length - 1 && (
+                <span className="ml-2 text-[10px] font-bold">•</span>
+              )}
+              {isTemp && <span className="ml-2 text-[10px]">(sync)</span>}
+            </button>
+          );
+        })}
+      </div>
+      {/* Conteúdo da versão selecionada */}
+      {sel && (
+        <div className="mt-2 p-3 border rounded-lg bg-white/70">
+          <div className="flex items-center justify-between text-xs mb-1">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold">v{sel.version_number}</span>
+              {String(sel.id).startsWith("temp-rev-") && (
+                <span className="text-[10px] bg-amber-100 text-amber-700 px-1 py-0.5 rounded">Sincronizando...</span>
+              )}
+            </div>
+            <span>{fmtDate(sel.created_at, "pt", { dateStyle: "short" })}</span>
+          </div>
+          {sel.notes && (
+            <div className="italic text-gray-600 text-xs mb-2">{sel.notes}</div>
+          )}
+          {sel.data?.format === "pdf" && (sel.data?.file?.key || sel.data?.file?.base64) && (
+            <button
+              type="button"
+              className="text-blue-600 underline mb-2"
+              onClick={() => onDownloadPdf(detail.id, sel)}
+            >
+              Baixar PDF
+            </button>
+          )}
+          {sel.data && sel.data.versao === 1 && Array.isArray(sel.data.meals) && (
+            <div className="space-y-1">
+              <StructuredDietView data={sel.data} compact />
+              <div className="flex gap-2 flex-wrap text-[10px] items-center">
+                <button
+                  type="button"
+                  className="px-2 py-1 bg-emerald-600 text-white rounded"
+                  onClick={() => downloadDietJson(sel.data, `dieta_v${sel.version_number}.json`)}
+                >
+                  JSON
+                </button>
+                <button
+                  type="button"
+                  className="px-2 py-1 bg-blue-600 text-white rounded"
+                  onClick={() => printDiet(sel.data, `Dieta v${sel.version_number}`, { showAlternatives: exportShowAlternatives })}
+                >
+                  Imprimir / PDF
+                </button>
+                <button
+                  type="button"
+                  disabled={pdfExportingVersion === sel.id}
+                  className={`px-2 py-1 rounded text-white ${pdfExportingVersion === sel.id ? "bg-indigo-400 cursor-wait" : "bg-indigo-600 hover:bg-indigo-700"}`}
+                  onClick={async () => {
+                    if (pdfExportingVersion) return;
+                    setPdfExportingVersion(sel.id);
+                    setPdfExportPhase("preparando");
+                    try {
+                      await exportDietPdf(sel.data, {
+                        filename: `dieta_v${sel.version_number}.pdf`,
+                        title: `Dieta v${sel.version_number}`,
+                        showAlternatives: exportShowAlternatives,
+                        headerText: "Plano Nutricional",
+                        footerText: "AvanteNutri - Confidencial",
+                        watermarkText: "AvanteNutri",
+                        watermarkRepeat: pdfWatermarkRepeat,
+                        watermarkOpacity: pdfWatermarkOpacity,
+                        cover: pdfIncludeCover
+                          ? {
+                              title: `Plano Nutricional v${sel.version_number}`,
+                              subtitle: detail?.name || "Paciente",
+                              showTotals: pdfIncludeTotalsOnCover,
+                              notes: sel.notes || detail?.description || "",
+                              date: new Date(sel.created_at),
+                              qrUrl: pdfIncludeQr ? `${location.origin}/plan/${detail?.id || ""}` : undefined,
+                            }
+                          : undefined,
+                        phaseLabels: {
+                          prepare: "Preparando",
+                          render: "Renderizando",
+                          cover: "Capa",
+                          paginate: "Paginando",
+                          finalize: "Finalizando",
+                          done: "Concluído",
+                        },
+                        onProgress: (ph) => setPdfExportPhase(ph),
+                      });
+                    } catch (err) {
+                      console.error(err);
+                      alert("Falha ao gerar PDF");
+                    } finally {
+                      setPdfExportingVersion(null);
+                      setPdfExportPhase("");
+                    }
+                  }}
+                >
+                  {pdfExportingVersion === sel.id ? `Gerando (${pdfExportPhase})...` : "PDF Direto"}
+                </button>
+                <button type="button" className="px-2 py-1 bg-amber-600 text-white rounded" onClick={() => copyDietJson(sel.data)}>
+                  Copiar JSON
+                </button>
+                <button
+                  type="button"
+                  className="px-2 py-1 bg-amber-700 text-white rounded"
+                  onClick={() => copyDietHtml(sel.data, `Dieta v${sel.version_number}`, { showAlternatives: exportShowAlternatives })}
+                >
+                  Copiar HTML
+                </button>
+                <label className="flex items-center gap-1 cursor-pointer select-none ml-2">
+                  <input type="checkbox" checked={exportShowAlternatives} onChange={(e) => setExportShowAlternatives(e.target.checked)} /> Alternativas
+                </label>
+                <button type="button" className="px-2 py-1 bg-gray-500 text-white rounded" onClick={() => setShowPdfOptions(!showPdfOptions)}>
+                  {showPdfOptions ? "Fechar Opções" : "Opções PDF"}
+                </button>
+              </div>
+              {showPdfOptions && (
+                <div className="mt-2 p-2 border rounded bg-gray-50 space-y-2 text-[10px]">
+                  <div className="flex flex-wrap gap-4">
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={pdfIncludeCover} onChange={(e) => setPdfIncludeCover(e.target.checked)} /> Capa
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={pdfIncludeTotalsOnCover} disabled={!pdfIncludeCover} onChange={(e) => setPdfIncludeTotalsOnCover(e.target.checked)} /> Totais na capa
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={pdfWatermarkRepeat} onChange={(e) => setPdfWatermarkRepeat(e.target.checked)} /> Repetir watermark
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input type="checkbox" checked={pdfIncludeQr} onChange={(e) => setPdfIncludeQr(e.target.checked)} /> QR Link
+                    </label>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <label className="text-[10px]">Opacidade watermark</label>
+                    <input type="range" min={0.02} max={0.3} step={0.01} value={pdfWatermarkOpacity} onChange={(e) => setPdfWatermarkOpacity(parseFloat(e.target.value))} />
+                    <span>{pdfWatermarkOpacity.toFixed(2)}</span>
+                  </div>
+                  <p className="text-gray-500">Essas opções afetam apenas a geração do PDF Direto.</p>
+                </div>
+              )}
+            </div>
+          )}
+          {sel.data && sel.data.versao !== 1 && (
+            <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">{JSON.stringify(sel.data, null, 2)}</pre>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};
+
 /* ---------------------------
    DietManagement component
    (integrated from the older file)
@@ -79,7 +304,7 @@ const DietManagement: React.FC = () => {
   const [filterUserId, setFilterUserId] = useState("");
   const [filterUserLabel, setFilterUserLabel] = useState("");
   const [detailId, setDetailId] = useState<string | null>(null);
-  const [detailIncludeData, setDetailIncludeData] = useState(false);
+  // Sempre incluir dados completos
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<PlanDetail | null>(null);
   const [revNotes, setRevNotes] = useState("");
@@ -162,17 +387,16 @@ const DietManagement: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterUserId]);
 
-  const openDetail = async (id: string, includeData: boolean) => {
+  const openDetail = async (id: string) => {
     setDetailId(id);
     setDetailLoading(true);
     setDetail(null);
     try {
       const access = await getAccessToken();
       if (!access) return;
-      const r = await fetch(
-        `${API.dietPlan(id)}${includeData ? "?includeData=1" : ""}`,
-        { headers: { authorization: `Bearer ${access}` } }
-      );
+      const r = await fetch(`${API.dietPlan(id)}?includeData=1`, {
+        headers: { authorization: `Bearer ${access}` },
+      });
       const data = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(data.error || "Falha");
       setDetail(data.plan);
@@ -239,7 +463,9 @@ const DietManagement: React.FC = () => {
       setStructuredCreateData(null);
       try {
         localStorage.removeItem("structuredDietDraft");
-      } catch {}
+      } catch {
+        // ignore cleanup error
+      }
       setPdfBase64("");
       setPdfName("");
       setTargetUserId("");
@@ -339,7 +565,7 @@ const DietManagement: React.FC = () => {
       });
       const resp = await r.json().catch(() => ({}));
       if (!r.ok) throw new Error(resp.error || "Falha revisão");
-      await openDetail(detailId, detailIncludeData);
+  await openDetail(detailId);
       await load();
       setRevNotes("");
       setRevPatchJson("{}");
@@ -409,7 +635,7 @@ const DietManagement: React.FC = () => {
             </div>
           )}
         </div>
-        <div className="flex gap-2 items-center">
+              <div className="flex gap-2 items-center">
           <Button variant="secondary" onClick={load} disabled={loading}>
             Atualizar
           </Button>
@@ -460,7 +686,7 @@ const DietManagement: React.FC = () => {
                 <Button
                   variant="secondary"
                   className="w-full text-xs"
-                  onClick={() => openDetail(p.id, detailIncludeData)}
+                  onClick={() => openDetail(p.id)}
                 >
                   Detalhes
                 </Button>
@@ -670,27 +896,7 @@ const DietManagement: React.FC = () => {
               </button>
             </div>
 
-            <div className="flex items-center gap-3 text-xs">
-              <label className="flex items-center gap-1">
-                <input
-                  type="checkbox"
-                  checked={detailIncludeData}
-                  onChange={(e) => {
-                    setDetailIncludeData(e.target.checked);
-                    if (detailId) void openDetail(detailId, e.target.checked);
-                  }}
-                />{" "}
-                Incluir dados completos
-              </label>
-              <button
-                className="text-green-700 underline"
-                onClick={() =>
-                  detailId && openDetail(detailId, detailIncludeData)
-                }
-              >
-                Recarregar
-              </button>
-            </div>
+            {/* Controles removidos: sempre buscamos com includeData=1 */}
 
             {detailLoading && (
               <div className="text-sm text-gray-500">Carregando...</div>
@@ -711,273 +917,31 @@ const DietManagement: React.FC = () => {
                     })}
                   </p>
                 </div>
-
                 <div>
                   <h4 className="font-semibold mb-2">Versões</h4>
-                  <div className="max-h-72 overflow-y-auto border rounded divide-y">
-                    {detail.versions.map((v) => (
-                      <div key={v.id} className="p-2 space-y-1">
-                        <div className="flex justify-between items-center">
-                          <span className="flex items-center gap-2">
-                            v{v.version_number}
-                            {v === detail.versions[0] && (
-                              <span className="text-[10px] bg-green-100 text-green-700 px-1 py-0.5 rounded">
-                                Atual
-                              </span>
-                            )}
-                          </span>
-                          <span>
-                            {fmtDate(v.created_at, "pt", {
-                              dateStyle: "short",
-                            })}
-                          </span>
-                        </div>
-                        {v.notes && (
-                          <div className="italic text-gray-600">{v.notes}</div>
-                        )}
-                        {detailIncludeData &&
-                          v.data?.format === "pdf" &&
-                          (v.data?.file?.key || v.data?.file?.base64) && (
-                            <button
-                              type="button"
-                              className="text-blue-600 underline"
-                              onClick={() => downloadPdf(detail.id, v)}
-                            >
-                              Baixar PDF
-                            </button>
-                          )}
-                        {detailIncludeData &&
-                          v.data &&
-                          v.data.versao === 1 &&
-                          Array.isArray(v.data.meals) && (
-                            <div className="space-y-1">
-                              <StructuredDietView data={v.data} compact />
-                              <div className="flex gap-2 flex-wrap text-[10px] items-center">
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 bg-emerald-600 text-white rounded"
-                                  onClick={() =>
-                                    downloadDietJson(
-                                      v.data,
-                                      `dieta_v${v.version_number}.json`
-                                    )
-                                  }
-                                >
-                                  JSON
-                                </button>
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 bg-blue-600 text-white rounded"
-                                  onClick={() =>
-                                    printDiet(
-                                      v.data,
-                                      `Dieta v${v.version_number}`,
-                                      {
-                                        showAlternatives:
-                                          exportShowAlternatives,
-                                      }
-                                    )
-                                  }
-                                >
-                                  Imprimir / PDF
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={pdfExportingVersion === v.id}
-                                  className={`px-2 py-1 rounded text-white ${
-                                    pdfExportingVersion === v.id
-                                      ? "bg-indigo-400 cursor-wait"
-                                      : "bg-indigo-600 hover:bg-indigo-700"
-                                  }`}
-                                  onClick={async () => {
-                                    if (pdfExportingVersion) return;
-                                    setPdfExportingVersion(v.id);
-                                    setPdfExportPhase("preparando");
-                                    try {
-                                      await exportDietPdf(v.data, {
-                                        filename: `dieta_v${v.version_number}.pdf`,
-                                        title: `Dieta v${v.version_number}`,
-                                        showAlternatives:
-                                          exportShowAlternatives,
-                                        headerText: "Plano Nutricional",
-                                        footerText:
-                                          "AvanteNutri - Confidencial",
-                                        watermarkText: "AvanteNutri",
-                                        watermarkRepeat: pdfWatermarkRepeat,
-                                        watermarkOpacity: pdfWatermarkOpacity,
-                                        cover: pdfIncludeCover
-                                          ? {
-                                              title: `Plano Nutricional v${v.version_number}`,
-                                              subtitle:
-                                                detail?.name || "Paciente",
-                                              showTotals:
-                                                pdfIncludeTotalsOnCover,
-                                              notes:
-                                                v.notes ||
-                                                detail?.description ||
-                                                "",
-                                              date: new Date(v.created_at),
-                                              qrUrl: pdfIncludeQr
-                                                ? `${location.origin}/plan/${
-                                                    detail?.id || ""
-                                                  }`
-                                                : undefined,
-                                            }
-                                          : undefined,
-                                        phaseLabels: {
-                                          prepare: "Preparando",
-                                          render: "Renderizando",
-                                          cover: "Capa",
-                                          paginate: "Paginando",
-                                          finalize: "Finalizando",
-                                          done: "Concluído",
-                                        },
-                                        onProgress: (ph) =>
-                                          setPdfExportPhase(ph),
-                                      });
-                                    } catch (err) {
-                                      console.error(err);
-                                      alert("Falha ao gerar PDF");
-                                    } finally {
-                                      setPdfExportingVersion(null);
-                                      setPdfExportPhase("");
-                                    }
-                                  }}
-                                >
-                                  {pdfExportingVersion === v.id
-                                    ? `Gerando (${pdfExportPhase})...`
-                                    : "PDF Direto"}
-                                </button>
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 bg-amber-600 text-white rounded"
-                                  onClick={() => copyDietJson(v.data)}
-                                >
-                                  Copiar JSON
-                                </button>
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 bg-amber-700 text-white rounded"
-                                  onClick={() =>
-                                    copyDietHtml(
-                                      v.data,
-                                      `Dieta v${v.version_number}`,
-                                      {
-                                        showAlternatives:
-                                          exportShowAlternatives,
-                                      }
-                                    )
-                                  }
-                                >
-                                  Copiar HTML
-                                </button>
-                                <label className="flex items-center gap-1 cursor-pointer select-none ml-2">
-                                  <input
-                                    type="checkbox"
-                                    checked={exportShowAlternatives}
-                                    onChange={(e) =>
-                                      setExportShowAlternatives(
-                                        e.target.checked
-                                      )
-                                    }
-                                  />{" "}
-                                  Alternativas
-                                </label>
-                                <button
-                                  type="button"
-                                  className="px-2 py-1 bg-gray-500 text-white rounded"
-                                  onClick={() => setShowPdfOptions((s) => !s)}
-                                >
-                                  {showPdfOptions
-                                    ? "Fechar Opções"
-                                    : "Opções PDF"}
-                                </button>
-                              </div>
-                              {showPdfOptions && (
-                                <div className="mt-2 p-2 border rounded bg-gray-50 space-y-2 text-[10px]">
-                                  <div className="flex flex-wrap gap-4">
-                                    <label className="flex items-center gap-1">
-                                      <input
-                                        type="checkbox"
-                                        checked={pdfIncludeCover}
-                                        onChange={(e) =>
-                                          setPdfIncludeCover(e.target.checked)
-                                        }
-                                      />{" "}
-                                      Capa
-                                    </label>
-                                    <label className="flex items-center gap-1">
-                                      <input
-                                        type="checkbox"
-                                        checked={pdfIncludeTotalsOnCover}
-                                        disabled={!pdfIncludeCover}
-                                        onChange={(e) =>
-                                          setPdfIncludeTotalsOnCover(
-                                            e.target.checked
-                                          )
-                                        }
-                                      />{" "}
-                                      Totais na capa
-                                    </label>
-                                    <label className="flex items-center gap-1">
-                                      <input
-                                        type="checkbox"
-                                        checked={pdfWatermarkRepeat}
-                                        onChange={(e) =>
-                                          setPdfWatermarkRepeat(
-                                            e.target.checked
-                                          )
-                                        }
-                                      />{" "}
-                                      Repetir watermark
-                                    </label>
-                                    <label className="flex items-center gap-1">
-                                      <input
-                                        type="checkbox"
-                                        checked={pdfIncludeQr}
-                                        onChange={(e) =>
-                                          setPdfIncludeQr(e.target.checked)
-                                        }
-                                      />{" "}
-                                      QR Link
-                                    </label>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <label className="text-[10px]">
-                                      Opacidade watermark
-                                    </label>
-                                    <input
-                                      type="range"
-                                      min={0.02}
-                                      max={0.3}
-                                      step={0.01}
-                                      value={pdfWatermarkOpacity}
-                                      onChange={(e) =>
-                                        setPdfWatermarkOpacity(
-                                          parseFloat(e.target.value)
-                                        )
-                                      }
-                                    />
-                                    <span>
-                                      {pdfWatermarkOpacity.toFixed(2)}
-                                    </span>
-                                  </div>
-                                  <p className="text-gray-500">
-                                    Essas opções afetam apenas a geração do PDF
-                                    Direto.
-                                  </p>
-                                </div>
-                              )}
-                            </div>
-                          )}
-                        {detailIncludeData && v.data && v.data.versao !== 1 && (
-                          <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">
-                            {JSON.stringify(v.data, null, 2)}
-                          </pre>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+                  {/* Seletor horizontal */}
+                  <AdminVersionsSelector
+                    detail={detail}
+                    onDownloadPdf={downloadPdf}
+                    exportShowAlternatives={exportShowAlternatives}
+                    setExportShowAlternatives={setExportShowAlternatives}
+                    pdfIncludeCover={pdfIncludeCover}
+                    setPdfIncludeCover={setPdfIncludeCover}
+                    pdfIncludeTotalsOnCover={pdfIncludeTotalsOnCover}
+                    setPdfIncludeTotalsOnCover={setPdfIncludeTotalsOnCover}
+                    pdfWatermarkRepeat={pdfWatermarkRepeat}
+                    setPdfWatermarkRepeat={setPdfWatermarkRepeat}
+                    pdfWatermarkOpacity={pdfWatermarkOpacity}
+                    setPdfWatermarkOpacity={setPdfWatermarkOpacity}
+                    pdfIncludeQr={pdfIncludeQr}
+                    setPdfIncludeQr={setPdfIncludeQr}
+                    showPdfOptions={showPdfOptions}
+                    setShowPdfOptions={setShowPdfOptions}
+                    pdfExportingVersion={pdfExportingVersion}
+                    setPdfExportingVersion={setPdfExportingVersion}
+                    pdfExportPhase={pdfExportPhase}
+                    setPdfExportPhase={setPdfExportPhase}
+                  />
                 </div>
 
                 <form
@@ -1083,12 +1047,12 @@ const DietManagement: React.FC = () => {
                         <h5 className="font-semibold text-xs">
                           Editar Dieta Estruturada
                         </h5>
-                        {detail?.versions?.[0]?.data?.versao === 1 && (
+                        {detail?.versions?.[detail.versions.length - 1]?.data?.versao === 1 && (
                           <button
                             type="button"
                             className="text-[10px] underline text-green-700"
                             onClick={() =>
-                              setRevStructuredData(detail.versions[0].data)
+                              setRevStructuredData(detail.versions[detail.versions.length - 1].data)
                             }
                           >
                             Carregar Atual

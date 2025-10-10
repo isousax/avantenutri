@@ -27,7 +27,7 @@ export function useIntersectionPrefetch(selector = '[data-plan-id]', opts?: { ro
             Prefetch.dietPlanDetail(ctx, id); // básico
             if (includeDeep && !qc.getQueryState(['diet-plan-detail', id, true])) {
               const t = window.setTimeout(() => {
-                Prefetch.dietPlanDetail(ctx, id, true); // deep
+                Prefetch.dietPlanDetail(ctx, id); // deep
                 deepTimers.delete(el);
               }, deepDelayMs);
               deepTimers.set(el, t);

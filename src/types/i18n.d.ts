@@ -344,7 +344,6 @@ export type TranslationKey =
   | 'billing.history.loading'
   | 'billing.history.payments'
   | 'billing.history.processedAt'
-  | 'billing.history.reload'
   | 'billing.history.seo.desc'
   | 'billing.history.seo.title'
   | 'billing.history.title'
