@@ -28,7 +28,7 @@ export const CATEGORIAS_ALIMENTOS = [
 ] as const;
 export type CategoriaAlimento = (typeof CATEGORIAS_ALIMENTOS)[number];
 
-// Base de dados enriquecida
+// Base de dados local de alimentos
 export const ALIMENTOS: Alimento[] = [
   // FRUTAS 🍎
   { id: "maca", nome: "Maçã", categoria: "Frutas", emoji: "🍎", calorias: 73, proteina: 0.3, carboidratos: 14, gordura: 0.2, porcaoPadrao: 150, porcaoDescricao: "1 unidade média" },
@@ -79,7 +79,7 @@ export const ALIMENTOS: Alimento[] = [
   { id: "arroz_branco", nome: "Arroz Branco (cozido)", categoria: "Cereais & Grãos", emoji: "🍚", calorias: 130, proteina: 2.7, carboidratos: 28, gordura: 0.3, porcaoPadrao: 150, porcaoDescricao: "1 xícara" },
   { id: "arroz_integral", nome: "Arroz Integral (cozido)", categoria: "Cereais & Grãos", emoji: "🍙", calorias: 111, proteina: 2.6, carboidratos: 22, gordura: 0.9, porcaoPadrao: 150, porcaoDescricao: "1 xícara" },
   { id: "quinoa", nome: "Quinoa (cozida)", categoria: "Cereais & Grãos", emoji: "🥣", calorias: 120, proteina: 4.4, carboidratos: 21.3, gordura: 1.9, porcaoPadrao: 100, porcaoDescricao: "½ xícara" },
-  { id: "aveia", nome: "Aveia em Flocos", categoria: "Cereais & Grãos", emoji: "🥣", calorias: 389, proteina: 17, carboidratos: 66, gordura: 6.9, porcaoPadrao: 30, porcaoDescricao: "3 colheres de sopa" },
+  { id: "aveia_em_flocos", nome: "Aveia em Flocos", categoria: "Cereais & Grãos", emoji: "🥣", calorias: 389, proteina: 17, carboidratos: 66, gordura: 6.9, porcaoPadrao: 30, porcaoDescricao: "3 colheres de sopa" },
   { id: "pao_integral", nome: "Pão Integral", categoria: "Cereais & Grãos", emoji: "🍞", calorias: 247, proteina: 13, carboidratos: 41, gordura: 4.2, porcaoPadrao: 50, porcaoDescricao: "2 fatias" },
   { id: "macarrao", nome: "Macarrão Integral (cozido)", categoria: "Cereais & Grãos", emoji: "🍝", calorias: 124, proteina: 5.8, carboidratos: 25.5, gordura: 0.9, porcaoPadrao: 100, porcaoDescricao: "1 xícara" },
   { id: "pao_frances", nome: "Pão Francês", categoria: "Cereais & Grãos", emoji: "🥖", calorias: 275, proteina: 8.5, carboidratos: 55, gordura: 1.5, porcaoPadrao: 50, porcaoDescricao: "1 unidade (50g)" },
@@ -185,7 +185,6 @@ export const ALIMENTOS: Alimento[] = [
 ];
 
 
-// Funções utilitárias (atualizadas)
 export function buscarAlimentos(termo: string): Alimento[] {
   const termoLimpo = termo.toLowerCase().trim();
   if (!termoLimpo) return ALIMENTOS;

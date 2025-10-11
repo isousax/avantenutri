@@ -113,7 +113,7 @@ interface ExportPdfOptions extends DietExportOptions {
   colorScheme?: "blue" | "green" | "purple" | "professional";
 }
 
-// Função para criar gráfico de macronutrientes melhorado
+// Função para criar gráfico de macronutrientes
 async function createMacronutrientChart(total: {
   proteina?: number;
   carboidratos?: number;
@@ -216,7 +216,6 @@ async function createMacronutrientChart(total: {
   });
 }
 
-// [Manter loadImageAsBase64...]
 async function loadImageAsBase64(url: string): Promise<string> {
   return new Promise((resolve, reject) => {
     const img = new Image();

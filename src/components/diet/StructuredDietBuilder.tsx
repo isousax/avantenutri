@@ -47,8 +47,6 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
   onChange,
   persistKey = "structuredDietDraft",
   showAlternatives,
-  // onToggleAlternatives,
-  // compact = false,
 }) => {
   const [busca, setBusca] = useState("");
   const [selectedMealKey, setSelectedMealKey] = useState<string>("cafe_manha");
@@ -58,7 +56,6 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
     [busca]
   );
   const [expandedMeals, setExpandedMeals] = useState<Set<string>>(new Set(['cafe_manha']));
-  // const [quickAddFood, setQuickAddFood] = useState("");
 
   const data: StructuredDietData = useMemo(() => (
     value || {
@@ -74,7 +71,7 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
       try {
         localStorage.setItem(persistKey, JSON.stringify(data));
       } catch {
-        /* ignore */
+        console.warn("Falha ao salvar rascunho no localStorage");
       }
     }, 500);
     return () => clearTimeout(id);
@@ -220,14 +217,14 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
 
   // Quick add common foods
   const commonFoods = [
-    { id: "arroz_branco_cozido", nome: "Arroz Branco", emoji: "🍚" },
-    { id: "feijao_preto_cozido", nome: "Feijão Preto", emoji: "🫘" },
-    { id: "frango_grelhado", nome: "Frango Grelhado", emoji: "🍗" },
-    { id: "ovo_cozido", nome: "Ovo Cozido", emoji: "🥚" },
-    { id: "banana_prata", nome: "Banana", emoji: "🍌" },
-    { id: "maca_vermelha", nome: "Maçã", emoji: "🍎" },
-    { id: "aveia_em_flocos", nome: "Aveia", emoji: "🌾" },
-    { id: "leite_integral", nome: "Leite", emoji: "🥛" },
+    { id: "arroz_branco", nome: "Arroz Branco (cozido)", emoji: "🍚" },
+    { id: "feijao_preto", nome: "Feijão Preto (cozido)", emoji: "🫘" },
+    { id: "frango_peito", nome: "Peito de Frango (grelhado)", emoji: "🍗" },
+    { id: "ovo", nome: "Ovo de Galinha (cozido)", emoji: "🥚" },
+    { id: "banana", nome: "Banana", emoji: "🍌" },
+    { id: "maca", nome: "Maçã", emoji: "🍎" },
+    { id: "aveia_em_flocos", nome: "Aveia em Flocos", emoji: "🌾" },
+    { id: "leite_integral", nome: "Leite Integral", emoji: "🥛" },
   ];
 
   const totalItems = data.meals.reduce((sum, meal) => sum + meal.itens.length, 0);
@@ -308,7 +305,7 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
                 placeholder="Buscar alimentos (arroz, frango, aveia...)"
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                className="w-full px-3 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:border-green-500"
               />
               {busca && (
                 <button
@@ -332,7 +329,7 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
                       className="flex items-center gap-2 p-3 bg-white border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition-colors"
                     >
                       <span className="text-base">{food.emoji}</span>
-                      <span className="flex-1 text-left">{food.nome}</span>
+                      <span className="flex-1 text-left text-xs sm:text-sm">{food.nome}</span>
                     </button>
                   ))}
                 </div>
