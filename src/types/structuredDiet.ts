@@ -31,6 +31,13 @@ export interface StructuredDietData {
     carboidratos: number;
     gordura: number;
   };
+  // Snapshot flexível do questionário no momento da criação/revisão
+  questionnaire?: {
+    category?: string | null;
+    answers?: Record<string, unknown>;
+    created_at?: string;
+    updated_at?: string;
+  };
 }
 
 export const MEAL_DEFS: { key: MealKey; titulo: string }[] = [

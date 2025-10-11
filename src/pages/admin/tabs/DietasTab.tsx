@@ -8,6 +8,7 @@ import { dietHasItems } from "../../../utils/structuredDietExport";
 import AdminVersionsSelector from "./AdminVersionsSelector";
 import type { PlanDetail as _PlanDetail } from "./AdminVersionsSelector";
 import type { StructuredDietData } from "../../../types/structuredDiet";
+import { parseSQLDateTimeAssumingUTC } from "../../../utils/date";
 
 interface AdminUser {
   id: string;
@@ -34,6 +35,14 @@ function isStructured(x: unknown): x is StructuredDietData {
   return d.versao === 1 && Array.isArray(d.meals);
 }
 
+// Snapshot flexível do questionário
+interface QuestionnaireSnapshot {
+  category?: string | null;
+  answers?: Record<string, unknown>;
+  created_at?: string;
+  updated_at?: string;
+}
+
 const DietasTab: React.FC = () => {
   const { getAccessToken } = useAuth();
   const [plans, setPlans] = useState<PlanListItem[]>([]);
@@ -56,6 +65,8 @@ const DietasTab: React.FC = () => {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<PlanDetail | null>(null);
+  const [questionnaire, setQuestionnaire] =
+    useState<QuestionnaireSnapshot | null>(null);
   const [revNotes, setRevNotes] = useState("");
   const [revMode] = useState<"json" | "structured">("structured");
   const [revStructuredData, setRevStructuredData] =
@@ -65,6 +76,8 @@ const DietasTab: React.FC = () => {
   const [exportShowAlternatives, setExportShowAlternatives] = useState(true);
   const [searchFocused, setSearchFocused] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [showQuestionnairePreview, setShowQuestionnairePreview] =
+    useState(false);
 
   const preventFormSubmitFromBuilder = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -139,6 +152,45 @@ const DietasTab: React.FC = () => {
     };
   }, [targetUserQuery, getAccessToken]);
 
+  // Carregar questionário do paciente ao selecionar no modal de criação
+  useEffect(() => {
+    let cancelled = false;
+    const fetchQuestionnaire = async () => {
+      if (!showCreate || !targetUserId) return;
+      try {
+        const access = await getAccessToken();
+        if (!access) return;
+        const r = await fetch(API.adminUserQuestionnaire(targetUserId), {
+          headers: { authorization: `Bearer ${access}` },
+        });
+        const data: Record<string, unknown> = (await r
+          .json()
+          .catch(() => ({}))) as Record<string, unknown>;
+        // Backend retorna direto: { category, answers, created_at, updated_at }
+        const cat = (data["category"] as string | undefined) ?? null;
+        const answers =
+          (data["answers"] as Record<string, unknown> | undefined) || undefined;
+        const createdAt =
+          (data["created_at"] as string | undefined) ?? undefined;
+        const updatedAt =
+          (data["updated_at"] as string | undefined) ?? undefined;
+        setQuestionnaire({
+          category: cat,
+          answers,
+          created_at: createdAt,
+          updated_at: updatedAt,
+        });
+        // Nada adicional a derivar: todo conteúdo está em answers
+      } catch {
+        if (!cancelled) setQuestionnaire(null);
+      }
+    };
+    fetchQuestionnaire();
+    return () => {
+      cancelled = true;
+    };
+  }, [showCreate, targetUserId, getAccessToken]);
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -199,11 +251,15 @@ const DietasTab: React.FC = () => {
         planFormat === "structured" && structuredCreateData
           ? structuredCreateData
           : undefined;
+      // Anexar dados do paciente oriundos do questionário (quando disponíveis)
+      const dataWithQuestionnaire: StructuredDietData | undefined = dataObj
+        ? { ...dataObj, questionnaire: questionnaire || undefined }
+        : undefined;
       const finalDesc = creatingDesc;
       const body = {
         name: creatingName,
         description: finalDesc,
-        data: dataObj,
+        data: dataWithQuestionnaire,
         user_id: targetUserId || undefined,
       };
       const r = await fetch(API.DIET_PLANS, {
@@ -232,6 +288,7 @@ const DietasTab: React.FC = () => {
       }
       setTargetUserId("");
       setTargetUserLabel("");
+      setQuestionnaire(null);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro criar";
       setError(msg);
@@ -564,7 +621,7 @@ const DietasTab: React.FC = () => {
                   Listar dietas
                 </h3>
                 <p className="text-gray-600 mb-6 text-xs leading-relaxed">
-                    Clique abaixo para carregar a lista.
+                  Clique abaixo para carregar a lista.
                 </p>
 
                 <Button
@@ -791,28 +848,60 @@ const DietasTab: React.FC = () => {
                             </div>
                           </div>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setTargetUserId("");
-                            setTargetUserLabel("");
-                          }}
-                          className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <svg
-                            className="w-4 h-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
+                        <div className="flex items-center gap-1">
+                          {questionnaire && (
+                            <button
+                              type="button"
+                              onClick={() => setShowQuestionnairePreview(true)}
+                              title="Ver questionário"
+                              className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                            >
+                              <svg
+                                className="w-4 h-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                />
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                />
+                              </svg>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setTargetUserId("");
+                              setTargetUserLabel("");
+                              setQuestionnaire(null);
+                            }}
+                            title="Limpar paciente"
+                            className="p-1.5 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
                           >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                            />
-                          </svg>
-                        </button>
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ) : (
@@ -987,6 +1076,114 @@ const DietasTab: React.FC = () => {
                     </div>
                   </div>
                 </div>
+
+                {/* Preview do Questionário (overlay sobre o modal) */}
+                {showCreate && showQuestionnairePreview && questionnaire && (
+                  <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-2">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-xl max-h-[90vh] overflow-hidden flex flex-col">
+                      <div className="flex items-center justify-between px-4 py-3 border-b">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1.5 bg-blue-100 rounded-lg">
+                            <svg
+                              className="w-4 h-4 text-blue-600"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                              />
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                              />
+                            </svg>
+                          </div>
+                          <h3 className="font-semibold text-gray-900">
+                            Questionário do Paciente
+                          </h3>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setShowQuestionnairePreview(false)}
+                          className="p-1.5 hover:bg-gray-100 rounded-lg"
+                        >
+                          <svg
+                            className="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M6 18L18 6M6 6l12 12"
+                            />
+                          </svg>
+                        </button>
+                      </div>
+                      <div className="flex-1 overflow-y-auto p-4">
+                        <div className="space-y-3">
+                          <div className="text-sm text-gray-700">
+                            <span className="font-medium">Categoria:</span>{" "}
+                            <span className="font-bold">
+                              {questionnaire.category || "—"}
+                            </span>
+                          </div>
+                          <div>
+                            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm">
+                              {questionnaire.answers &&
+                              Object.keys(questionnaire.answers).length > 0 ? (
+                                <div className="space-y-2">
+                                  {Object.entries(questionnaire.answers).map(
+                                    ([k, v]) => (
+                                      <div
+                                        key={k}
+                                        className="flex items-start justify-between gap-4"
+                                      >
+                                        <div className="text-gray-600">{k}</div>
+                                        <div className="text-gray-900 break-words max-w-[60%]">
+                                          {typeof v === "string" ||
+                                          typeof v === "number"
+                                            ? String(v)
+                                            : JSON.stringify(v)}
+                                        </div>
+                                      </div>
+                                    )
+                                  )}
+                                </div>
+                              ) : (
+                                <div className="text-gray-500">
+                                  Sem respostas.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="text-[11px] text-gray-500">
+                            <div>
+                              Criado em:{" "}
+                              {parseSQLDateTimeAssumingUTC(
+                                questionnaire.created_at as string
+                              )?.toLocaleString?.("pt-BR") ?? "—"}
+                            </div>
+                            <div>
+                              Atualizado em:{" "}
+                              {parseSQLDateTimeAssumingUTC(
+                                questionnaire.updated_at as string
+                              )?.toLocaleString?.("pt-BR") ?? "—"}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* Construtor de Dieta Estruturada */}
                 {planFormat === "structured" && (
@@ -1376,7 +1573,6 @@ const DietasTab: React.FC = () => {
                             className="w-full px-4 py-3 border border-gray-300 rounded-lg text-sm resize-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
                           />
                         </div>
-
 
                         {revMode === "json" && (
                           <div className="border border-gray-200 rounded-lg p-4 bg-gray-50">
