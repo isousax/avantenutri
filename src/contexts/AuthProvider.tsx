@@ -686,14 +686,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         );
       }
       try {
-        const refresh =
-          localStorage.getItem(STORAGE_REFRESH_KEY) ||
-          sessionStorage.getItem(STORAGE_REFRESH_KEY);
-        if (refresh && navigator.sendBeacon) {
-          const blob = new Blob([JSON.stringify({ refresh_token: refresh })], {
-            type: "application/json",
-          });
-          navigator.sendBeacon(API.LOGOUT, blob);
+        // Só envia logout automático em sessões de curta duração (sem "lembrar-me").
+        // Heurística: se existe espelho em sessionStorage do access token, é sessão curta.
+        const isSessionOnly = !!sessionStorage.getItem(STORAGE_ACCESS_KEY);
+        if (isSessionOnly) {
+          const refresh =
+            localStorage.getItem(STORAGE_REFRESH_KEY) ||
+            sessionStorage.getItem(STORAGE_REFRESH_KEY);
+          if (refresh && navigator.sendBeacon) {
+            const blob = new Blob(
+              [JSON.stringify({ refresh_token: refresh })],
+              {
+                type: "application/json",
+              }
+            );
+            navigator.sendBeacon(API.LOGOUT, blob);
+          }
         }
       } catch (err) {
         console.warn(
