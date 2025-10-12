@@ -740,7 +740,7 @@ export async function exportDietPdf(
       head: [
         [
           "Alimento",
-          "Quantidade",
+          "Qtd.",
           "Calorias",
           "Proteína",
           "Carbo.",
@@ -777,11 +777,11 @@ export async function exportDietPdf(
       theme: "grid",
       columnStyles: {
         0: { cellWidth: "auto" }, // Alimento
-        1: { cellWidth: 20 }, // Quantidade
-        2: { cellWidth: 20 }, // Calorias
-        3: { cellWidth: 18 }, // Proteína
+        1: { cellWidth: 17 }, // Quantidade
+        2: { cellWidth: 21 }, // Calorias
+        3: { cellWidth: 21 }, // Proteína
         4: { cellWidth: 18 }, // Carboidratos
-        5: { cellWidth: 18 }, // Gorduras
+        5: { cellWidth: 22 }, // Gorduras
       },
     });
 

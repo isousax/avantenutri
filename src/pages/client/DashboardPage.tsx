@@ -16,7 +16,7 @@ import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
 import { exportDietPdf } from "../../utils/structuredDietPdf";
 import { useAuthenticatedFetch } from "../../hooks/useApi";
-import { API as Routes, API } from "../../config/api";
+import { API as Routes } from "../../config/api";
 import Perfil from "../../components/dashboard/Perfil";
 import Consultas from "../../components/dashboard/Consultas";
 import Suporte from "../../components/dashboard/Suporte";
@@ -565,17 +565,6 @@ const DashboardPage: React.FC = () => {
     setShowDetail(true);
   };
 
-  // Helpers para identificar formato da versão
-  const isPdfData = (
-    d: unknown
-  ): d is {
-    format: string;
-    file?: { key?: string; base64?: string; name?: string };
-  } => {
-    if (!d || typeof d !== "object") return false;
-    const obj = d as Record<string, unknown>;
-    return typeof obj.format === "string" && obj.format === "pdf";
-  };
   const isStructuredDietData = (d: unknown): d is StructuredDietData => {
     if (!d || typeof d !== "object") return false;
     const obj = d as Record<string, unknown>;
@@ -592,87 +581,24 @@ const DashboardPage: React.FC = () => {
       const d = await getDetail(planId);
       if (!d || !d.versions?.length) throw new Error("Plano sem versões");
       const v = d.versions[d.versions.length - 1];
-      // Se for PDF nativo, baixa do backend (key) ou do base64
-      if (isPdfData(v.data)) {
-        const pdf = v.data;
-        try {
-          if (pdf.file?.key && d?.id) {
-            const url = `${API.API_AUTH_BASE}/diet/plans/${d.id}/version/${v.id}/file`;
-            const r = await fetch(url, {
-              headers: {
-                authorization: localStorage.getItem("access_token")
-                  ? `Bearer ${localStorage.getItem("access_token")}`
-                  : "",
-              },
-            });
-            if (!r.ok) throw new Error("Falha no download");
-            const blob = await r.blob();
-            const dlUrl = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = dlUrl;
-            a.download =
-              pdf.file?.name ||
-              `${d.name}_v${v.version_number}.pdf`.replace(/[^a-z0-9]/gi, "_");
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(() => URL.revokeObjectURL(dlUrl), 1500);
-          } else if (pdf.file?.base64) {
-            const base64 = pdf.file.base64 as string;
-            const byteStr = atob(base64);
-            const bytes = new Uint8Array(byteStr.length);
-            for (let i = 0; i < byteStr.length; i++)
-              bytes[i] = byteStr.charCodeAt(i);
-            const blob = new Blob([bytes], { type: "application/pdf" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download =
-              pdf.file?.name ||
-              `${d.name}_v${v.version_number}.pdf`.replace(/[^a-z0-9]/gi, "_");
-            document.body.appendChild(a);
-            a.click();
-            a.remove();
-            setTimeout(() => URL.revokeObjectURL(url), 1500);
-          } else {
-            throw new Error("Arquivo PDF indisponível");
-          }
-        } catch (err) {
-          console.error(err);
-          alert("Falha ao baixar PDF");
-        }
-        return;
-      }
 
       // Se for estruturada, gerar PDF no cliente com dados dinâmicos
       if (isStructuredDietData(v.data)) {
         try {
-          // Coleta dados dinâmicos mínimos (nome do /me, objetivo do questionário, peso)
-          const [qRes, meRes, wRes] = await Promise.all([
-            authenticatedFetch(Routes.QUESTIONNAIRE),
+          // Coleta dados dinâmicos mínimos (nome do /me e peso recente)
+          // Observação: o questionário já está embutido no snapshot da dieta (v.data.questionnaire)
+          const [meRes, wRes] = await Promise.all([
             authenticatedFetch(Routes.ME, { method: "GET" }),
             authenticatedFetch(`${Routes.WEIGHT_SUMMARY}?days=120`),
           ]);
 
-          let qAnswers: Record<string, unknown> = {};
-          try {
-            const qJson: unknown = await qRes.json();
-            const qData =
-              typeof qJson === "object" && qJson !== null && "data" in qJson
-                ? (qJson as Record<string, unknown>)["data"]
-                : qJson;
-            if (
-              typeof qData === "object" &&
-              qData !== null &&
-              "answers" in qData
-            ) {
-              const ans = (qData as Record<string, unknown>)["answers"];
-              if (typeof ans === "object" && ans !== null)
-                qAnswers = ans as Record<string, unknown>;
-            }
-          } catch (err) {
-            void err;
-          }
+          // Extrai snapshot do questionário da própria dieta
+          const qSnap = v.data?.questionnaire as
+            | { category?: string | null; answers?: Record<string, unknown>; created_at?: string; updated_at?: string }
+            | undefined;
+          const qCategory = (qSnap?.category || "").toString().toLowerCase();
+          const qAnswers: Record<string, unknown> =
+            (qSnap?.answers as Record<string, unknown>) || {};
 
           let meObj: Record<string, unknown> = {};
           try {
@@ -733,12 +659,93 @@ const DashboardPage: React.FC = () => {
             return Number.isFinite(n) ? n : undefined;
           };
 
-          const age = getNum(pick(qAnswers, "idade"));
-          const gender = pickString(qAnswers, "sexo");
-          const height = getNum(pick(qAnswers, "altura"));
-          const weight = latestWeight ?? getNum(pick(qAnswers, "peso"));
+          // Campos com mapeamento flexível, compatíveis com adulto/infantil
+          const hasChildKeys =
+            Object.prototype.hasOwnProperty.call(qAnswers, "nome_crianca") ||
+            Object.prototype.hasOwnProperty.call(qAnswers, "peso_atual") ||
+            Object.prototype.hasOwnProperty.call(qAnswers, "altura");
+          const isInfantil =
+            qCategory === "infantil" ||
+            qCategory === "criança" ||
+            qCategory === "crianca" ||
+            hasChildKeys;
+
+          const gender = pickString(
+            qAnswers,
+            // infantil (prioridade)
+            "sexo",
+            // adulto (fallbacks)
+            "gênero",
+            "genero",
+            // variações menos prováveis
+            "sexo_crianca",
+            "sexo_da_crianca"
+          );
+
+          const age = getNum(
+            pick(
+              qAnswers,
+              // infantil (prioridade)
+              "idade",
+              // adulto e variações
+              "idade_anos",
+              "idade_crianca",
+              "idade_da_crianca",
+              "idade (anos)"
+            )
+          );
+
+          const height = getNum(
+            pick(
+              qAnswers,
+              // infantil (prioridade)
+              "altura",
+              // adulto e variações
+              "altura_cm",
+              "altura_crianca",
+              "altura_da_crianca",
+              "altura (cm)"
+            )
+          );
+
+          const weight =
+            latestWeight ??
+            getNum(
+              pick(
+                qAnswers,
+                // infantil (prioridade)
+                "peso_atual",
+                // adulto e variações
+                "peso",
+                "peso_kg",
+                "peso_crianca",
+                "peso_da_crianca",
+                "peso (kg)"
+              )
+            );
+
           const goal =
-            pickString(qAnswers, "objetivo_nutricional") ?? undefined;
+            pickString(
+              qAnswers,
+              // chaves padrão adulto/infantil (idênticas no infantil informado)
+              "objetivo_nutricional",
+              // variações
+              "objetivo",
+              "objetivo_da_dieta",
+              "objetivo_crianca",
+              "objetivo_nutricional_crianca"
+            ) ?? undefined;
+
+          // Para clientes infantis, tentar extrair nome da criança (fallback ao nome do perfil)
+          const childName = isInfantil
+            ? pickString(
+                qAnswers,
+                "nome_crianca",
+                "nome da criança",
+                "nome_da_crianca",
+                "crianca_nome"
+              )
+            : undefined;
 
           await exportDietPdf(v.data, {
             filename: `${d.name}_v${v.version_number}.pdf`.replace(
@@ -755,7 +762,7 @@ const DashboardPage: React.FC = () => {
             watermarkOpacity: 0.05,
             cover: {
               title: `${d.name}`,
-              subtitle: `Versão ${v.version_number}`,
+              subtitle: `Versão ${v.version_number}${isInfantil ? " · Infantil" : ""}`,
               showTotals: true,
               notes:
                 v.notes ??
@@ -763,7 +770,9 @@ const DashboardPage: React.FC = () => {
               date: new Date(),
               clientInfo: {
                 name:
-                  pickString(meObj, "display_name", "full_name") || "Paciente",
+                  childName ||
+                  pickString(meObj, "display_name", "full_name") ||
+                  "Paciente",
                 age,
                 gender,
                 weight,
