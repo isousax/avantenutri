@@ -251,6 +251,28 @@ const DietasTab: React.FC = () => {
     };
   }, [showCreate, targetUserId, getAccessToken]);
 
+  // Carregamento inicial automático (evita exigir clique em "Listar dietas")
+  useEffect(() => {
+    if (hasLoaded) return;
+    if (showCreate || detailId) return; // evita refetch enquanto modal aberto
+    const t = setTimeout(() => {
+      void load();
+    }, 150);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasLoaded, showCreate, detailId]);
+
+  // Refetch automático ao alterar filtro de paciente (com debounce)
+  useEffect(() => {
+    if (!hasLoaded) return; // se ainda não carregou, deixa o hook acima cuidar
+    if (showCreate || detailId) return; // não refetcha com modal aberto
+    const t = setTimeout(() => {
+      void load();
+    }, 350);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterUserId, showCreate, detailId, hasLoaded]);
+
   const load = async () => {
     setLoading(true);
     setError(null);
@@ -710,53 +732,6 @@ const DietasTab: React.FC = () => {
                 ></path>
               </svg>
               <p className="text-gray-600">Carregando planos...</p>
-            </div>
-          ) : !hasLoaded ? (
-            <div className="flex justify-center">
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md w-full text-center shadow-sm">
-                <svg
-                  className="w-14 h-14 text-gray-300 mx-auto mb-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Listar dietas
-                </h3>
-                <p className="text-gray-600 mb-6 text-xs leading-relaxed">
-                  Clique abaixo para carregar a lista.
-                </p>
-
-                <Button
-                  onClick={load}
-                  disabled={loading}
-                  noFocus
-                  className="bg-green-600 hover:bg-green-700 text-white flex items-center gap-2 justify-center px-4 py-2 rounded-lg text-sm font-medium mx-auto"
-                >
-                  <svg
-                    className={`w-4 h-4 ${loading ? "animate-spin" : ""}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  <span>Listar dietas</span>
-                </Button>
-              </div>
             </div>
           ) : plans.length === 0 ? (
             <div className="text-center py-12">

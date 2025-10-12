@@ -95,8 +95,9 @@ const AdminLayout: React.FC = () => {
       } catch { upd('users', { value: 0 }); }
       // Consultas futuras
       try {
-        const from = new Date().toISOString();
-        const r = await authenticatedFetch(`${API.ADMIN_CONSULTATIONS}?from=${encodeURIComponent(from)}&page=1&pageSize=1&status=scheduled`);
+        // Backend espera from/to em formato YYYY-MM-DD (não ISO completo)
+        const fromDate = new Date().toISOString().slice(0, 10);
+        const r = await authenticatedFetch(`${API.ADMIN_CONSULTATIONS}?from=${fromDate}&page=1&pageSize=1&status=scheduled`);
         if (r.ok) {
           const data = await r.json();
           upd('consultsUpcoming', { value: data.total ?? data.results?.length ?? 0 });
@@ -176,7 +177,7 @@ const AdminLayout: React.FC = () => {
 
   const filteredCommands = allCommands.filter(c => !commandQuery || c.label.toLowerCase().includes(commandQuery.toLowerCase()));
 
-  const runCommand = (cmd: typeof filteredCommands[number]) => {
+  const runCommand = useCallback((cmd: typeof filteredCommands[number]) => {
     if (cmd.type==='nav') { navigate(cmd.path); setCommandOpen(false); return; }
     if (cmd.path==='#logout') { logout(); setCommandOpen(false); return; }
     if (cmd.path==='#reloadMetrics') {
@@ -187,7 +188,7 @@ const AdminLayout: React.FC = () => {
       })();
       setCommandOpen(false);
     }
-  };
+  }, [navigate, logout, loadMetrics, push, t]);
   const [commandIndex, setCommandIndex] = useState(0);
   useEffect(()=> { setCommandIndex(0); }, [commandQuery, commandOpen]);
   useEffect(()=> {
@@ -200,10 +201,10 @@ const AdminLayout: React.FC = () => {
     };
     window.addEventListener('keydown', keyHandler);
     return () => window.removeEventListener('keydown', keyHandler);
-  }, [commandOpen, filteredCommands, commandIndex]);
+  }, [commandOpen, filteredCommands, commandIndex, runCommand]);
 
   // Filtrar navegação por role
-  const filteredNav = useMemo(()=> navItems.filter(n => !n.requiresRole || n.requiresRole === user?.role), [user]);
+  const filteredNav = useMemo(()=> navItems.filter(n => !n.requiresRole || n.requiresRole === user?.role), [user, navItems]);
   // Agrupar por group
   const grouped = useMemo(()=> {
     const groups: Record<string, NavItem[]> = {};
