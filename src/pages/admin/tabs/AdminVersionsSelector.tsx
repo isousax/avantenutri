@@ -16,6 +16,8 @@ export interface PlanDetail {
   id: string;
   name: string;
   description?: string;
+  start_date?: string;
+  end_date?: string;
   versions: PlanVersion[];
   created_at: string;
 }

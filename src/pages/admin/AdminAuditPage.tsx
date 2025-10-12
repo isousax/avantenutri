@@ -1,4 +1,4 @@
-import React, { useEffect, useState, type FormEvent } from "react";
+import React, { useEffect, useState, type FormEvent, useCallback } from "react";
 import Skeleton from "../../components/ui/Skeleton";
 import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
@@ -6,11 +6,11 @@ import { API } from "../../config/api";
 import { SEO } from "../../components/comum/SEO";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { useToast } from "../../components/ui/ToastProvider";
+import { useAuthenticatedFetch } from "../../hooks/useApi";
 import {
   Search,
   Filter,
   RefreshCw,
-  Download,
   Shield,
   Key,
   UserX,
@@ -59,6 +59,7 @@ type Tab = "password" | "revoked" | "role" | "credits";
 
 interface AuditApiResponse {
   results: AuditRow[];
+  hasMore?: boolean;
 }
 
 const AdminAuditPage: React.FC = () => {
@@ -67,17 +68,19 @@ const AdminAuditPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState<boolean>(true);
   const pageSize = 20;
   const [userIdFilter, setUserIdFilter] = useState<string>("");
   const [dateFrom, setDateFrom] = useState<string>("");
   const [dateTo, setDateTo] = useState<string>("");
   const { push } = useToast();
+  const authenticatedFetch = useAuthenticatedFetch();
 
   const apiKey: string =
     (import.meta as { env: { VITE_ADMIN_AUDIT_KEY?: string } }).env
       .VITE_ADMIN_AUDIT_KEY || "";
 
-  const load = async (): Promise<void> => {
+  const load = useCallback(async (): Promise<void> => {
     setLoading(true);
     setError(null);
     try {
@@ -89,12 +92,14 @@ const AdminAuditPage: React.FC = () => {
       if (userIdFilter.trim()) params.set("user_id", userIdFilter.trim());
       if (dateFrom) params.set("from", dateFrom);
       if (dateTo) params.set("to", dateTo + "T23:59:59Z");
-      const r = await fetch(`${API.ADMIN_AUDIT}?${params.toString()}`, {
-        headers: apiKey ? { "x-api-key": apiKey } : {},
+      const r = await authenticatedFetch(`${API.ADMIN_AUDIT}?${params.toString()}`, {
+        method: 'GET',
+        headers: apiKey ? { "x-api-key": apiKey } : undefined,
       });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
-      const data: AuditApiResponse = await r.json();
-      setRows(data.results || []);
+  const data: AuditApiResponse = await r.json();
+  setRows(data.results || []);
+  setHasMore(Boolean(data.hasMore));
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao carregar auditoria";
       setError(message);
@@ -102,11 +107,25 @@ const AdminAuditPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [tab, page, pageSize, userIdFilter, dateFrom, dateTo, authenticatedFetch, apiKey, push]);
 
   useEffect(() => {
     void load();
-  }, [tab, page]);
+  }, [load]);
+
+  // Helpers
+
+  const getTimestamp = (row: AuditRow): string => {
+    if ("changed_at" in row) return row.changed_at;
+    if ("revoked_at" in row) return row.revoked_at;
+    if ("created_at" in row) return row.created_at;
+    return "";
+  };
+
+  const getUserId = (row: AuditRow): string => {
+    if ("user_id" in row) return row.user_id;
+    return "";
+  };
 
   const handleFilterSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -121,45 +140,7 @@ const AdminAuditPage: React.FC = () => {
     setPage(1);
   };
 
-  const exportCsv = () => {
-    const headerMap: Record<Tab, string[]> = {
-      password: ["user_id", "ip", "changed_at"],
-      revoked: ["jti", "user_id", "reason", "revoked_at", "expires_at"],
-      role: [
-        "user_id",
-        "old_role",
-        "new_role",
-        "changed_by",
-        "reason",
-        "changed_at",
-      ],
-      credits: ["admin_id", "user_id", "type", "delta", "reason", "created_at"],
-    };
-    const cols = headerMap[tab];
-    const csv = [cols.join(",")]
-      .concat(
-        rows.map((r) =>
-          cols
-            .map((c) => {
-              const v: any = (r as any)[c];
-              if (v == null) return "";
-              return '"' + String(v).replace(/"/g, '""') + '"';
-            })
-            .join(",")
-        )
-      )
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `audit-${tab}-${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    push({ type: "success", message: "CSV exportado com sucesso" });
-  };
+  // (Export CSV removido por ora; reativar botão ao reintroduzir a feature)
 
   const { t, locale } = useI18n();
 
@@ -347,21 +328,6 @@ const AdminAuditPage: React.FC = () => {
               </div>
             </div>
           </Card>
-        )}
-
-        {/* Export Button */}
-        {rows.length > 0 && (
-          <div className="flex justify-end mb-4">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={exportCsv}
-              className="flex items-center gap-2"
-            >
-              <Download size={14} />
-              Exportar CSV
-            </Button>
-          </div>
         )}
 
         {/* Desktop Table */}
@@ -618,7 +584,7 @@ const AdminAuditPage: React.FC = () => {
               <div className="flex items-start justify-between gap-3 mb-3">
                 <div className="flex-1 min-w-0">
                   <div className="font-semibold text-gray-900 text-sm mb-1">
-                    {"user_id" in r && (r as any).user_id}
+                    {getUserId(r)}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
                     <span className={`px-2 py-0.5 rounded-full ${getStatusColor(tab)}`}>
@@ -627,13 +593,7 @@ const AdminAuditPage: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-xs text-gray-400">
-                  {fmtDate(
-                    "changed_at" in r ? (r as any).changed_at : 
-                    "revoked_at" in r ? (r as any).revoked_at : 
-                    "created_at" in r ? (r as any).created_at : "",
-                    locale,
-                    { dateStyle: "short" }
-                  )}
+                  {fmtDate(getTimestamp(r), locale, { dateStyle: "short" })}
                 </div>
               </div>
 
@@ -706,13 +666,7 @@ const AdminAuditPage: React.FC = () => {
               </div>
 
               <div className="text-xs text-gray-500 mt-3 pt-3 border-t border-gray-100">
-                {fmtDate(
-                  "changed_at" in r ? (r as any).changed_at : 
-                  "revoked_at" in r ? (r as any).revoked_at : 
-                  "created_at" in r ? (r as any).created_at : "",
-                  locale,
-                  { dateStyle: "short", timeStyle: "short" }
-                )}
+                {fmtDate(getTimestamp(r), locale, { dateStyle: "short", timeStyle: "short" })}
               </div>
             </Card>
           ))}
@@ -741,6 +695,7 @@ const AdminAuditPage: React.FC = () => {
                 type="button"
                 variant="secondary"
                 onClick={() => setPage((p) => p + 1)}
+                disabled={!hasMore}
                 className="flex items-center gap-2"
               >
                 Próxima

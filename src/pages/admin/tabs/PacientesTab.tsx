@@ -43,10 +43,10 @@ const PacientesTab: React.FC = () => {
           headers: { authorization: `Bearer ${access}` },
         });
         if (!r.ok) throw new Error("fail");
-        const data = await r.json();
+  const data = await r.json();
         if (ignore) return;
         setUsers(data.results || []);
-        setUsersHasMore((data.results || []).length === pageSize);
+  setUsersHasMore(Boolean(data.hasMore));
       } catch {
         if (!ignore) setUsers([]);
       } finally {

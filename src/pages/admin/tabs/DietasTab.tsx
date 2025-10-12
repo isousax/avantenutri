@@ -25,9 +25,11 @@ interface PlanListItem {
   format?: string;
   start_date?: string;
   user_id?: string;
+  user_display_name?: string;
+  user_email?: string;
 }
 
-type PlanDetail = _PlanDetail;
+type PlanDetail = _PlanDetail & { start_date?: string; end_date?: string };
 
 function isStructured(x: unknown): x is StructuredDietData {
   if (!x || typeof x !== "object") return false;
@@ -78,6 +80,34 @@ const DietasTab: React.FC = () => {
   const [hasLoaded, setHasLoaded] = useState(false);
   const [showQuestionnairePreview, setShowQuestionnairePreview] =
     useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<
+    Record<string, boolean>
+  >(() => {
+    try {
+      const raw = localStorage.getItem("admin.diets.groupCollapsed");
+      return raw ? JSON.parse(raw) : {};
+    } catch {
+      return {};
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        "admin.diets.groupCollapsed",
+        JSON.stringify(collapsedGroups)
+      );
+    } catch {
+      // ignore persist error
+    }
+  }, [collapsedGroups]);
+  // Validade (criação)
+  const [showCreateValidity, setShowCreateValidity] = useState(false);
+  const [creatingStartDate, setCreatingStartDate] = useState<string>("");
+  const [creatingEndDate, setCreatingEndDate] = useState<string>("");
+  // Validade (revisão)
+  const [showRevValidity, setShowRevValidity] = useState(false);
+  const [revStartDate, setRevStartDate] = useState<string>("");
+  const [revEndDate, setRevEndDate] = useState<string>("");
 
   const preventFormSubmitFromBuilder = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -118,6 +148,36 @@ const DietasTab: React.FC = () => {
       body.style.paddingRight = prevPaddingRight;
     };
   }, [showCreate, detailId]);
+
+  // Helpers de data (YYYY-MM-DD)
+  const fmtYmd = (d: Date) => d.toISOString().slice(0, 10);
+  const addMonths = (d: Date, months: number) => {
+    const nd = new Date(d);
+    nd.setMonth(nd.getMonth() + months);
+    return nd;
+  };
+
+  // Defaults ao abrir modal de criação
+  useEffect(() => {
+    if (showCreate) {
+      const today = new Date();
+      if (!creatingStartDate) setCreatingStartDate(fmtYmd(today));
+      if (!creatingEndDate) setCreatingEndDate(fmtYmd(addMonths(today, 3)));
+    }
+  }, [showCreate, creatingStartDate, creatingEndDate]);
+
+  // Prefill datas da revisão quando detalhe carregar
+  useEffect(() => {
+    if (detailId && detail) {
+      const today = new Date();
+      const start = detail.start_date ? new Date(detail.start_date) : today;
+      const end = detail.end_date
+        ? new Date(detail.end_date)
+        : addMonths(today, 3);
+      setRevStartDate(fmtYmd(start));
+      setRevEndDate(fmtYmd(end));
+    }
+  }, [detailId, detail]);
 
   // Busca de pacientes (debounced)
   useEffect(() => {
@@ -242,6 +302,15 @@ const DietasTab: React.FC = () => {
       alert("Dieta estruturada vazia.");
       return;
     }
+    // Validação simples de datas
+    if (creatingStartDate && creatingEndDate) {
+      const sd = new Date(creatingStartDate).getTime();
+      const ed = new Date(creatingEndDate).getTime();
+      if (!isNaN(sd) && !isNaN(ed) && ed < sd) {
+        alert("Data de término não pode ser anterior ao início.");
+        return;
+      }
+    }
     setCreating(true);
     setError(null);
     try {
@@ -261,6 +330,8 @@ const DietasTab: React.FC = () => {
         description: finalDesc,
         data: dataWithQuestionnaire,
         user_id: targetUserId || undefined,
+        start_date: creatingStartDate || undefined,
+        end_date: creatingEndDate || undefined,
       };
       const r = await fetch(API.DIET_PLANS, {
         method: "POST",
@@ -289,6 +360,9 @@ const DietasTab: React.FC = () => {
       setTargetUserId("");
       setTargetUserLabel("");
       setQuestionnaire(null);
+      setCreatingStartDate("");
+      setCreatingEndDate("");
+      setShowCreateValidity(false);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro criar";
       setError(msg);
@@ -303,6 +377,15 @@ const DietasTab: React.FC = () => {
     if (revMode === "structured" && !dietHasItems(revStructuredData)) {
       alert("Dieta estruturada vazia.");
       return;
+    }
+    // Validação simples de datas (se usuário optou por editar validade)
+    if (showRevValidity && revStartDate && revEndDate) {
+      const sd = new Date(revStartDate).getTime();
+      const ed = new Date(revEndDate).getTime();
+      if (!isNaN(sd) && !isNaN(ed) && ed < sd) {
+        alert("Data de término não pode ser anterior ao início.");
+        return;
+      }
     }
     setRevising(true);
     setError(null);
@@ -319,6 +402,44 @@ const DietasTab: React.FC = () => {
           return;
         }
       }
+      // Opcionalmente aplicar update de validade antes da revisão
+      if (showRevValidity && detail) {
+        const metaPayload: Record<string, unknown> = {};
+        if (
+          revStartDate &&
+          revStartDate !==
+            (detail.start_date ? detail.start_date.slice(0, 10) : "")
+        ) {
+          metaPayload.start_date = revStartDate;
+        }
+        if (
+          revEndDate &&
+          revEndDate !== (detail.end_date ? detail.end_date.slice(0, 10) : "")
+        ) {
+          metaPayload.end_date = revEndDate;
+        }
+        if (Object.keys(metaPayload).length > 0) {
+          const pr = await fetch(API.dietPlan(detailId), {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+              authorization: `Bearer ${access}`,
+            },
+            body: JSON.stringify(metaPayload),
+          });
+          const presp: Record<string, unknown> = await pr
+            .json()
+            .catch(() => ({} as Record<string, unknown>));
+          if (!pr.ok) {
+            const msg =
+              typeof presp?.error === "string"
+                ? presp.error
+                : "Falha ao atualizar validade";
+            throw new Error(msg);
+          }
+        }
+      }
+
       const payload = { notes: revNotes || undefined, dataPatch };
       const r = await fetch(API.dietPlanRevise(detailId), {
         method: "POST",
@@ -337,6 +458,7 @@ const DietasTab: React.FC = () => {
       await load();
       setRevNotes("");
       setRevPatchJson("{}");
+      // manter revStartDate/revEndDate preenchidos com o que foi salvo
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro revisão";
       setError(msg);
@@ -346,14 +468,12 @@ const DietasTab: React.FC = () => {
   };
 
   const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
-  const totalPlans = plans.length;
-  const activePlans = plans.filter((p) => p.status === "active").length;
 
   return (
     <Card className="p-0 overflow-hidden" padding="p-3 sm:p-6">
-      <div className="min-h-screen bg-gray-50">
+      <div className="min-h-screen">
         {/* Header Principal */}
-        <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
+        <div className="bg-white border-b border-gray-200 sticky top-0">
           <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
             <div className="flex justify-between items-center py-4">
               <div className="flex items-center gap-3">
@@ -361,15 +481,6 @@ const DietasTab: React.FC = () => {
                   <h1 className="text-lg font-bold text-gray-900">
                     Gerenciar Dietas
                   </h1>
-                  <p className="text-xs text-gray-600">
-                    {!hasLoaded
-                      ? "—"
-                      : `${totalPlans} plano${
-                          totalPlans !== 1 ? "s" : ""
-                        } • ${activePlans} ativo${
-                          activePlans !== 1 ? "s" : ""
-                        }`}
-                  </p>
                 </div>
               </div>
               <Button
@@ -551,7 +662,7 @@ const DietasTab: React.FC = () => {
         </div>
 
         {/* Conteúdo Principal */}
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="max-w-7xl mx-auto px-1 sm:px-4 lg:px-6 py-6">
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
               <div className="flex items-center gap-3">
@@ -678,83 +789,183 @@ const DietasTab: React.FC = () => {
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {plans.map((p) => (
-                <div
-                  key={p.id}
-                  className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-bold text-gray-900 text-lg truncate">
-                        {p.name}
-                      </h3>
-                      <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                        {p.description || "Plano nutricional personalizado"}
-                      </p>
+            (() => {
+              // Agrupar por usuário
+              type Group = {
+                id: string;
+                label: string;
+                subtitle?: string;
+                plans: PlanListItem[];
+              };
+              const userLabelCache = new Map<string, string>();
+              if (targetUserId && targetUserLabel)
+                userLabelCache.set(targetUserId, targetUserLabel);
+              const groupsMap = new Map<string, Group>();
+              const unknownKey = "__none__";
+              for (const p of plans) {
+                const uid = p.user_id || unknownKey;
+                const labelFromApi =
+                  p.user_display_name || p.user_email || null;
+                const label =
+                  uid === unknownKey
+                    ? "Sem paciente"
+                    : labelFromApi ||
+                      userLabelCache.get(uid) ||
+                      `${uid.slice(0, 6)}...`;
+                const subtitle =
+                  p.user_email && p.user_display_name
+                    ? p.user_email
+                    : undefined;
+                const g = groupsMap.get(uid) || {
+                  id: uid,
+                  label,
+                  subtitle,
+                  plans: [],
+                };
+                g.plans.push(p);
+                groupsMap.set(uid, g);
+              }
+              const groups = Array.from(groupsMap.values()).sort((a, b) => {
+                if (a.id === unknownKey) return 1;
+                if (b.id === unknownKey) return -1;
+                return a.label.localeCompare(b.label, "pt-BR");
+              });
+
+              return (
+                <div className="space-y-6">
+                  {groups.map((g) => (
+                    <div
+                      key={g.id}
+                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+                    >
+                      <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                            {g.label.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="grid grid-cols items-start">
+                            <div className="font-semibold text-gray-900">
+                              {g.label}
+                            </div>
+
+                            <div className="text-xs text-gray-500">
+                              {g.subtitle ? (
+                                <span>{g.subtitle}</span>
+                              ) : (
+                                <span>-</span> // ou null, se preferir omitir
+                              )}
+                            </div>
+
+                            <div className="text-xs text-gray-500">
+                              {g.plans.length} plano
+                              {g.plans.length !== 1 ? "s" : ""}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            className="px-3 py-1 text-xs rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
+                            onClick={() =>
+                              setCollapsedGroups((m) => ({
+                                ...m,
+                                [g.id]: !m[g.id],
+                              }))
+                            }
+                          >
+                            {collapsedGroups[g.id] ? "Expandir" : "Recolher"}
+                          </button>
+                        </div>
+                      </div>
+                      {!collapsedGroups[g.id] && (
+                        <div className="p-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {g.plans.map((p) => (
+                              <div
+                                key={p.id}
+                                className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                              >
+                                <div className="flex justify-between items-start mb-3">
+                                  <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-gray-900 text-lg truncate">
+                                      {p.name}
+                                    </h3>
+                                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                                      {p.description ||
+                                        "Plano nutricional personalizado"}
+                                    </p>
+                                  </div>
+                                  <span
+                                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                      p.status === "active"
+                                        ? "bg-green-100 text-green-800"
+                                        : "bg-gray-100 text-gray-600"
+                                    }`}
+                                  >
+                                    {p.status === "active"
+                                      ? "Ativo"
+                                      : "Inativo"}
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2 mb-4">
+                                  {p.format && (
+                                    <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-medium">
+                                      {p.format}
+                                    </span>
+                                  )}
+                                  {p.start_date && (
+                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs">
+                                      Início:{" "}
+                                      {new Date(
+                                        p.start_date
+                                      ).toLocaleDateString("pt-BR")}
+                                    </span>
+                                  )}
+                                  {p.user_id && (
+                                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
+                                      Paciente: {p.user_id.slice(0, 6)}...
+                                    </span>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="secondary"
+                                    className="flex-1 text-sm flex items-center justify-center"
+                                    noFocus
+                                    onClick={() => openDetail(p.id)}
+                                  >
+                                    <svg
+                                      className="w-4 h-4 mr-2"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                      />
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                      />
+                                    </svg>
+                                    Detalhes
+                                  </Button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <span
-                      className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                        p.status === "active"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-600"
-                      }`}
-                    >
-                      {p.status === "active" ? "Ativo" : "Inativo"}
-                    </span>
-                  </div>
-
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {p.format && (
-                      <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-medium">
-                        {p.format}
-                      </span>
-                    )}
-                    {p.start_date && (
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs">
-                        Início:{" "}
-                        {new Date(p.start_date).toLocaleDateString("pt-BR")}
-                      </span>
-                    )}
-                    {p.user_id && (
-                      <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
-                        Paciente: {p.user_id.slice(0, 6)}...
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="secondary"
-                      className="flex-1 text-sm flex items-center justify-center"
-                      noFocus
-                      onClick={() => openDetail(p.id)}
-                    >
-                      <svg
-                        className="w-4 h-4 mr-2"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                        />
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                        />
-                      </svg>
-                      Detalhes
-                    </Button>
-                  </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              );
+            })()
           )}
         </div>
       </div>
@@ -786,24 +997,46 @@ const DietasTab: React.FC = () => {
                     <h2 className="text-lg font-bold">Criar Nova Dieta</h2>
                   </div>
                 </div>
-                <button
-                  onClick={() => setShowCreate(false)}
-                  className="p-2 hover:bg-white/20 rounded-lg transition-colors"
-                >
-                  <svg
-                    className="w-6 h-6"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    title="Configurar validade"
+                    onClick={() => setShowCreateValidity((v) => !v)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
+                    <svg
+                      className="w-5 h-5"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                      />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setShowCreate(false)}
+                    className="p-2 hover:bg-white/20 rounded-lg transition-colors"
+                  >
+                    <svg
+                      className="w-6 h-6"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1024,6 +1257,59 @@ const DietasTab: React.FC = () => {
                     </div>
                   )}
                 </div>
+
+                {/* Validade (opcional) */}
+                {showCreateValidity && (
+                  <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-1.5 bg-amber-100 rounded-lg">
+                        <svg
+                          className="w-4 h-4 text-amber-700"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M8 7V3m8 4V3M3 11h18M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                          />
+                        </svg>
+                      </div>
+                      <h3 className="font-semibold text-amber-900">
+                        Validade do Plano
+                      </h3>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs font-medium text-amber-900 mb-1">
+                          Início
+                        </label>
+                        <input
+                          type="date"
+                          value={creatingStartDate}
+                          onChange={(e) => setCreatingStartDate(e.target.value)}
+                          className="w-full border border-amber-300 rounded-lg p-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-amber-900 mb-1">
+                          Fim
+                        </label>
+                        <input
+                          type="date"
+                          value={creatingEndDate}
+                          onChange={(e) => setCreatingEndDate(e.target.value)}
+                          className="w-full border border-amber-300 rounded-lg p-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                    <p className="text-[11px] text-amber-700 mt-2">
+                      Se preferir, deixe em branco para não definir validade.
+                    </p>
+                  </div>
+                )}
 
                 {/* Informações Básicas */}
                 <div className="space-y-4">
@@ -1561,6 +1847,49 @@ const DietasTab: React.FC = () => {
 
                     <div className="p-4 space-y-4">
                       <form onSubmit={handleRevise} className="space-y-4">
+                        <div className="flex items-center justify-between">
+                          <div className="text-gray-700 font-medium">
+                            Nova Revisão
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button
+                              type="button"
+                              title="Editar validade (início/fim)"
+                              onClick={() => setShowRevValidity((v) => !v)}
+                              className="px-3 py-1 text-xs rounded-md bg-amber-100 text-amber-800 hover:bg-amber-200"
+                            >
+                              Validade
+                            </button>
+                          </div>
+                        </div>
+                        {showRevValidity && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-amber-50 border border-amber-200 p-3 rounded-lg">
+                            <div>
+                              <label className="block text-xs font-medium text-amber-900 mb-1">
+                                Início
+                              </label>
+                              <input
+                                type="date"
+                                value={revStartDate}
+                                onChange={(e) =>
+                                  setRevStartDate(e.target.value)
+                                }
+                                className="w-full border border-amber-300 rounded-lg p-2 text-sm"
+                              />
+                            </div>
+                            <div>
+                              <label className="block text-xs font-medium text-amber-900 mb-1">
+                                Fim
+                              </label>
+                              <input
+                                type="date"
+                                value={revEndDate}
+                                onChange={(e) => setRevEndDate(e.target.value)}
+                                className="w-full border border-amber-300 rounded-lg p-2 text-sm"
+                              />
+                            </div>
+                          </div>
+                        )}
                         <div>
                           <label className="block text-sm font-medium text-gray-700 mb-2">
                             📝 Notas da Revisão
