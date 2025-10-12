@@ -1,4 +1,5 @@
 import React from "react";
+import { ChevronDown } from "lucide-react";
 import { ALIMENTOS, calcularNutricao } from "../../data/alimentos";
 import type { StructuredDietData } from "../../types/structuredDiet";
 
@@ -13,7 +14,48 @@ const StructuredDietView: React.FC<StructuredDietViewProps> = ({
   compact = false,
   showAlternatives = false,
 }) => {
-  if (!data || data.versao !== 1 || !Array.isArray(data.meals)) {
+  const isValid = !!(data && data.versao === 1 && Array.isArray(data.meals));
+
+  // Estado de expansão por refeição (inicia oculto)
+  const [expanded, setExpanded] = React.useState<Record<string, boolean>>({});
+
+  // Ao mudar os dados, reseta para tudo oculto
+  React.useEffect(() => {
+    if (!data?.meals) return;
+    const next: Record<string, boolean> = {};
+    for (const m of data.meals) next[m.key] = false;
+    setExpanded(next);
+  }, [data]);
+
+  const toggleMeal = (key: string) =>
+    setExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+
+  // Calcular totais se não existirem
+  const displayTotal = isValid
+    ? data.total ||
+    data.meals.reduce(
+      (acc, meal) => {
+        meal.itens.forEach((item) => {
+          const alimento = ALIMENTOS.find((a) => a.id === item.alimentoId);
+          if (alimento) {
+            const nut = calcularNutricao(
+              alimento,
+              item.quantidade,
+              alimento.porcaoPadrao
+            );
+            acc.calorias += nut.calorias;
+            acc.proteina += nut.proteina;
+            acc.carboidratos += nut.carboidratos;
+            acc.gordura += nut.gordura;
+          }
+        });
+        return acc;
+      },
+      { calorias: 0, proteina: 0, carboidratos: 0, gordura: 0 }
+    )
+    : null;
+
+  if (!isValid) {
     return (
       <div className="text-center py-8 text-gray-500">
         <svg
@@ -34,30 +76,6 @@ const StructuredDietView: React.FC<StructuredDietViewProps> = ({
     );
   }
 
-  // Calcular totais se não existirem
-  const displayTotal =
-    data.total ||
-    data.meals.reduce(
-      (acc, meal) => {
-        meal.itens.forEach((item) => {
-          const alimento = ALIMENTOS.find((a) => a.id === item.alimentoId);
-          if (alimento) {
-            const nut = calcularNutricao(
-              alimento,
-              item.quantidade,
-              alimento.porcaoPadrao
-            );
-            acc.calorias += nut.calorias;
-            acc.proteina += nut.proteina;
-            acc.carboidratos += nut.carboidratos;
-            acc.gordura += nut.gordura;
-          }
-        });
-        return acc;
-      },
-      { calorias: 0, proteina: 0, carboidratos: 0, gordura: 0 }
-    );
-
   return (
     <div className={compact ? "space-y-3" : "space-y-6"}>
       {/* Lista de Refeições */}
@@ -69,26 +87,38 @@ const StructuredDietView: React.FC<StructuredDietViewProps> = ({
           }`}
         >
           {/* Cabeçalho da Refeição */}
-          <div className="px-4 py-3 flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100 rounded-t-xl">
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-emerald-900">
+          <button
+            type="button"
+            onClick={() => toggleMeal(meal.key)}
+            className="w-full text-left px-4 py-3 flex items-center justify-between bg-gradient-to-r from-emerald-50 to-green-50 border-b border-emerald-100 rounded-t-xl hover:from-emerald-100 hover:to-green-100"
+            aria-expanded={!!expanded[meal.key]}
+            aria-controls={`meal-${meal.key}`}
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <ChevronDown
+                className={`w-4 h-4 text-emerald-700 transition-transform duration-200 ${
+                  expanded[meal.key] ? "rotate-180" : "rotate-0"
+                }`}
+              />
+              <span className="font-semibold text-emerald-900 truncate">
                 {meal.titulo}
               </span>
               {compact && meal.itens.length > 0 && (
-                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium">
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-700 rounded-full text-xs font-medium flex-shrink-0">
                   {meal.itens.length} item{meal.itens.length !== 1 ? "s" : ""}
                 </span>
               )}
             </div>
             {!compact && meal.itens.length > 0 && (
-              <span className="text-sm text-emerald-600 font-medium">
+              <span className="text-sm text-emerald-700 font-medium flex items-center gap-2">
                 {meal.itens.length} item{meal.itens.length !== 1 ? "s" : ""}
               </span>
             )}
-          </div>
+          </button>
 
           {/* Itens da Refeição */}
-          <div className="divide-y divide-gray-100">
+          {expanded[meal.key] && (
+          <div id={`meal-${meal.key}`} className="divide-y divide-gray-100">
             {meal.itens.map((item, index) => {
               const alimento = ALIMENTOS.find((a) => a.id === item.alimentoId);
               const nut = alimento
@@ -226,9 +256,10 @@ const StructuredDietView: React.FC<StructuredDietViewProps> = ({
               </div>
             )}
           </div>
+          )}
 
           {/* Observação da Refeição */}
-          {meal.observacao && (
+          {expanded[meal.key] && meal.observacao && (
             <div
               className={`px-4 py-2 bg-blue-50 border-t border-blue-100 text-blue-700 ${
                 compact ? "text-xs" : "text-sm"

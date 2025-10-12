@@ -3,7 +3,7 @@ import StructuredDietView from "./StructuredDietView";
 import type { StructuredDietData } from "../../types/structuredDiet";
 import { exportDietPdf } from "../../utils/structuredDietPdf";
 import { API } from "../../config/api";
-import { formatDate as fmtDate } from "../../i18n";
+import { formatLocalDateTimeFromUTC } from "../../utils/date";
 import type { Locale } from "../../i18n";
 import type { DietPlanDetail, DietPlanVersion } from "../../hooks/useDietPlans";
 import type { PdfDietData } from "../../hooks/useDietPlansOptimized";
@@ -365,7 +365,9 @@ const VersionSelector: React.FC<{
                 v{v.version_number}
               </span>
               <span className="text-xs text-gray-500">
-                {fmtDate(v.created_at, locale, { dateStyle: "short" })}
+                {formatLocalDateTimeFromUTC(v.created_at, locale, {
+                  dateStyle: "short",
+                })}
               </span>
               <div className="flex gap-1">
                 {isLatest && (
@@ -486,7 +488,7 @@ const DietPlanDetailContent: React.FC<DietPlanDetailContentProps> = ({
       {/* Resumo Nutricional */}
       {structuredData && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between p-2">
             <h3 className="text-lg font-semibold text-gray-900">
               Resumo Nutricional
             </h3>
@@ -548,8 +550,8 @@ const DietPlanDetailContent: React.FC<DietPlanDetailContentProps> = ({
           )}
 
           {activeTab === "dieta" && (
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <div className="flex items-center justify-between mb-4">
+            <div className="bg-white rounded-2xl border border-gray-200 p-0.5">
+              <div className="flex items-center justify-between mb-4 p-2.5">
                 <h4 className="font-semibold text-gray-900">
                   Refeições do Dia
                 </h4>
@@ -567,7 +569,7 @@ const DietPlanDetailContent: React.FC<DietPlanDetailContentProps> = ({
 
       {/* Seletor de Versões */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between p-2">
           <h3 className="text-lg font-semibold text-gray-900">
             Versões do Plano
           </h3>
@@ -586,8 +588,8 @@ const DietPlanDetailContent: React.FC<DietPlanDetailContentProps> = ({
 
         {/* Detalhes da Versão Selecionada */}
         {selectedVersion && (
-          <div className="bg-white rounded-2xl border border-gray-200 p-5 space-y-4">
-            <div className="flex items-start justify-between">
+          <div className="bg-white rounded-2xl border border-gray-200 p-0.5 space-y-4">
+            <div className="flex items-start justify-between p-2.5">
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-lg font-bold text-gray-900">
@@ -605,8 +607,8 @@ const DietPlanDetailContent: React.FC<DietPlanDetailContentProps> = ({
                     </span>
                   )}
                 </div>
-                <p className="text-sm text-gray-600">
-                  {fmtDate(selectedVersion.created_at, locale, {
+                <p className="text-xs text-gray-600">
+                  {formatLocalDateTimeFromUTC(selectedVersion.created_at, locale, {
                     dateStyle: "long",
                     timeStyle: "short",
                   })}
@@ -725,7 +727,7 @@ const DietPlanDetailContent: React.FC<DietPlanDetailContentProps> = ({
                 {isStructured && (
                   <StructuredDietView
                     data={selectedVersion.data as StructuredDietData}
-                    compact={false}
+                    compact={true}
                   />
                 )}
               </div>

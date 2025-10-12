@@ -38,6 +38,12 @@ export interface PrefetchCtx {
   fetcher: (input: RequestInfo, init?: RequestInit) => Promise<Response>;
 }
 
+// Lock simples para evitar prefetch de detalhes enquanto modal estiver aberta
+const detailLocks = new Set<string>();
+export function lockDetail(id: string){ if (id) detailLocks.add(id); }
+export function unlockDetail(id: string){ if (id) detailLocks.delete(id); }
+export function isDetailLocked(id: string){ return id ? detailLocks.has(id) : false; }
+
 export const Prefetch = {
   overview(ctx: PrefetchCtx) {
     const mk = 'overview'; markAttempt(mk);
@@ -60,6 +66,7 @@ export const Prefetch = {
   },
   dietPlanDetail(ctx: PrefetchCtx, id: string) {
     if (!id) return; const mk = `dietPlanDetail:${id}:deep`; markAttempt(mk);
+    if (isDetailLocked(id)) { markCooldown(mk); return; }
     const key = ['diet-plan-detail', id];
     if (!shouldRun(key.join(':'))) { markCooldown(mk); return; }
     if (!isCached(ctx.qc, key, mk)) { prefetchDietPlanDetail(ctx.qc, ctx.fetcher, id); markExec(mk); }

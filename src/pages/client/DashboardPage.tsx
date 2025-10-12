@@ -47,6 +47,7 @@ import type { DietPlanDetail } from "../../hooks/useDietPlans";
 import { useDashboardData } from "../../hooks/useDashboardData";
 import { useQueryClient } from "@tanstack/react-query";
 import Prefetch, { logPrefetchMetrics } from "../../utils/prefetch";
+import { lockDetail, unlockDetail } from "../../utils/prefetch";
 import { shouldShowSkeleton } from "../../utils/loadingHelpers";
 import { useIntersectionPrefetch } from "../../hooks/useIntersectionPrefetch";
 import { useWaterLogsInteligente } from "../../hooks/useWaterLogsInteligente";
@@ -557,12 +558,23 @@ const DashboardPage: React.FC = () => {
     {}
   );
   const authenticatedFetch = useAuthenticatedFetch();
+  // Wrapper compatível com assinatura de fetch(RequestInfo, RequestInit)
+  const authFetchCompat: (input: RequestInfo, init?: RequestInit) => Promise<Response> = (input, init) => {
+    const url =
+      typeof input === "string"
+        ? input
+        : input instanceof URL
+        ? input.toString()
+        : (input as Request).url;
+    return authenticatedFetch(url, init);
+  };
 
   // Fetch automático via React Query – sem efeito manual.
 
   const openDetail = async (id: string) => {
     setSelectedPlanId(id);
     setShowDetail(true);
+    lockDetail(id);
   };
 
   const isStructuredDietData = (d: unknown): d is StructuredDietData => {
@@ -762,7 +774,7 @@ const DashboardPage: React.FC = () => {
             watermarkOpacity: 0.05,
             cover: {
               title: `${d.name}`,
-              subtitle: `Versão ${v.version_number}${isInfantil ? " · Infantil" : ""}`,
+              subtitle: `Versão ${v.version_number}`,
               showTotals: true,
               notes:
                 v.notes ??
@@ -816,18 +828,19 @@ const DashboardPage: React.FC = () => {
   useEffect(() => {
     (async () => {
       if (!showDetail || !selectedPlanId) return;
+      // Evitar refetch se dado estiver fresco (<60s)
+      const st = qc.getQueryState(["diet-plan-detail", selectedPlanId]);
+      const isFresh = !!(st?.dataUpdatedAt && Date.now() - st.dataUpdatedAt < 60_000);
+      if (isFresh && detailJson) return;
       setDetailLoading(true);
       try {
-        await qc.invalidateQueries({
-          queryKey: ["diet-plan-detail", selectedPlanId],
-        });
         const d = await getDetail(selectedPlanId);
         if (d) setDetailJson(d as DietPlanDetail);
       } finally {
         setDetailLoading(false);
       }
     })();
-  }, [showDetail, selectedPlanId, getDetail, qc]);
+  }, [showDetail, selectedPlanId, getDetail, qc, detailJson]);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1089,7 +1102,7 @@ const DashboardPage: React.FC = () => {
                   setSidebarOpen(false);
                 }}
                 onMouseEnter={() => {
-                  const ctx = { qc, fetcher: fetch } as const;
+                  const ctx = { qc, fetcher: authFetchCompat } as const;
                   if (item.id === "overview") Prefetch.overview(ctx);
                   else if (item.id === "exercicios") Prefetch.exercicios(ctx);
                   else if (item.id === "dietas") Prefetch.dietas(ctx);
@@ -1266,7 +1279,7 @@ const DashboardPage: React.FC = () => {
                       onClick={action.onClick}
                       onMouseEnter={() =>
                         Prefetch.quickAction(
-                          { qc, fetcher: fetch },
+                          { qc, fetcher: authFetchCompat },
                           action.label
                         )
                       }
@@ -1682,7 +1695,7 @@ const DashboardPage: React.FC = () => {
                       key={diet.id}
                       data-plan-id={diet.id}
                       onMouseEnter={() => {
-                        const ctx = { qc, fetcher: fetch } as const;
+                        const ctx = { qc, fetcher: authFetchCompat } as const;
                         Prefetch.dietPlanDetail(ctx, diet.id);
                       }}
                       onMouseLeave={() => {
@@ -1843,12 +1856,13 @@ const DashboardPage: React.FC = () => {
 
         {/* Detail Modal */}
         {showDetail && selectedPlanId && (
-          <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/50 p-4 overflow-y-auto">
-            <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center">
+          <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/50 p-3 overflow-y-auto">
+            <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl p-2 space-y-4 max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center p-4">
                 <h2 className="text-lg font-semibold">Plano de Dieta</h2>
                 <button
                   onClick={() => {
+                    if (selectedPlanId) unlockDetail(selectedPlanId);
                     setShowDetail(false);
                     setSelectedPlanId(null);
                   }}
