@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { fetchPosts } from "../../../services/blog";
+import React, { useCallback, useEffect, useState } from "react";
+import { fetchPosts, updatePostStatus } from "../../../services/blog";
 import { useAuth } from "../../../contexts/useAuth";
 import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
@@ -20,6 +20,8 @@ import {
   Search,
   Filter,
   BookOpen,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 import { useI18n, formatDate as fmtDate } from "../../../i18n";
 
@@ -35,7 +37,7 @@ interface PostRow {
 }
 
 const BlogAdminListPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, getAccessToken } = useAuth();
   const { push } = useToast();
   const { locale } = useI18n();
 
@@ -45,27 +47,29 @@ const BlogAdminListPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState<"all"|"draft"|"published"|"archived">("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const limit = 20;
   const canManage = user && user.role === "admin";
 
-  const loadPosts = async () => {
+  const loadPosts = useCallback(async () => {
     if (!canManage) return;
 
     setLoading(true);
     setError(null);
     try {
+      const accessToken = await getAccessToken?.();
       const data = await fetchPosts({
         page,
         limit,
         preview: true,
+        accessToken: accessToken || undefined,
         ...(searchTerm && { search: searchTerm }),
-        ...(statusFilter !== "all" && { status: statusFilter }),
+  ...(statusFilter !== "all" && { status: statusFilter }),
         ...(categoryFilter !== "all" && { category: categoryFilter }),
       });
-      setPosts(data.results as any);
+      setPosts(data.results as unknown as PostRow[]);
       setTotal(data.total);
     } catch (e) {
       const message =
@@ -75,11 +79,11 @@ const BlogAdminListPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [canManage, categoryFilter, getAccessToken, limit, page, searchTerm, statusFilter, push]);
 
   useEffect(() => {
     loadPosts();
-  }, [page, canManage]);
+  }, [page, canManage, loadPosts]);
 
   useEffect(() => {
     // Debounce search
@@ -92,7 +96,7 @@ const BlogAdminListPage: React.FC = () => {
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [searchTerm, statusFilter, categoryFilter]);
+  }, [searchTerm, statusFilter, categoryFilter, page, loadPosts]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -125,6 +129,33 @@ const BlogAdminListPage: React.FC = () => {
     setStatusFilter("all");
     setCategoryFilter("all");
     setPage(1);
+  };
+
+  const handleArchive = async (postId: string) => {
+    try {
+      const token = await getAccessToken?.();
+      if (!token) throw new Error("Sem autorização");
+      await updatePostStatus(postId, "archived", token);
+      push({ type: "success", message: "Post arquivado" });
+      loadPosts();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Falha ao arquivar";
+      push({ type: "error", message });
+    }
+  };
+
+  const handleUnarchive = async (postId: string) => {
+    try {
+      const token = await getAccessToken?.();
+      if (!token) throw new Error("Sem autorização");
+      // Ao desarquivar, voltamos para rascunho para revisão rápida
+      await updatePostStatus(postId, "draft", token);
+      push({ type: "success", message: "Post desarquivado (rascunho)" });
+      loadPosts();
+    } catch (e) {
+      const message = e instanceof Error ? e.message : "Falha ao desarquivar";
+      push({ type: "error", message });
+    }
   };
 
   const totalPages = Math.ceil(total / limit);
@@ -244,7 +275,7 @@ const BlogAdminListPage: React.FC = () => {
               </label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
+                onChange={(e) => setStatusFilter(e.target.value as "all"|"draft"|"published"|"archived")}
                 className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">Todos os status</option>
@@ -478,6 +509,33 @@ const BlogAdminListPage: React.FC = () => {
                                 Editar
                               </Button>
                             </Link>
+                            {post.status !== "archived" ? (
+                              <Button
+                                variant="secondary"
+                                className="flex items-center gap-2 text-gray-600"
+                                noBorder
+                                noFocus
+                                noBackground
+                                onClick={() => handleArchive(post.id)}
+                                title="Arquivar"
+                              >
+                                <Archive size={14} />
+                                Arquivar
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="secondary"
+                                className="flex items-center gap-2 text-gray-600"
+                                noBorder
+                                noFocus
+                                noBackground
+                                onClick={() => handleUnarchive(post.id)}
+                                title="Desarquivar"
+                              >
+                                <RotateCcw size={14} />
+                                Desarquivar
+                              </Button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -623,6 +681,33 @@ const BlogAdminListPage: React.FC = () => {
                         Editar
                       </Button>
                     </Link>
+                    {post.status !== "archived" ? (
+                      <Button
+                        variant="secondary"
+                        className="flex-1 w-full flex items-center gap-2 justify-center text-gray-600"
+                        noBorder
+                        noFocus
+                        noBackground
+                        onClick={() => handleArchive(post.id)}
+                        title="Arquivar"
+                      >
+                        <Archive size={14} />
+                        Arquivar
+                      </Button>
+                    ) : (
+                      <Button
+                        variant="secondary"
+                        className="flex-1 w-full flex items-center gap-2 justify-center text-gray-600"
+                        noBorder
+                        noFocus
+                        noBackground
+                        onClick={() => handleUnarchive(post.id)}
+                        title="Desarquivar"
+                      >
+                        <RotateCcw size={14} />
+                        Desarquivar
+                      </Button>
+                    )}
                   </div>
                 </Card>
               ))}

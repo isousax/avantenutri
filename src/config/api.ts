@@ -80,6 +80,8 @@ export const API = {
   BLOG_POSTS: `${API_AUTH_BASE}/blog/posts`, // GET list posts
   blogPost: (slug: string) => `${API_AUTH_BASE}/blog/posts/${slug}`, // GET single post
   blogPostRelated: (slug: string) => `${API_AUTH_BASE}/blog/posts/${slug}/related`, // GET related posts
+  BLOG_MEDIA_UPLOAD: `${API_AUTH_BASE}/blog/media`, // POST file upload (admin/nutri)
+  BLOG_MEDIA_PUBLIC: (path: string) => `${API_AUTH_BASE}/blog/media/${path}`, // GET public media
 } as const;
 
 export type ApiRoutes = typeof API;

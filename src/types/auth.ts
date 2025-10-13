@@ -3,7 +3,7 @@ export type User = {
   full_name: string;
   display_name: string;
   email: string;
-  role: "patient" | "admin";
+  role: "patient" | "admin" | "nutri";
   photoUrl?: string;
   phone?: string;
   birthDate?: string;

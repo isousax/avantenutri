@@ -5,6 +5,7 @@ import Button from "../../../components/ui/Button";
 import Card from "../../../components/ui/Card";
 import Skeleton from "../../../components/ui/Skeleton";
 import EditorStats from "../../../components/blog/EditorStats";
+import RichTextEditor from "../../../components/blog/RichTextEditor";
 import { SEO } from "../../../components/comum/SEO";
 import { useToast } from "../../../components/ui/ToastProvider";
 import {
@@ -25,6 +26,8 @@ import {
   ChevronUp,
   BookOpen,
   Settings,
+  Archive,
+  RotateCcw,
 } from "lucide-react";
 
 interface FormState {
@@ -62,7 +65,7 @@ const BlogAdminEditPage: React.FC = () => {
 
   const [form, setForm] = useState<FormState>(empty);
   const MODE_KEY = "blogEditorMode";
-  const [mode, setMode] = useState<"html" | "md">("md");
+  const [mode, setMode] = useState<"html" | "md" | "rich">("md");
   const [previewHtml, setPreviewHtml] = useState<string>("");
   const [previewLoading, setPreviewLoading] = useState(false);
   const previewDebounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -202,7 +205,9 @@ const BlogAdminEditPage: React.FC = () => {
           ta.focus();
           const cursorPos = start + finalSnippet.length;
           ta.setSelectionRange(cursorPos, cursorPos);
-        } catch {}
+        } catch {
+          /* noop */
+        }
       }, 0);
       return { ...f, content_md: newValue };
     });
@@ -303,14 +308,18 @@ const BlogAdminEditPage: React.FC = () => {
     try {
       const stored = localStorage.getItem(MODE_KEY);
       if (stored === "html" || stored === "md") setMode(stored);
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }, []);
 
   // persist mode
   useEffect(() => {
     try {
       localStorage.setItem(MODE_KEY, mode);
-    } catch {}
+    } catch {
+      /* noop */
+    }
   }, [mode]);
 
   const [saving, setSaving] = useState(false);
@@ -383,12 +392,23 @@ const BlogAdminEditPage: React.FC = () => {
         const key = (form.content_md || "") + "|md";
         let generated: string | undefined = previewCacheRef.current.get(key);
         if (!generated) {
-          const mod: any = await import("marked");
-          const parseFn =
-            mod.parse ||
-            (mod.marked && mod.marked.parse) ||
-            mod.marked ||
-            ((x: string) => x);
+          const modUnknown: unknown = await import("marked");
+          const isFn = (v: unknown): v is ((s: string) => string) => typeof v === "function";
+          const getParse = (mod: unknown): ((s: string) => string) => {
+            if (mod && typeof mod === "object") {
+              const m = mod as Record<string, unknown>;
+              if (isFn(m.parse)) return m.parse;
+              if (m.marked && typeof m.marked === "object") {
+                const mm = m.marked as Record<string, unknown>;
+                if (isFn(mm.parse)) return mm.parse;
+              }
+              if (isFn((m as Record<string, unknown>).marked)) {
+                return (m.marked as (s: string) => string);
+              }
+            }
+            return (x: string) => x;
+          };
+          const parseFn = getParse(modUnknown);
           generated = parseFn(form.content_md || "");
         }
         // Collect languages from fenced blocks to minimize highlight footprint
@@ -398,7 +418,12 @@ const BlogAdminEditPage: React.FC = () => {
         const unique = Array.from(new Set(codeLangs)).slice(0, 8);
         if (unique.length) {
           try {
-            const hlCore: any = await import("highlight.js/lib/core");
+            const hlCoreUnknown: unknown = await import("highlight.js/lib/core");
+            type HLCore = {
+              registerLanguage: (name: string, lang: unknown) => void;
+              highlight: (code: string, opts: { language: string }) => { value: string };
+            };
+            const hlCore = hlCoreUnknown as HLCore;
             const alias: Record<string, string> = {
               js: "javascript",
               ts: "typescript",
@@ -411,7 +436,7 @@ const BlogAdminEditPage: React.FC = () => {
                 const langMod = await import(
                   `highlight.js/lib/languages/${resolved}`
                 );
-                hlCore.registerLanguage(resolved, langMod.default);
+                hlCore.registerLanguage(resolved, (langMod as { default: unknown }).default);
               } catch {
                 /* skip unknown */
               }
@@ -579,9 +604,10 @@ const BlogAdminEditPage: React.FC = () => {
           : "Rascunho salvo com sucesso!",
       });
       navigate("/admin/blog");
-    } catch (e: any) {
-      setError(e.message);
-      push({ type: "error", message: e.message });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Falha ao salvar";
+      setError(message);
+      push({ type: "error", message });
     } finally {
       setSaving(false);
     }
@@ -601,9 +627,51 @@ const BlogAdminEditPage: React.FC = () => {
       if (!r.ok) throw new Error("Falha ao excluir");
       push({ type: "success", message: "Artigo excluído com sucesso" });
       navigate("/admin/blog");
-    } catch (e: any) {
-      setError(e.message);
-      push({ type: "error", message: e.message });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Falha ao excluir";
+      setError(message);
+      push({ type: "error", message });
+    }
+  };
+
+  const doArchive = async () => {
+    if (isNew) return;
+    try {
+      const token = await getAccessToken?.();
+      if (!token) throw new Error("Sem autorização");
+      const r = await fetch(`${API_BASE}/blog/posts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: "archived" }),
+      });
+      if (!r.ok) throw new Error("Falha ao arquivar");
+      push({ type: "success", message: "Artigo arquivado" });
+      navigate("/admin/blog");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Erro ao arquivar";
+      setError(message);
+      push({ type: "error", message });
+    }
+  };
+
+  const doUnarchive = async () => {
+    if (isNew) return;
+    try {
+      const token = await getAccessToken?.();
+      if (!token) throw new Error("Sem autorização");
+      // Retorna para rascunho ao desarquivar
+      const r = await fetch(`${API_BASE}/blog/posts/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status: "draft" }),
+      });
+      if (!r.ok) throw new Error("Falha ao desarquivar");
+      push({ type: "success", message: "Artigo desarquivado (rascunho)" });
+      navigate("/admin/blog");
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : "Erro ao desarquivar";
+      setError(message);
+      push({ type: "error", message });
     }
   };
 
@@ -684,6 +752,34 @@ const BlogAdminEditPage: React.FC = () => {
               >
                 Voltar
               </Button>
+              {!isNew && form.status !== "archived" && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={doArchive}
+                  className="flex items-center gap-2"
+                  noBorder
+                  noFocus
+                  noBackground
+                >
+                  <Archive size={16} />
+                  Arquivar
+                </Button>
+              )}
+              {!isNew && form.status === "archived" && (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={doUnarchive}
+                  className="flex items-center gap-2"
+                  noBorder
+                  noFocus
+                  noBackground
+                >
+                  <RotateCcw size={16} />
+                  Desarquivar
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -861,6 +957,18 @@ const BlogAdminEditPage: React.FC = () => {
                       <Code size={12} />
                       HTML
                     </Button>
+                    <Button
+                      type="button"
+                      variant={mode === "rich" ? "primary" : "secondary"}
+                      onClick={() => setMode("rich")}
+                      noFocus
+                      className="flex items-center gap-2 text-xs"
+                      noBorder={mode !== "rich"}
+                      noBackground={mode !== "rich"}
+                    >
+                      <Type size={12} />
+                      Editor
+                    </Button>
                   </div>
                 </div>
 
@@ -1011,6 +1119,19 @@ const BlogAdminEditPage: React.FC = () => {
                     onChange={(e) => update("content_html", e.target.value)}
                     placeholder="Cole ou edite HTML diretamente..."
                   />
+                )}
+
+                {mode === "rich" && (
+                  <div className="space-y-2">
+                    <RichTextEditor
+                      value={form.content_html}
+                      onChange={(html) => update("content_html", html)}
+                      placeholder="Escreva seu artigo como em um editor de texto..."
+                    />
+                    <div className="text-xs text-gray-500">
+                      Dica: você pode alternar entre os modos Editor/HTML/Markdown quando necessário.
+                    </div>
+                  </div>
                 )}
               </div>
             )}

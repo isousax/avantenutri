@@ -11,12 +11,13 @@ import DevQueryPanel from './panels/DevQueryPanel';
 import { API } from './config/api';
 
 if (import.meta.env.DEV) {
-  // eslint-disable-next-line no-console
   console.log('[BOOT] API base:', API.API_AUTH_BASE);
 }
 
+const Wrapper = import.meta.env.DEV ? React.Fragment : React.StrictMode;
+
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode>
+  <Wrapper>
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <QuestionarioProvider>
@@ -33,5 +34,5 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
         </QuestionarioProvider>
       </AuthProvider>
     </QueryClientProvider>
-  </React.StrictMode>
+  </Wrapper>
 );

@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo, useState } from "react";
 import { fetchPosts, fetchCategories } from "../../services/blog";
+import type { BlogListItem, BlogListResponse } from "../../services/blog";
 import { useAuth } from "../../contexts/useAuth";
 import { Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
@@ -7,6 +8,7 @@ import Card from "../../components/ui/Card";
 import Footer from "../../components/layout/Footer";
 import { useI18n, formatDate as fmtDate } from "../../i18n";
 import { SEO } from "../../components/comum/SEO";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 // Tipos e dados mock (depois pode vir de uma API)
 interface BlogPost {
@@ -34,43 +36,97 @@ const BlogPage: React.FC = () => {
   const [total, setTotal] = useState(0);
   const limit = 9;
   const [categoriesApi, setCategoriesApi] = useState<{category:string; count:number}[]>([]);
-  const { user } = useAuth();
-  const canPreview: boolean = !!user && (user.role === 'admin' || (user as any).role === 'nutri');
+  const { user, getAccessToken } = useAuth();
+  const canPreview: boolean = !!user && (user.role === 'admin' || (user as unknown as { role?: string }).role === 'nutri');
   const [tagFilter, setTagFilter] = useState('');
+  const queryClient = useQueryClient();
 
-  useEffect(()=> {
-    // load categories (no pagination; ignore errors)
-    fetchCategories().then(res=> setCategoriesApi(res.categories)).catch(()=>{});
+  // Debounce leve para busca/tag (memória estável da key)
+  const debouncedSearch = useMemo(() => searchTerm.trim(), [searchTerm]);
+  const debouncedTag = useMemo(() => tagFilter.trim(), [tagFilter]);
+
+  // Categorias com cache
+  React.useEffect(() => {
+    let mounted = true;
+    fetchCategories().then(res => { if(mounted) setCategoriesApi(res.categories); }).catch(()=>{});
+    return () => { mounted = false; };
   }, []);
 
-  useEffect(() => {
-    let ignore = false;
-    async function load(){
-      setLoading(true); setError(null);
-      try {
-  const data = await fetchPosts({ page, limit, category: selectedCategory, search: searchTerm, tag: tagFilter || undefined, preview: canPreview || undefined });
-        if(ignore) return;
-        const mapped: BlogPost[] = (data.results||[]).map((r:any)=> ({
-          id: r.id,
-          title: r.title,
-          excerpt: r.excerpt || '',
-          author: r.author_name || 'Avante Nutri',
-          publishDate: r.published_at || '',
-          readTime: r.read_time_min || 1,
-          category: r.category || 'geral',
-          tags: r.tags || [],
-          imageUrl: r.cover_image_url || '/blog/placeholder.jpg',
-          featured: false,
-        }));
-        setBlogPosts(mapped);
-        setTotal(data.total || 0);
-      } catch(e:any){
-        if(!ignore) setError('Erro ao carregar artigos');
-      } finally { if(!ignore) setLoading(false); }
-    }
-    load();
-    return ()=> { ignore = true; };
-  }, [page, selectedCategory, searchTerm, tagFilter, canPreview]);
+  const { data: listResp, isLoading, error: listErr } = useQuery<BlogListResponse>({
+    queryKey: [
+      'blog',
+      'list',
+      { page, limit, category: selectedCategory, search: debouncedSearch, tag: debouncedTag, mode: canPreview ? 'preview' : 'public' },
+    ],
+    queryFn: async () => {
+      const token = canPreview ? ((await getAccessToken?.()) || undefined) : undefined;
+      return fetchPosts({ page, limit, category: selectedCategory, search: debouncedSearch || undefined, tag: debouncedTag || undefined, preview: canPreview || undefined, accessToken: token });
+    },
+  });
+
+  React.useEffect(() => {
+    // Prefetch da próxima página para navegação suave
+    const nextPage = page + 1;
+    const tokenPromise = canPreview ? getAccessToken?.() : Promise.resolve(undefined);
+    tokenPromise?.then(token => {
+      queryClient.prefetchQuery({
+        queryKey: [
+          'blog', 'list', { page: nextPage, limit, category: selectedCategory, search: debouncedSearch, tag: debouncedTag, mode: canPreview ? 'preview' : 'public' },
+        ],
+        queryFn: () => fetchPosts({ page: nextPage, limit, category: selectedCategory, search: debouncedSearch || undefined, tag: debouncedTag || undefined, preview: canPreview || undefined, accessToken: (token || undefined) as string | undefined }),
+      });
+    });
+  }, [page, limit, selectedCategory, debouncedSearch, debouncedTag, canPreview, getAccessToken, queryClient]);
+
+  React.useEffect(() => {
+    // Prefetch do post ao passar mouse no card (delegado via evento)
+    const handler = (e: MouseEvent) => {
+      const a = (e.target as HTMLElement).closest('a[href^="/blog/"]') as HTMLAnchorElement | null;
+      if (!a) return;
+      const slug = a.getAttribute('href')?.split('/blog/')[1];
+      if (!slug) return;
+      const tokenPromise = canPreview ? getAccessToken?.() : Promise.resolve(undefined);
+      tokenPromise?.then(token => {
+        queryClient.prefetchQuery({
+          queryKey: ['blog', 'post', slug, canPreview ? 'preview' : 'public'],
+          queryFn: async () => {
+            const access = canPreview ? ((token) || undefined) : undefined;
+            const mod = await import('../../services/blog');
+            return mod.fetchPost(slug, canPreview || false, access);
+          },
+        });
+      });
+    };
+    document.addEventListener('mouseover', handler);
+    return () => document.removeEventListener('mouseover', handler);
+  }, [canPreview, getAccessToken, queryClient]);
+
+  React.useEffect(() => {
+    // Atualizar estados derivados quando a query resolver
+    if (!listResp) return;
+    const results: BlogListItem[] = (listResp.results || []) as BlogListItem[];
+    const mapped: BlogPost[] = results.map((r: BlogListItem) => ({
+      id: r.slug,
+      title: r.title,
+      excerpt: r.excerpt || '',
+      author: 'Avante Nutri',
+      publishDate: r.published_at || '',
+      readTime: r.read_time_min || 1,
+      category: r.category || 'geral',
+      tags: r.tags || [],
+      imageUrl: r.cover_image_url || '/blog/placeholder.jpg',
+      featured: false,
+    }));
+    setBlogPosts(mapped);
+    setTotal(listResp.total ?? 0);
+    setLoading(false);
+    setError(null);
+  }, [listResp]);
+
+  React.useEffect(() => {
+    setLoading(isLoading);
+    setError(listErr ? 'Erro ao carregar artigos' : null);
+  }, [isLoading, listErr]);
 
   const categories = [
     { id: 'todos', name: 'Todos os Artigos', count: total },
