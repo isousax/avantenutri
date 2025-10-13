@@ -9,6 +9,16 @@ export function parseYMDToLocalDate(s: string): Date {
 }
 
 /**
+ * Formata uma instância Date para 'YYYY-MM-DD' usando o fuso LOCAL do usuário.
+ */
+export function formatYMDLocal(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/**
  * Formata dia da semana curto em pt-BR a partir de 'YYYY-MM-DD'.
  */
 export function formatWeekdayShortPtBR(ymd: string): string {

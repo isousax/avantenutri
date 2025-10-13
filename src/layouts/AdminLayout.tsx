@@ -8,6 +8,7 @@ import { useToast } from '../components/ui/ToastProvider';
 import { useI18n } from '../i18n';
 import { API } from '../config/api';
 import type { TranslationKey } from '../types/i18n.d';
+import { formatYMDLocal } from '../utils/date';
 
 interface BaseNavItem { path: string; labelKey: TranslationKey; icon?: React.ReactNode; requiresRole?: string; groupId?: string; }
 interface NavItem extends BaseNavItem { label: string; }
@@ -80,14 +81,19 @@ const AdminLayout: React.FC = () => {
     setSidebarOpen(false);
   }, [location.pathname]);
 
+  // Mantenha o fetch estável mesmo se o provider atualizar em foco/visibilidade
+  const authFetchRef = useRef(authenticatedFetch);
+  useEffect(() => { authFetchRef.current = authenticatedFetch; }, [authenticatedFetch]);
+
   // Tentativa suave de endpoints agregados (fallback silencioso se não existirem)
   const loadMetrics = useCallback(async (): Promise<boolean> => {
     // Estratégia: chamadas independentes para manter tempo de resposta rápido
     const upd = (key: string, partial: Partial<Metric>) => setMetrics(m => m.map(mm => mm.key===key? { ...mm, ...partial, loading:false }: mm));
+    const fetcher = authFetchRef.current;
     try {
       // Usuários
       try {
-        const r = await authenticatedFetch(`${API.ADMIN_USERS}?page=1&pageSize=1`);
+        const r = await fetcher(`${API.ADMIN_USERS}?page=1&pageSize=1`);
         if (r.ok) {
           const data = await r.json();
           if (typeof data.total === 'number') upd('users', { value: data.total }); else upd('users', { value: data.results?.length || 0 });
@@ -95,9 +101,9 @@ const AdminLayout: React.FC = () => {
       } catch { upd('users', { value: 0 }); }
       // Consultas futuras
       try {
-        // Backend espera from/to em formato YYYY-MM-DD (não ISO completo)
-        const fromDate = new Date().toISOString().slice(0, 10);
-        const r = await authenticatedFetch(`${API.ADMIN_CONSULTATIONS}?from=${fromDate}&page=1&pageSize=1&status=scheduled`);
+        // Backend espera from/to em formato YYYY-MM-DD no fuso local
+        const fromDate = formatYMDLocal(new Date());
+        const r = await fetcher(`${API.ADMIN_CONSULTATIONS}?from=${fromDate}&page=1&pageSize=1&status=scheduled`);
         if (r.ok) {
           const data = await r.json();
           upd('consultsUpcoming', { value: data.total ?? data.results?.length ?? 0 });
@@ -105,7 +111,7 @@ const AdminLayout: React.FC = () => {
       } catch { upd('consultsUpcoming', { value: 0 }); }
       // Posts publicados
       try {
-        const r = await authenticatedFetch(`${API.BLOG_POSTS}?page=1&limit=1`);
+        const r = await fetcher(`${API.BLOG_POSTS}?page=1&limit=1`);
         if (r.ok) {
           const data = await r.json();
           upd('posts', { value: data.total ?? data.results?.length ?? 0 });
@@ -113,7 +119,7 @@ const AdminLayout: React.FC = () => {
       } catch { upd('posts', { value: 0 }); }
       return true;
     } catch {/* ignore root */ return false; }
-  }, [authenticatedFetch]);
+  }, []);
 
   const initialLoadToastSent = useRef(false);
   useEffect(()=> {
@@ -124,8 +130,9 @@ const AdminLayout: React.FC = () => {
         initialLoadToastSent.current = true;
       }
     })();
+  // somente no mount para evitar refetch por foco/visibilidade
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loadMetrics]);
+  }, []);
 
   // Command palette: atalhos de teclado
   useEffect(()=> {
