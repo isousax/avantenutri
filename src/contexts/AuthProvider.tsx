@@ -8,7 +8,7 @@ import { API } from "../config/api";
  * AuthProvider
  * - Leader election multi-tab (localStorage + BroadcastChannel)
  * - Refresh with exponential backoff and retry, leader-only
- * - Persist tokens to sessionStorage or localStorage depending on rememberMe
+ * - Persistência unificada em localStorage (sem heurísticas de sessionStorage)
  * - BroadcastChannel + storage event sync
  * - beforeunload / visibilitychange cleanup & attempt to assume leadership
  *
@@ -43,26 +43,19 @@ function normalizeRole(role: unknown): "patient" | "admin" {
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(() => {
     try {
-      const raw =
-        localStorage.getItem(STORAGE_USER_KEY) ||
-        sessionStorage.getItem(STORAGE_USER_KEY);
-      if (!raw) return null;
-      const parsed = JSON.parse(raw) as {
-        user: User;
-        expiresAt: number;
-        rememberMe?: boolean;
+      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+      if (!access) return null;
+      const p = decodeJwt(access);
+      if (!p) return null;
+      const derived: User = {
+        id: (p.sub ?? p.user_id ?? p.id) as string,
+        email: (p.email ?? "") as string,
+        role: normalizeRole(p.role),
+        full_name: (p.full_name ?? p.name ?? "") as string,
+        display_name: (p.display_name ?? p.full_name ?? p.name ?? "") as string,
+        phone: (p.phone ?? p.phone_number ?? p.tel ?? "") as string,
       };
-      if (!parsed) return null;
-      if (
-        parsed.expiresAt &&
-        parsed.expiresAt < nowMs() &&
-        !parsed.rememberMe
-      ) {
-        localStorage.removeItem(STORAGE_USER_KEY);
-        sessionStorage.removeItem(STORAGE_USER_KEY);
-        return null;
-      }
-      return parsed.user;
+      return derived;
     } catch {
       return null;
     }
@@ -85,22 +78,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const verificationInProgressRef = useRef<boolean>(false);
   const refreshInProgressRef = useRef<Promise<boolean> | null>(null);
 
-  const saveUserToStorage = (userData: User, rememberMe: boolean) => {
+  const saveUserToStorage = (userData: User) => {
     const payload = {
       user: userData,
       expiresAt: nowMs() + SESSION_EXPIRY,
-      rememberMe,
+      rememberMe: true,
     };
     try {
-      // Sempre salva em localStorage para compartilhamento entre abas
+      // Persistência unificada em localStorage
       localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(payload));
-      if (!rememberMe) {
-        // Espelha também em sessionStorage (opcional / para limpeza automática se todas abas fecharem)
-        sessionStorage.setItem(STORAGE_USER_KEY, JSON.stringify(payload));
-      } else {
-        // Se rememberMe true, remove possível cópia antiga de sessão curta
-        sessionStorage.removeItem(STORAGE_USER_KEY);
-      }
     } catch (err) {
       console.warn("[AuthProvider] saveUserToStorage failed", err);
     }
@@ -130,28 +116,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const persistTokens = (
     accessToken: string,
     refreshToken: string | null,
-    expiresAtIso?: string,
-    rememberMe = false
+    expiresAtIso?: string
   ) => {
     try {
-      // Fonte de verdade sempre localStorage
+      // Fonte de verdade: apenas localStorage
       localStorage.setItem(STORAGE_ACCESS_KEY, accessToken);
       if (refreshToken) localStorage.setItem(STORAGE_REFRESH_KEY, refreshToken);
       if (expiresAtIso) localStorage.setItem(STORAGE_EXPIRES_KEY, expiresAtIso);
 
-      if (!rememberMe) {
-        // Espelha para sessionStorage para ciclo de vida curto
-        sessionStorage.setItem(STORAGE_ACCESS_KEY, accessToken);
-        if (refreshToken)
-          sessionStorage.setItem(STORAGE_REFRESH_KEY, refreshToken);
-        if (expiresAtIso)
-          sessionStorage.setItem(STORAGE_EXPIRES_KEY, expiresAtIso);
-      } else {
-        // Garante remoção de cópias antigas de sessão curta
-        sessionStorage.removeItem(STORAGE_ACCESS_KEY);
-        sessionStorage.removeItem(STORAGE_REFRESH_KEY);
-        sessionStorage.removeItem(STORAGE_EXPIRES_KEY);
-      }
+      // Não usamos mais sessionStorage para heurísticas/mirror
 
       // notify other tabs
       try {
@@ -203,9 +176,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // contextual logout used by provider & refresh failure
   const contextLogout = async () => {
     try {
-      const refresh =
-        localStorage.getItem(STORAGE_REFRESH_KEY) ||
-        sessionStorage.getItem(STORAGE_REFRESH_KEY);
+      const refresh = localStorage.getItem(STORAGE_REFRESH_KEY);
       if (refresh) {
         // try navigator.sendBeacon first (best-effort)
         try {
@@ -247,8 +218,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // doRefresh with retry/backoff (leader only calls)
   const doRefreshWithRetry = async (
-    refreshToken: string,
-    rememberMe = false
+    refreshToken: string
   ) => {
     // Aquisição de lock global para evitar duas abas batendo /auth/refresh ao mesmo tempo
     if (!(await acquireRefreshLock())) {
@@ -285,8 +255,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             persistTokens(
               newAccess,
               newRefresh,
-              expiresAt ?? undefined,
-              rememberMe
+              expiresAt ?? undefined
             );
 
           if (newAccess) {
@@ -301,12 +270,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 phone: (p.phone ?? p.phone_number ?? p.tel ?? "") as string,
               };
               setUser(derived);
-              saveUserToStorage(derived, rememberMe);
+              saveUserToStorage(derived);
             }
           }
 
           if (newAccess)
-            scheduleRefreshLeader(newAccess, newRefresh, expiresAt, rememberMe);
+            scheduleRefreshLeader(newAccess, newRefresh, expiresAt);
 
           return true;
         }
@@ -336,8 +305,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const scheduleRefreshLeader = (
     accessToken: string,
     refreshToken: string | null,
-    expiresAtIso?: string | null,
-    rememberMe = false
+    expiresAtIso?: string | null
   ) => {
     cancelScheduledRefresh();
     if (!refreshToken) return;
@@ -349,13 +317,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const timeout = when <= 0 ? 200 : when;
 
     // Agora tokens sempre em localStorage (espelho opcional em sessionStorage)
-    const storageForCallback = localStorage;
+  const storageForCallback = localStorage;
 
     refreshTimeoutRef.current = window.setTimeout(() => {
       try {
         const storedRefresh = storageForCallback.getItem(STORAGE_REFRESH_KEY);
         if (!isLeaderRef.current || !storedRefresh) return;
-        void doRefreshWithRetry(storedRefresh, rememberMe).catch((err) => {
+        void doRefreshWithRetry(storedRefresh).catch((err) => {
           console.warn("[AuthProvider] scheduled doRefresh failed:", err);
         });
       } catch (err) {
@@ -418,9 +386,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const refresh = localStorage.getItem(STORAGE_REFRESH_KEY);
       const expiresAt = localStorage.getItem(STORAGE_EXPIRES_KEY);
       if (access && refresh) {
-        // Detecta rememberMe pela ausência de espelho em sessionStorage
-        const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
-        scheduleRefreshLeader(access, refresh, expiresAt, rememberFlag);
+        scheduleRefreshLeader(access, refresh, expiresAt);
       }
     } catch (err) {
       console.warn("[AuthProvider] becomeLeader schedule error", err);
@@ -469,28 +435,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const rehydrateFromStorage = () => {
     try {
       // Sempre tenta a fonte de verdade localStorage
-      const access = localStorage.getItem(STORAGE_ACCESS_KEY);
+  const access = localStorage.getItem(STORAGE_ACCESS_KEY);
       const refresh = localStorage.getItem(STORAGE_REFRESH_KEY) ?? null;
       const expiresAtIso = localStorage.getItem(STORAGE_EXPIRES_KEY) ?? null;
-
-      if (!access) {
-        const rawUser =
-          sessionStorage.getItem(STORAGE_USER_KEY) ||
-          localStorage.getItem(STORAGE_USER_KEY);
-        if (!rawUser) return;
-        const parsed = JSON.parse(rawUser) as {
-          user: User;
-          expiresAt: number;
-          rememberMe?: boolean;
-        };
-        if (parsed && parsed.expiresAt && parsed.expiresAt > nowMs()) {
-          setUser(parsed.user);
-        } else {
-          clearAllStorage();
-          setUser(null);
-        }
-        return;
-      }
+      if (!access) { setUser(null); return; }
 
       const payload = decodeJwt(access);
       if (payload) {
@@ -503,12 +451,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           phone: (payload.phone ?? payload.phone_number ?? payload.tel ?? "") as string,
         };
         setUser(derived);
-        // detecta rememberMe pela existência no sessionStorage (espelho) – se não existir assume rememberMe=true
-        const sessionAccess = sessionStorage.getItem(STORAGE_ACCESS_KEY);
-        const rememberFlag = !sessionAccess; // se não há espelho, é uma sessão persistente (rememberMe)
-
         if (isLeaderRef.current && refresh) {
-          scheduleRefreshLeader(access, refresh, expiresAtIso, rememberFlag);
+          scheduleRefreshLeader(access, refresh, expiresAtIso);
         }
 
         // Chamada de sincronização não bloqueante: tenta obter /me e só então persiste o usuário
@@ -531,8 +475,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   })();
                   if (payload && payload.error === "Token outdated") {
                     const hadRefresh = !!(
-                      localStorage.getItem(STORAGE_REFRESH_KEY) ||
-                      sessionStorage.getItem(STORAGE_REFRESH_KEY)
+                      localStorage.getItem(STORAGE_REFRESH_KEY)
                     );
                     if (hadRefresh) {
                       const refreshed = await contextValue.refreshSession?.();
@@ -544,7 +487,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 }
                 // Persist derived user as fallback quando /me falhar
                 try {
-                  saveUserToStorage(derived, rememberFlag);
+                  saveUserToStorage(derived);
                 } catch (syncErr) { console.warn('[AuthProvider] /me sync parse failed', syncErr); }
                 return;
               }
@@ -570,17 +513,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                   height: (me.height ?? derived.height) as number | undefined,
                 };
                 setUser(updated);
-                saveUserToStorage(updated, rememberFlag);
+                saveUserToStorage(updated);
                 return;
               }
 
               // se /me não retornou objeto válido, persiste derived como fallback
-              saveUserToStorage(derived, rememberFlag);
+              saveUserToStorage(derived);
             } catch (networkErr) {
               // Em caso de erro de rede, persiste derived como fallback
               console.warn('[AuthProvider] /me sync failed', networkErr);
               try {
-                saveUserToStorage(derived, rememberFlag);
+                saveUserToStorage(derived);
               } catch (saveErr) {
                 console.warn('[AuthProvider] failed to save derived user', saveErr);
               }
@@ -589,31 +532,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } catch (outerErr) {
           console.warn("[AuthProvider] sync failed", outerErr);
           try {
-            saveUserToStorage(derived, rememberFlag);
+            saveUserToStorage(derived);
           } catch (saveErr) {
             console.warn('[AuthProvider] failed to save derived user', saveErr);
           }
         }
         return;
       }
-
-      // fallback to persisted user object
-      const rawUser =
-        localStorage.getItem(STORAGE_USER_KEY) ||
-        sessionStorage.getItem(STORAGE_USER_KEY);
-      if (rawUser) {
-        const parsed = JSON.parse(rawUser) as {
-          user: User;
-          expiresAt: number;
-          rememberMe?: boolean;
-        };
-        if (parsed && parsed.expiresAt && parsed.expiresAt > nowMs()) {
-          setUser(parsed.user);
-        } else {
-          clearAllStorage();
-          setUser(null);
-        }
-      }
+      // Se token inválido, limpa usuário
+      clearAllStorage();
+      setUser(null);
     } catch (err) {
       console.warn("[AuthProvider] rehydrate failed", err);
     }
@@ -672,7 +600,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     };
     document.addEventListener("visibilitychange", onVisibility);
 
-    // beforeunload -> if leader remove LEADER_KEY and try to notify backend (sendBeacon best-effort)
+    // beforeunload -> se líder, apenas remover LEADER_KEY (sem forçar logout)
     const onBeforeUnload = () => {
       try {
         const cur = JSON.parse(localStorage.getItem(LEADER_KEY) || "{}");
@@ -682,30 +610,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (err) {
         console.warn(
           "[AuthProvider] Failed to release leader key on unload",
-          err
-        );
-      }
-      try {
-        // Só envia logout automático em sessões de curta duração (sem "lembrar-me").
-        // Heurística: se existe espelho em sessionStorage do access token, é sessão curta.
-        const isSessionOnly = !!sessionStorage.getItem(STORAGE_ACCESS_KEY);
-        if (isSessionOnly) {
-          const refresh =
-            localStorage.getItem(STORAGE_REFRESH_KEY) ||
-            sessionStorage.getItem(STORAGE_REFRESH_KEY);
-          if (refresh && navigator.sendBeacon) {
-            const blob = new Blob(
-              [JSON.stringify({ refresh_token: refresh })],
-              {
-                type: "application/json",
-              }
-            );
-            navigator.sendBeacon(API.LOGOUT, blob);
-          }
-        }
-      } catch (err) {
-        console.warn(
-          "[AuthProvider] Failed to send logout beacon on unload",
           err
         );
       }
@@ -829,8 +733,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const changed = JSON.stringify(updated) !== JSON.stringify(user);
         if (changed) {
           setUser(updated);
-          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
-          saveUserToStorage(updated, rememberFlag);
+          saveUserToStorage(updated);
         }
       }
       setSessionVerified(true);
@@ -893,7 +796,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     forceVerify: async () => runSessionVerification(true),
     getAccessToken: async () => {
       const access = localStorage.getItem(STORAGE_ACCESS_KEY) ||
-        sessionStorage.getItem(STORAGE_ACCESS_KEY);
+        null; // Removed sessionStorage reference
       if (access) {
         try {
           const p = decodeJwt(access);
@@ -907,18 +810,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Se já há refresh em progresso, aguarda
       if (refreshInProgressRef.current) {
         await refreshInProgressRef.current;
-        return localStorage.getItem(STORAGE_ACCESS_KEY) ||
-          sessionStorage.getItem(STORAGE_ACCESS_KEY);
+          return localStorage.getItem(STORAGE_ACCESS_KEY);
       }
       const refreshed = await contextValue.refreshSession();
       if (!refreshed) return null;
-      return localStorage.getItem(STORAGE_ACCESS_KEY) ||
-        sessionStorage.getItem(STORAGE_ACCESS_KEY);
+        return localStorage.getItem(STORAGE_ACCESS_KEY);
     },
     login: async (
       email: string,
       password: string,
-      rememberMe: boolean = false
+      rememberMe: boolean = false // No longer used in sessionStorage
     ) => {
       try {
         const res = await fetch(API.LOGIN, {
@@ -981,10 +882,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
 
           if (access)
-            persistTokens(access, refresh, expiresAt ?? undefined, rememberMe);
+            persistTokens(access, refresh, expiresAt ?? undefined); // Removed rememberMe
 
           setUser(userObj);
-          saveUserToStorage(userObj, rememberMe);
+          saveUserToStorage(userObj); // Removed rememberMe
 
           // Validação adicional opcional com /api/auth/me (se upstream suportar) – não bloqueante
           if (access) {
@@ -1015,7 +916,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     phone: (meData.phone ?? userObj.phone ?? "") as string,
                   } as User;
                   setUser(updated);
-                  saveUserToStorage(updated, rememberMe);
+                  saveUserToStorage(updated);
                 }
               }
             } catch (err) {
@@ -1026,7 +927,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
           // schedule refresh if leader
           if (isLeaderRef.current && access && refresh) {
-            scheduleRefreshLeader(access, refresh, expiresAt, rememberMe);
+      scheduleRefreshLeader(access, refresh, expiresAt); // Removed rememberMe
           }
 
           // Inform other tabs
@@ -1073,15 +974,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const updated = { ...user, ...partial } as User;
       setUser(updated);
       try {
-        const raw =
-          sessionStorage.getItem(STORAGE_USER_KEY) ||
-          localStorage.getItem(STORAGE_USER_KEY);
-        let rememberMe = false;
-        if (raw) {
-          const parsed = JSON.parse(raw) as { rememberMe?: boolean };
-          rememberMe = !!parsed?.rememberMe;
-        }
-        saveUserToStorage(updated, rememberMe);
+        saveUserToStorage(updated);
       } catch (err) {
         console.warn("[AuthProvider] updateUser storage failed", err);
       }
@@ -1095,9 +988,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         
         const refreshPromise = (async () => {
           try {
-            const refresh =
-              localStorage.getItem(STORAGE_REFRESH_KEY) ||
-              sessionStorage.getItem(STORAGE_REFRESH_KEY);
+            const refresh = localStorage.getItem(STORAGE_REFRESH_KEY);
             if (!refresh) return false;
             // Tenta lock cross-tab
             if (!(await acquireRefreshLock())) {
@@ -1107,10 +998,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             }
             // Se líder, usa fluxo de retry existente
             if (isLeaderRef.current) {
-              const res = await doRefreshWithRetry(
-                refresh,
-                !sessionStorage.getItem(STORAGE_ACCESS_KEY)
-              );
+              const res = await doRefreshWithRetry(refresh);
               releaseRefreshLock();
               return res;
             }
@@ -1149,12 +1037,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               if (p?.exp) expiresAt = new Date(Number(p.exp) * 1000).toISOString();
             }
             if (newAccess) {
-              const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
               persistTokens(
                 newAccess,
                 newRefresh,
-                expiresAt ?? undefined,
-                rememberFlag
+                expiresAt ?? undefined
               );
               const p = decodeJwt(newAccess);
               if (p) {
@@ -1292,8 +1178,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             height: (data.height ?? user?.height) as number | undefined,
           };
           setUser(updated);
-          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
-          saveUserToStorage(updated, rememberFlag);
+          saveUserToStorage(updated);
           return true;
         }
         return false;
@@ -1340,13 +1225,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         // Se veio novo access token (session_version mudou), persistir sem exigir logout
         if (data?.access_token) {
-          const rememberFlag = !sessionStorage.getItem(STORAGE_ACCESS_KEY);
           persistTokens(
             data.access_token,
-            localStorage.getItem(STORAGE_REFRESH_KEY) ||
-              sessionStorage.getItem(STORAGE_REFRESH_KEY),
-            data.expires_at,
-            rememberFlag
+            localStorage.getItem(STORAGE_REFRESH_KEY),
+            data.expires_at
           );
         }
         // Atualiza user local se campos retornados
@@ -1359,10 +1241,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (Object.keys(updatedPartial).length > 0 && user) {
           const merged = { ...user, ...updatedPartial } as User;
           setUser(merged);
-          saveUserToStorage(
-            merged,
-            !sessionStorage.getItem(STORAGE_ACCESS_KEY)
-          );
+          saveUserToStorage(merged);
           // Ensure server canonical /me is fetched and persisted (in case backend changed display_name stored in users table)
           try {
             void contextValue.syncUser?.();

@@ -703,7 +703,6 @@ const DashboardPage: React.FC = () => {
               "idade_anos",
               "idade_crianca",
               "idade_da_crianca",
-              "idade (anos)"
             )
           );
 
@@ -716,23 +715,26 @@ const DashboardPage: React.FC = () => {
               "altura_cm",
               "altura_crianca",
               "altura_da_crianca",
-              "altura (cm)"
             )
           );
 
-          const weight =
-            latestWeight ??
+          const weight = isInfantil ?
+           
             getNum(
               pick(
                 qAnswers,
                 // infantil (prioridade)
                 "peso_atual",
+              )
+            )
+            : latestWeight ?? getNum(
+              pick(
+                qAnswers,
                 // adulto e variações
                 "peso",
                 "peso_kg",
                 "peso_crianca",
                 "peso_da_crianca",
-                "peso (kg)"
               )
             );
 
