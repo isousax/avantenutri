@@ -1,7 +1,6 @@
 export interface QuestionarioData {
   step: number;
   categoria: string;
-  planoSelecionado: number | null;
   respostas: Record<string, string>;
 }
 
@@ -14,6 +13,5 @@ export interface QuestionarioContextType {
 export const initialState: QuestionarioData = {
   step: 0,
   categoria: '',
-  planoSelecionado: null,
   respostas: {},
 };

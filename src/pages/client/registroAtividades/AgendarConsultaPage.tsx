@@ -12,6 +12,7 @@ import { useConsultations } from "../../../hooks/useConsultations";
 import { useToast } from "../../../components/ui/ToastProvider";
 import { useQuestionnaireStatus } from "../../../hooks/useQuestionnaireStatus";
 import { QuestionnaireConfirmModal } from "../../../components/dashboard/QuestionnaireConfirmModal";
+import { useQuestionario } from "../../../contexts/useQuestionario";
 import {
   ArrowLeft,
   Calendar,
@@ -134,8 +135,9 @@ const AgendarConsultaPage: React.FC = () => {
   const [etapa, setEtapa] = useState(1);
 
   // Questionnaire modal state
-  const { data: questionnaireStatus } = useQuestionnaireStatus();
+  const { data: questionnaireStatus, refetch: refetchQuestionnaireStatus } = useQuestionnaireStatus();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
+  const [questionnaireReviewReady, setQuestionnaireReviewReady] = useState(false);
   // Removido modal de créditos; fluxo agora redireciona automaticamente
   // purchaseLoading removido (não é mais necessário com redirecionamento automático)
   const [redirectingCheckout, setRedirectingCheckout] = useState(false);
@@ -275,13 +277,30 @@ const AgendarConsultaPage: React.FC = () => {
       return;
     }
 
-    // Check questionnaire status before proceeding
+    // Forçar refetch rápido do status para garantir estado atualizado
+    try {
+      await refetchQuestionnaireStatus();
+    } catch {
+      // Ignorar erros de refetch; seguimos com dados atuais
+    }
+
+    // Se não completo -> mostrar modal de exigência
     if (!questionnaireStatus?.is_complete) {
+      setQuestionnaireReviewReady(false);
       setShowQuestionnaireModal(true);
       return;
     }
 
-    await processBooking();
+    // Se completo -> buscar dados completos antes de revisão
+    const fetchedOk = await fetchFullQuestionnaire();
+    if (!fetchedOk) {
+      // fallback: permitir prosseguir mesmo sem dados (evita bloquear usuário)
+  push({ type: "info", message: "Não foi possível carregar dados do questionário atualizado, prosseguindo." });
+      await processBooking();
+      return;
+    }
+    setQuestionnaireReviewReady(true);
+    setShowQuestionnaireModal(true);
   };
 
   const processBooking = async () => {
@@ -341,7 +360,31 @@ const AgendarConsultaPage: React.FC = () => {
 
   const handleQuestionnaireConfirm = async () => {
     setShowQuestionnaireModal(false);
+    // Após revisão confirmada, segue fluxo normal
     await processBooking();
+  };
+
+  // Carregar dados completos do questionário (quando completo) antes de mostrar revisão
+  const { updateQuestionario } = useQuestionario();
+  const fetchFullQuestionnaire = async (): Promise<boolean> => {
+    try {
+      const r = await authenticatedFetch(API.QUESTIONNAIRE);
+      if (!r.ok) return false;
+      const raw = await r.json().catch(() => ({}));
+      // Payload esperado: { ok, data: { category, answers, updated_at, submitted_at, step }, is_complete }
+      const data = raw && raw.data ? raw.data : raw;
+      const category = data.category as string | undefined;
+      const answers = (data.answers as Record<string, string> | undefined) || {};
+      const updatedAt = (data.updated_at as string | undefined) || (data.submitted_at as string | undefined) || undefined;
+      // Persistimos no contexto local para modal mostrar conteúdo
+      updateQuestionario({
+        categoria: category || "",
+        respostas: { ...answers, ...(updatedAt ? { updated_at: updatedAt } : {}) },
+      });
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const purchaseCredit = async (type: TipoConsulta) => {
@@ -396,6 +439,8 @@ const AgendarConsultaPage: React.FC = () => {
             const hasLockedReavaliacao = isReavaliacao && lockedCredits > 0 && availableCredits === 0;
             // Elegível para seleção: NÃO permitir seleção se só possui locked (aguardar liberação)
             const isEligible = !isReavaliacao || canUseReavaliacao || hasCredits; // não inclui somente locked
+            // Se há reavaliação bloqueada (reservada), não exibir 'Não elegível' banner
+            const showNotEligibleBanner = isReavaliacao && !isEligible && !hasLockedReavaliacao;
             const isDisabled = !isEligible;
 
             const selected = formData.tipoConsulta === tipo.value;
@@ -456,7 +501,7 @@ const AgendarConsultaPage: React.FC = () => {
                               </span>
                             )}
                             {hasLockedReavaliacao && (
-                              <span className="text-amber-600">Reavaliação reservada</span>
+                              <span className="text-amber-600">Reservada</span>
                             )}
                           </div>
                         ) : (
@@ -483,7 +528,7 @@ const AgendarConsultaPage: React.FC = () => {
                 {/* BLOCOS DE AVISO (ocupam 100% da largura do card) */}
                 <div className="mt-4 w-full">
                   {/* Aviso de não elegibilidade para reavaliação (linha inteira) */}
-                  {isReavaliacao && !isEligible && (
+                  {showNotEligibleBanner && (
                     <div className="flex items-start gap-3 p-3 rounded-lg text-[13px] sm:text-sm bg-yellow-50 text-yellow-800 border border-yellow-200">
                       <div className="mt-0.5">
                         <AlertCircle size={18} />
@@ -517,7 +562,7 @@ const AgendarConsultaPage: React.FC = () => {
                         <AlertCircle size={18} />
                       </div>
                       <div className="leading-tight">
-                        <strong>Reavaliação reservada</strong><br />Será liberada após a sua Avaliação Completa ser <span className="font-semibold">realizada (status concluída)</span>. Agende e participe da avaliação para habilitar.
+                        <strong>Reavaliação reservada</strong><br />Será liberada após a sua Avaliação ser <span className="font-semibold">realizada</span>. Agende e participe da avaliação para habilitar.
                       </div>
                     </div>
                   )}
@@ -769,7 +814,8 @@ const AgendarConsultaPage: React.FC = () => {
         isOpen={showQuestionnaireModal}
         onClose={() => setShowQuestionnaireModal(false)}
         onConfirm={handleQuestionnaireConfirm}
-        hasQuestionnaire={questionnaireStatus?.has_data || false}
+        isComplete={questionnaireStatus?.is_complete || false}
+        hasQuestionnaireData={questionnaireReviewReady}
       />
 
       {/* Fluxo de compra de créditos: modal removido, redireciono automático */}

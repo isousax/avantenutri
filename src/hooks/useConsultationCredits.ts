@@ -30,8 +30,11 @@ export function useConsultationCredits(status: 'available' | 'used' | 'expired' 
       return res.json();
     },
     enabled: true,
-    staleTime: 5 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
 
@@ -47,7 +50,10 @@ export function useConsultationCreditsSummary() {
       return res.json();
     },
     enabled: true,
-    staleTime: 2 * 60 * 1000,
-    gcTime: 30 * 60 * 1000,
+    staleTime: 0,
+    gcTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
   });
 }
