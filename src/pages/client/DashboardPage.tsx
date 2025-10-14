@@ -589,6 +589,7 @@ const DashboardPage: React.FC = () => {
   };
 
   const handleDownloadLatest = async (planId: string) => {
+    console.log("[DietPDF] start handleDownloadLatest", { planId });
     setDownloadingMap((m) => ({ ...m, [planId]: true }));
     try {
       // Garante dados atualizados do plano (includeData=1 já é padrão)
@@ -620,6 +621,7 @@ const DashboardPage: React.FC = () => {
           const qCategory = (qSnap?.category || "").toString().toLowerCase();
           const qAnswers: Record<string, unknown> =
             (qSnap?.answers as Record<string, unknown>) || {};
+          console.log("[DietPDF] questionnaire snapshot", { qCategory, answerKeys: Object.keys(qAnswers || {}) });
 
           let meObj: Record<string, unknown> = {};
           try {
@@ -637,6 +639,7 @@ const DashboardPage: React.FC = () => {
           }
 
           const latestWeightKg: number | undefined = weightAgg?.latest?.weight_kg;
+          console.log("[DietPDF] latestWeightAgg", weightAgg?.latest);
 
           const pick = (
             obj: Record<string, unknown>,
@@ -674,6 +677,7 @@ const DashboardPage: React.FC = () => {
             qCategory === "criança" ||
             qCategory === "crianca" ||
             hasChildKeys;
+          console.log("[DietPDF] isInfantil?", { isInfantil, hasChildKeys, qCategory });
 
           const gender = pickString(
             qAnswers,
@@ -732,6 +736,7 @@ const DashboardPage: React.FC = () => {
                   "peso_da_crianca"
                 )
               );
+          console.log("[DietPDF] weight computed", { isInfantil, latestWeightKg, finalWeight: weight });
 
           const goal =
             pickString(
@@ -756,6 +761,13 @@ const DashboardPage: React.FC = () => {
               )
             : undefined;
 
+          console.log("[DietPDF] clientInfo preview", {
+            age,
+            gender,
+            height,
+            goal,
+            weight,
+          });
           await exportDietPdf(v.data, {
             filename: `${d.name}_v${v.version_number}.pdf`.replace(
               /[^a-z0-9]/gi,
