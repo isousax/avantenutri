@@ -415,6 +415,7 @@ const DietasTab: React.FC = () => {
       const access = await getAccessToken();
       if (!access) return;
       let dataPatch: unknown;
+      let structuredData: StructuredDietData | undefined;
       if (revMode === "json") {
         try {
           dataPatch = JSON.parse(revPatchJson || "{}");
@@ -423,6 +424,8 @@ const DietasTab: React.FC = () => {
           setRevising(false);
           return;
         }
+      } else if (revMode === "structured") {
+        structuredData = revStructuredData || undefined;
       }
       // Opcionalmente aplicar update de validade antes da revisão
       if (showRevValidity && detail) {
@@ -462,7 +465,12 @@ const DietasTab: React.FC = () => {
         }
       }
 
-      const payload = { notes: revNotes || undefined, dataPatch };
+      // Back-end aceita: data (substituição completa) ou dataPatch (patch JSON). Para "structured", enviamos data.
+      const payload: Record<string, unknown> = {
+        notes: revNotes || undefined,
+      };
+      if (structuredData) payload.data = structuredData;
+      if (dataPatch) payload.dataPatch = dataPatch;
       const r = await fetch(API.dietPlanRevise(detailId), {
         method: "POST",
         headers: {

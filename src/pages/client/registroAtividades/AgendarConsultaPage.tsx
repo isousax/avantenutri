@@ -387,14 +387,15 @@ const AgendarConsultaPage: React.FC = () => {
         <div className="grid gap-4">
           {tiposConsulta.map((tipo) => {
             const TipoIcon = tipo.icon;
-            const needsCredit =
-              tipo.value === "avaliacao_completa" ||
-              tipo.value === "reavaliacao";
-            const availableCredits =
-              creditsSummary?.summary?.[tipo.value]?.available || 0;
+            const needsCredit = tipo.value === "avaliacao_completa" || tipo.value === "reavaliacao";
+            const creditEntry = creditsSummary?.summary?.[tipo.value];
+            const availableCredits = creditEntry?.available || 0;
+            const lockedCredits = creditEntry?.locked || 0;
             const hasCredits = needsCredit && availableCredits > 0;
             const isReavaliacao = tipo.value === "reavaliacao";
-            const isEligible = !isReavaliacao || canUseReavaliacao;
+            const hasLockedReavaliacao = isReavaliacao && lockedCredits > 0 && availableCredits === 0;
+            // Elegível para seleção: NÃO permitir seleção se só possui locked (aguardar liberação)
+            const isEligible = !isReavaliacao || canUseReavaliacao || hasCredits; // não inclui somente locked
             const isDisabled = !isEligible;
 
             const selected = formData.tipoConsulta === tipo.value;
@@ -413,11 +414,9 @@ const AgendarConsultaPage: React.FC = () => {
                       }`
                 }`}
                 onClick={() => {
+                  if (hasLockedReavaliacao) return; // bloqueia seleção
                   if (!isDisabled) {
-                    setFormData((prev) => ({
-                      ...prev,
-                      tipoConsulta: tipo.value,
-                    }));
+                    setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }));
                   }
                 }}
               >
@@ -449,13 +448,26 @@ const AgendarConsultaPage: React.FC = () => {
                       </div>
 
                       <div className="text-right flex-shrink-0 ml-2">
-                        <div
-                          className={`font-bold sm:text-lg ${
-                            isDisabled ? "text-gray-400" : "text-green-600"
-                          }`}
-                        >
-                          {priceMap[tipo.value] || t(tipo.priceKey)}
-                        </div>
+                        {hasCredits || hasLockedReavaliacao ? (
+                          <div className="font-semibold text-sm text-green-600">
+                            {hasCredits && (
+                              <span>
+                                {availableCredits} crédito{availableCredits > 1 ? 's' : ''}
+                              </span>
+                            )}
+                            {hasLockedReavaliacao && (
+                              <span className="text-amber-600">Reavaliação reservada</span>
+                            )}
+                          </div>
+                        ) : (
+                          <div
+                            className={`font-bold sm:text-lg ${
+                              isDisabled ? "text-gray-400" : "text-green-600"
+                            }`}
+                          >
+                            {priceMap[tipo.value] || t(tipo.priceKey)}
+                          </div>
+                        )}
                         <div
                           className={`text-xs ${
                             isDisabled ? "text-gray-400" : "text-gray-500"
@@ -499,9 +511,19 @@ const AgendarConsultaPage: React.FC = () => {
                       </div>
                     </div>
                   )}
+                  {isReavaliacao && hasLockedReavaliacao && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg text-xs sm:text-sm bg-amber-50 text-amber-700 border border-amber-200" role="note" aria-label="Reavaliação reservada">
+                      <div className="mt-0.5" aria-hidden="true">
+                        <AlertCircle size={18} />
+                      </div>
+                      <div className="leading-tight">
+                        <strong>Reavaliação reservada</strong><br />Será liberada após a sua Avaliação Completa ser <span className="font-semibold">realizada (status concluída)</span>. Agende e participe da avaliação para habilitar.
+                      </div>
+                    </div>
+                  )}
 
                   {/* Regra de Reavaliação (quando elegível mostramos a regra em bloco separado) */}
-                  {tipo.value === "reavaliacao" && isEligible && (
+                  {tipo.value === "reavaliacao" && isEligible && !hasLockedReavaliacao && (
                     <div className="mt-3 text-sm text-gray-500 bg-gray-50 p-3 rounded border">
                       {t("consultations.credits.reavaliacao.rule")}
                     </div>

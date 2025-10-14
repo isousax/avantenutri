@@ -6,6 +6,8 @@ export interface ConsultationCredit {
   id: string;
   type: 'avaliacao_completa' | 'reavaliacao' | 'only_diet';
   status: 'available' | 'used' | 'expired';
+  locked?: boolean;
+  parent_credit_id?: string;
   payment_id?: string;
   consultation_id?: string;
   created_at: string;
@@ -13,9 +15,7 @@ export interface ConsultationCredit {
   expires_at?: string;
 }
 
-export interface ConsultationCreditsSummaryEntry {
-  available: number; used: number; expired: number;
-}
+export interface ConsultationCreditsSummaryEntry { available: number; used: number; expired: number; locked?: number; }
 export type ConsultationCreditsSummary = Record<string, ConsultationCreditsSummaryEntry>;
 
 export function useConsultationCredits(status: 'available' | 'used' | 'expired' | 'all' = 'available') {
