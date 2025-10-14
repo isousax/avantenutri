@@ -637,8 +637,6 @@ const DashboardPage: React.FC = () => {
           }
 
           const latestWeightKg: number | undefined = weightAgg?.latest?.weight_kg;
-          const latestWeightStr: string | undefined =
-            latestWeightKg != null ? latestWeightKg.toFixed(1) : undefined;
 
           const pick = (
             obj: Record<string, unknown>,
@@ -721,14 +719,15 @@ const DashboardPage: React.FC = () => {
                   "peso_atual"
                 )
               )
-            : latestWeightStr != null
-            ? parseFloat(latestWeightStr)
+            : latestWeightKg != null
+            ? latestWeightKg
             : getNum(
                 pick(
                   qAnswers,
                   // adulto e variações
                   "peso",
                   "peso_kg",
+                  "peso_atual",
                   "peso_crianca",
                   "peso_da_crianca"
                 )
