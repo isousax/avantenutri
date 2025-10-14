@@ -29,7 +29,12 @@ export function useConsultations() {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
     const data: ListResponse = await res.json();
-    if (!res.ok) throw new Error((data as any)?.error || 'erro');
+    if (!res.ok) {
+      const errMsg = (data && typeof (data as { error?: string }).error === 'string')
+        ? (data as { error?: string }).error!
+        : 'erro';
+      throw new Error(errMsg);
+    }
     return data.results || [];
   }, [getAccessToken]);
 
@@ -86,7 +91,10 @@ export function useConsultations() {
       if (ctx?.prev) qc.setQueryData(['consultations'], ctx.prev);
     },
     onSettled: () => {
+      // Recarregar consultas e créditos, pois o cancelamento pode devolver crédito
       qc.invalidateQueries({ queryKey: ['consultations'] });
+      qc.invalidateQueries({ queryKey: ['consultationCredits'] });
+      qc.invalidateQueries({ queryKey: ['consultationCreditsSummary'] });
     },
   });
 
