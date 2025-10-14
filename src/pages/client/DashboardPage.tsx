@@ -600,11 +600,12 @@ const DashboardPage: React.FC = () => {
       // Se for estruturada, gerar PDF no cliente com dados dinâmicos
       if (isStructuredDietData(v.data)) {
         try {
-          // Coleta dados dinâmicos mínimos (nome do /me e peso recente)
+          // Coleta dados dinâmicos mínimos (nome do /me)
           // Observação: o questionário já está embutido no snapshot da dieta (v.data.questionnaire)
-          const [meRes, wRes] = await Promise.all([
+          // O peso deve ser exatamente o mesmo exibido em "Peso Atual" na UI,
+          // então usamos weightAgg.latest?.weight_kg já carregado pelo Dashboard.
+          const [meRes] = await Promise.all([
             authenticatedFetch(Routes.ME, { method: "GET" }),
-            authenticatedFetch(`${Routes.WEIGHT_SUMMARY}?days=120`),
           ]);
 
           // Extrai snapshot do questionário da própria dieta
@@ -635,23 +636,9 @@ const DashboardPage: React.FC = () => {
             void err;
           }
 
-          let latestWeight: number | undefined;
-          try {
-            const wJson: unknown = await wRes.json();
-            const wData =
-              typeof wJson === "object" && wJson !== null && "data" in wJson
-                ? (wJson as Record<string, unknown>)["data"]
-                : wJson;
-            if (typeof wData === "object" && wData !== null) {
-              const latest = (wData as Record<string, unknown>)["latest"] as
-                | Record<string, unknown>
-                | undefined;
-              const wk = latest?.["weight_kg"] as unknown;
-              if (typeof wk === "number") latestWeight = wk;
-            }
-          } catch (err) {
-            void err;
-          }
+          const latestWeightKg: number | undefined = weightAgg?.latest?.weight_kg;
+          const latestWeightStr: string | undefined =
+            latestWeightKg != null ? latestWeightKg.toFixed(1) : undefined;
 
           const pick = (
             obj: Record<string, unknown>,
@@ -726,7 +713,7 @@ const DashboardPage: React.FC = () => {
             )
           );
 
-          const weight = isInfantil
+          const weight: number | undefined = isInfantil
             ? getNum(
                 pick(
                   qAnswers,
@@ -734,8 +721,8 @@ const DashboardPage: React.FC = () => {
                   "peso_atual"
                 )
               )
-            : latestWeight
-            ? latestWeight
+            : latestWeightStr != null
+            ? parseFloat(latestWeightStr)
             : getNum(
                 pick(
                   qAnswers,
