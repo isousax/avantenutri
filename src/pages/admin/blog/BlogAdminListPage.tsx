@@ -253,7 +253,7 @@ const BlogAdminListPage: React.FC = () => {
       <div className="max-w-7xl mx-auto sm:px-6 lg:px-8 py-6">
         {/* Filters */}
         <Card className="p-4 sm:p-6 mb-6">
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                 <Search size={14} />
