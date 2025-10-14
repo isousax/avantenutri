@@ -667,17 +667,31 @@ const DashboardPage: React.FC = () => {
             return Number.isFinite(n) ? n : undefined;
           };
 
-          // Campos com mapeamento flexível, compatíveis com adulto/infantil
-          const hasChildKeys =
-            Object.prototype.hasOwnProperty.call(qAnswers, "nome_crianca") ||
-            Object.prototype.hasOwnProperty.call(qAnswers, "peso_atual") ||
-            Object.prototype.hasOwnProperty.call(qAnswers, "altura");
+          // Detectar infantil com base em categoria OU em chaves específicas de criança
+          const childSpecificKeysList = [
+            "nome_crianca",
+            "idade_crianca",
+            "idade_da_crianca",
+            "sexo_crianca",
+            "sexo_da_crianca",
+            "peso_crianca",
+            "peso_da_crianca",
+            "altura_crianca",
+            "altura_da_crianca",
+          ];
+          const hasChildKeys = childSpecificKeysList.some((k) =>
+            Object.prototype.hasOwnProperty.call(qAnswers, k)
+          );
           const isInfantil =
             qCategory === "infantil" ||
             qCategory === "criança" ||
             qCategory === "crianca" ||
-            hasChildKeys;
-          console.log("[DietPDF] isInfantil?", { isInfantil, hasChildKeys, qCategory });
+            (qCategory === "" && hasChildKeys);
+          console.log("[DietPDF] isInfantil?", {
+            isInfantil,
+            hasChildKeys,
+            qCategory,
+          });
 
           const gender = pickString(
             qAnswers,
@@ -719,8 +733,10 @@ const DashboardPage: React.FC = () => {
             ? getNum(
                 pick(
                   qAnswers,
-                  // infantil (prioridade)
-                  "peso_atual"
+                  // infantil (prioridade + variações)
+                  "peso_atual",
+                  "peso_crianca",
+                  "peso_da_crianca"
                 )
               )
             : latestWeightKg != null
