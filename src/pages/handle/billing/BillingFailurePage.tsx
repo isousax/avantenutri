@@ -94,7 +94,7 @@ export default function BillingFailurePage() {
         
         <div className="space-y-2">
           <button 
-            onClick={() => navigate('/pricing')}
+            onClick={() => navigate('/agendar-consulta')}
             className="w-full bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700"
           >
             {t('billing.failure.retry')}

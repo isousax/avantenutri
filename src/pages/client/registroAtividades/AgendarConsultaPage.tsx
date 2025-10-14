@@ -136,8 +136,9 @@ const AgendarConsultaPage: React.FC = () => {
   // Questionnaire modal state
   const { data: questionnaireStatus } = useQuestionnaireStatus();
   const [showQuestionnaireModal, setShowQuestionnaireModal] = useState(false);
-  const [showCreditModal, setShowCreditModal] = useState(false);
-  const [purchaseLoading, setPurchaseLoading] = useState<null | TipoConsulta>(null);
+  // Removido modal de créditos; fluxo agora redireciona automaticamente
+  // purchaseLoading removido (não é mais necessário com redirecionamento automático)
+  const [redirectingCheckout, setRedirectingCheckout] = useState(false);
 
   function getErrorMessage(err: unknown) {
     if (!err) return "";
@@ -253,7 +254,11 @@ const AgendarConsultaPage: React.FC = () => {
         creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
 
       if (needsCredit && availableCredits <= 0) {
-        setShowCreditModal(true);
+        // Sem créditos: iniciar checkout automaticamente e dar feedback mínimo
+        setRedirectingCheckout(true);
+        push({ type: "info", message: "Redirecionando para pagamento..." });
+        await purchaseCredit(formData.tipoConsulta);
+        setRedirectingCheckout(false);
         return;
       }
 
@@ -284,7 +289,7 @@ const AgendarConsultaPage: React.FC = () => {
     setSubmitError(null);
 
     try {
-      // Credit check
+      // Credit check: iniciar checkout automático se não houver créditos
       if (
         formData.tipoConsulta === "avaliacao_completa" ||
         formData.tipoConsulta === "reavaliacao"
@@ -292,10 +297,10 @@ const AgendarConsultaPage: React.FC = () => {
         const available =
           creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
         if (available <= 0) {
-          push({
-            type: "error",
-            message: t("consultations.credits.required.cta"),
-          });
+          setRedirectingCheckout(true);
+          push({ type: "info", message: "Redirecionando para pagamento..." });
+          await purchaseCredit(formData.tipoConsulta);
+          setRedirectingCheckout(false);
           return;
         }
       }
@@ -341,7 +346,6 @@ const AgendarConsultaPage: React.FC = () => {
 
   const purchaseCredit = async (type: TipoConsulta) => {
     try {
-      setPurchaseLoading(type);
       const res = await authenticatedFetch(API.BILLING_INTENT, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -361,7 +365,8 @@ const AgendarConsultaPage: React.FC = () => {
       const msg = getErrorMessage(err);
       push({ type: "error", message: msg || "Erro inesperado" });
     } finally {
-      setPurchaseLoading(null);
+      // Caso não haja redirecionamento (erro), garantimos que o estado de redirecionamento seja liberado
+      setRedirectingCheckout(false);
     }
   };
 
@@ -694,12 +699,12 @@ const AgendarConsultaPage: React.FC = () => {
                     noBorder
                     noFocus
                     className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700 focus:outline-none"
-                    disabled={submitting}
+                    disabled={submitting || redirectingCheckout}
                   >
-                    {submitting ? (
+                    {submitting || redirectingCheckout ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Agendando...
+                        {redirectingCheckout ? "Redirecionando para pagamento..." : "Agendando..."}
                       </div>
                     ) : (
                       "Confirmar Agendamento"
@@ -723,11 +728,12 @@ const AgendarConsultaPage: React.FC = () => {
                     noFocus
                     className="w-full text-white hover:text-white bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-700"
                     disabled={
+                      redirectingCheckout ||
                       (etapa === 1 && !formData.tipoConsulta) ||
                       (etapa === 2 && (!formData.data || !formData.horario))
                     }
                   >
-                    Continuar
+                    {redirectingCheckout ? "Redirecionando para pagamento..." : "Continuar"}
                   </Button>
                 </>
               )}
@@ -744,83 +750,7 @@ const AgendarConsultaPage: React.FC = () => {
         hasQuestionnaire={questionnaireStatus?.has_data || false}
       />
 
-      {/* Credits Purchase Modal */}
-        {showCreditModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-2xl max-w-md w-full p-6">
-              <div className="text-center mb-6">
-                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <CreditCard size={32} className="text-red-600" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                  Créditos Insuficientes
-                </h3>
-                <p className="text-gray-600">
-                  Você precisa de créditos para agendar uma{" "}
-                  {formData.tipoConsulta === "avaliacao_completa"
-                    ? "avaliação completa"
-                    : "reavaliação"}
-                  .
-                </p>
-              </div>
-
-              <div className="space-y-3">
-                <Button
-                  onClick={() => purchaseCredit("avaliacao_completa")}
-                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-blue-500 to-blue-600"
-                  noFocus
-                  disabled={purchaseLoading !== null}
-                >
-                  {purchaseLoading === "avaliacao_completa" ? (
-                    <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Iniciando checkout...
-                    </div>
-                  ) : (
-                    <>
-                      <CreditCard size={16} />
-                      Comprar Avaliação Completa
-                    </>
-                  )}
-                </Button>
-
-                {canUseReavaliacao && (
-                  <Button
-                    onClick={() => purchaseCredit("reavaliacao")}
-                    className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-purple-600"
-                    noFocus
-                    disabled={purchaseLoading !== null}
-                  >
-                    {purchaseLoading === "reavaliacao" ? (
-                      <div className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        Iniciando checkout...
-                      </div>
-                    ) : (
-                      <>
-                        <CreditCard size={16} />
-                        Comprar Reavaliação
-                      </>
-                    )}
-                  </Button>
-                )}
-              </div>
-
-              <div className="mt-6 pt-4 border-t">
-                <Button
-                  variant="secondary"
-                  onClick={() => setShowCreditModal(false)}
-                  className="w-full"
-                  noBorder
-                  noFocus
-                  noBackground
-                >
-                  Fechar
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
+      {/* Fluxo de compra de créditos: modal removido, redireciono automático */}
     </div>
   );
 };
