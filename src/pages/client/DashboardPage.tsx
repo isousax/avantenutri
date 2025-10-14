@@ -559,7 +559,10 @@ const DashboardPage: React.FC = () => {
   );
   const authenticatedFetch = useAuthenticatedFetch();
   // Wrapper compatível com assinatura de fetch(RequestInfo, RequestInit)
-  const authFetchCompat: (input: RequestInfo, init?: RequestInit) => Promise<Response> = (input, init) => {
+  const authFetchCompat: (
+    input: RequestInfo,
+    init?: RequestInit
+  ) => Promise<Response> = (input, init) => {
     const url =
       typeof input === "string"
         ? input
@@ -606,7 +609,12 @@ const DashboardPage: React.FC = () => {
 
           // Extrai snapshot do questionário da própria dieta
           const qSnap = v.data?.questionnaire as
-            | { category?: string | null; answers?: Record<string, unknown>; created_at?: string; updated_at?: string }
+            | {
+                category?: string | null;
+                answers?: Record<string, unknown>;
+                created_at?: string;
+                updated_at?: string;
+              }
             | undefined;
           const qCategory = (qSnap?.category || "").toString().toLowerCase();
           const qAnswers: Record<string, unknown> =
@@ -702,7 +710,7 @@ const DashboardPage: React.FC = () => {
               // adulto e variações
               "idade_anos",
               "idade_crianca",
-              "idade_da_crianca",
+              "idade_da_crianca"
             )
           );
 
@@ -714,29 +722,30 @@ const DashboardPage: React.FC = () => {
               // adulto e variações
               "altura_cm",
               "altura_crianca",
-              "altura_da_crianca",
+              "altura_da_crianca"
             )
           );
 
-          const weight = isInfantil ?
-           
-            getNum(
-              pick(
-                qAnswers,
-                // infantil (prioridade)
-                "peso_atual",
+          const weight = isInfantil
+            ? getNum(
+                pick(
+                  qAnswers,
+                  // infantil (prioridade)
+                  "peso_atual"
+                )
               )
-            )
-            : latestWeight ?? getNum(
-              pick(
-                qAnswers,
-                // adulto e variações
-                "peso",
-                "peso_kg",
-                "peso_crianca",
-                "peso_da_crianca",
-              )
-            );
+            : latestWeight
+            ? latestWeight
+            : getNum(
+                pick(
+                  qAnswers,
+                  // adulto e variações
+                  "peso",
+                  "peso_kg",
+                  "peso_crianca",
+                  "peso_da_crianca"
+                )
+              );
 
           const goal =
             pickString(
@@ -832,7 +841,9 @@ const DashboardPage: React.FC = () => {
       if (!showDetail || !selectedPlanId) return;
       // Evitar refetch se dado estiver fresco (<60s)
       const st = qc.getQueryState(["diet-plan-detail", selectedPlanId]);
-      const isFresh = !!(st?.dataUpdatedAt && Date.now() - st.dataUpdatedAt < 60_000);
+      const isFresh = !!(
+        st?.dataUpdatedAt && Date.now() - st.dataUpdatedAt < 60_000
+      );
       if (isFresh && detailJson) return;
       setDetailLoading(true);
       try {
