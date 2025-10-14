@@ -1017,7 +1017,7 @@ const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex overflow-x-hidden">
       <SEO
         title={t("dashboard.seo.title")}
         description={t("dashboard.seo.desc")}
@@ -1201,8 +1201,8 @@ const DashboardPage: React.FC = () => {
           </div>
         </header>
 
-        {/* Content */}
-        <div className="p-5">
+  {/* Content */}
+  <div className="p-5 overflow-x-hidden">
           {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Questionnaire Banner */}
@@ -1481,7 +1481,7 @@ const DashboardPage: React.FC = () => {
               </div>
 
               {/* Progress and Diet Plans */}
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-6 lg:grid-cols-2 overflow-x-hidden">
                 <DataSection
                   isLoading={shouldShowSkeleton(
                     dashLoading,
@@ -1493,7 +1493,7 @@ const DashboardPage: React.FC = () => {
                   skeletonLines={6}
                   skeletonClassName="h-64"
                 >
-                  <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                  <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl min-w-0 overflow-hidden">
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                       <span>🎯</span>
                       Progresso dos Objetivos
@@ -1535,7 +1535,7 @@ const DashboardPage: React.FC = () => {
                   </Card>
                 </DataSection>
 
-                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl">
+                <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl min-w-0 overflow-hidden">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <span>🍽️</span>
@@ -1596,14 +1596,6 @@ const DashboardPage: React.FC = () => {
                     <span>📅</span>
                     Próximas Consultas
                   </h3>
-                  <button
-                    onClick={() =>
-                      navigate("/consultas") || setActiveTab("consultas")
-                    }
-                    className="text-xs font-semibold text-blue-600 hover:text-blue-800 transition-colors"
-                  >
-                    Ver todas
-                  </button>
                 </div>
                 {consultationsLoading && (
                   <div className="text-sm text-gray-500 py-6 text-center">
