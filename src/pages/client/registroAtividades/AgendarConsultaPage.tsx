@@ -480,31 +480,17 @@ const AgendarConsultaPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Status de Créditos (linha inteira) */}
-                  {needsCredit && isEligible && (
-                    <div
-                      className={`flex items-start gap-3 p-3 rounded-lg text-sm ${
-                        hasCredits
-                          ? "bg-green-50 text-green-700 border border-green-200"
-                          : "bg-red-50 text-red-700 border border-red-200"
-                      }`}
-                    >
+                  {/* Status de Créditos (mostrar somente quando houver créditos) */}
+                  {needsCredit && isEligible && hasCredits && (
+                    <div className="flex items-start gap-3 p-3 rounded-lg text-sm bg-green-50 text-green-700 border border-green-200">
                       <div className="mt-0.5">
-                        {hasCredits ? (
-                          <CheckCircle2 size={18} />
-                        ) : (
-                          <AlertCircle size={18} />
-                        )}
+                        <CheckCircle2 size={18} />
                       </div>
                       <div className="leading-tight">
-                        {hasCredits ? (
-                          <span>
-                            <strong>{availableCredits}</strong> crédito(s)
-                            disponível(is)
-                          </span>
-                        ) : (
-                          <span>Créditos insuficientes</span>
-                        )}
+                        <span>
+                          <strong>{availableCredits}</strong> crédito(s)
+                          disponível(is)
+                        </span>
                       </div>
                     </div>
                   )}
