@@ -1659,8 +1659,14 @@ const DashboardPage: React.FC = () => {
                         className="flex items-center justify-between p-4 bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/60 hover:border-green-200 transition-colors"
                       >
                         <div className="flex-1 min-w-0">
-                          <p className="font-bold text-gray-900 text-sm truncate capitalize">
-                            {app.type}
+                          <p className="font-bold text-gray-900 text-sm truncate">
+                            {app.type === 'avaliacao_completa'
+                              ? t('consultations.schedule.type.avaliacao_completa.label')
+                              : app.type === 'reavaliacao'
+                              ? t('consultations.schedule.type.reavaliacao.label')
+                              : app.type === 'only_diet'
+                              ? t('consultations.schedule.type.only_diet.label')
+                              : app.type.replace(/_/g, ' ')}
                           </p>
                           <p className="text-xs text-gray-600 mt-1">
                             {dateStr} às {timeStr}

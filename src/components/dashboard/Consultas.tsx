@@ -14,6 +14,20 @@ const Consultas: React.FC = () => {
   const { locale, t } = useI18n();
   const { push } = useToast();
   
+  const typeLabel = React.useCallback((type: string) => {
+    switch (type) {
+      case 'avaliacao_completa':
+        return t('consultations.schedule.type.avaliacao_completa.label');
+      case 'reavaliacao':
+        return t('consultations.schedule.type.reavaliacao.label');
+      case 'only_diet':
+        return t('consultations.schedule.type.only_diet.label');
+      default:
+        // Fallback: capitaliza e mostra como texto simples
+        return type.replace(/_/g, ' ');
+    }
+  }, [t]);
+  
   const upcoming = React.useMemo(() =>
     items
       .filter(c => c.status === 'scheduled')
@@ -35,8 +49,11 @@ const Consultas: React.FC = () => {
     try {
       await cancel(id);
       push({ type: 'success', message: t('consultations.cancel.action') });
-    } catch (e: any) {
-      push({ type: 'error', message: e.message || t('consultations.cancel.error') });
+    } catch (e: unknown) {
+      type WithMessage = { message?: unknown };
+      const hasMessage = (x: unknown): x is WithMessage => typeof x === 'object' && x !== null && 'message' in x;
+      const msg = hasMessage(e) && typeof e.message === 'string' ? e.message : t('consultations.cancel.error');
+      push({ type: 'error', message: msg });
     } finally {
       setCancelingId(null);
     }
@@ -185,11 +202,11 @@ const Consultas: React.FC = () => {
                         />
                       </div>
                       <div className="flex flex-wrap gap-4 text-sm text-gray-600">
-                        <span className="flex items-center gap-1 capitalize">
+                        <span className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                           </svg>
-                          {consultation.type}
+                          {typeLabel(consultation.type)}
                         </span>
                         <span className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -266,8 +283,8 @@ const Consultas: React.FC = () => {
                         {statusConfig.text}
                       </span>
                     </div>
-                    <p className="text-xs text-gray-600 capitalize">
-                      {consultation.type} • {consultation.duration_min}min
+                    <p className="text-xs text-gray-600">
+                      {typeLabel(consultation.type)} • {consultation.duration_min}min
                     </p>
                   </div>
                 </div>
