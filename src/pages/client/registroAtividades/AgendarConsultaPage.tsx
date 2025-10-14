@@ -31,7 +31,7 @@ import { API } from "../../../config/api";
 interface AvailableSlotsProps {
   date: string;
   selectedTime: string;
-  onTimeSelect: (time: string) => void;
+  onTimeSelect: (time: string, slotIso: string, durationMin: number) => void;
 }
 
 const AvailableSlots: React.FC<AvailableSlotsProps> = ({
@@ -40,7 +40,7 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({
   onTimeSelect,
 }) => {
   const [slots, setSlots] = useState<
-    Array<{ start: string; end: string; taken: boolean }>
+    Array<{ start: string; end: string; taken: boolean; available?: boolean }>
   >([]);
   const [loading, setLoading] = useState(false);
   const { authenticatedFetch } = useAuth();
@@ -101,7 +101,11 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({
             key={index}
             type="button"
             disabled={!isAvailable}
-            onClick={() => isAvailable && onTimeSelect(timeString)}
+            onClick={() => {
+              if (!isAvailable) return;
+              const dur = Math.max(1, Math.round((new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60000));
+              onTimeSelect(timeString, slot.start, dur);
+            }}
             className={`p-3 rounded-lg border text-sm font-medium transition-all ${
               isSelected
                 ? "border-blue-500 bg-blue-500 text-white"
@@ -125,6 +129,8 @@ const AgendarConsultaPage: React.FC = () => {
     tipoConsulta: "avaliacao_completa" as TipoConsulta,
     data: "",
     horario: "",
+    horarioIso: "",
+    durationMin: 40,
   });
   const { authenticatedFetch, user } = useAuth();
   const { create } = useConsultations();
@@ -324,18 +330,20 @@ const AgendarConsultaPage: React.FC = () => {
         }
       }
 
-      const { dataIso } = (() => {
-        const date = formData.data;
-        const time = formData.horario;
-        const [h, m] = time.split(":").map(Number);
-        if (!isNaN(h!) && !isNaN(m!)) {
-          const local = new Date(date + "T" + time + ":00");
-          return { dataIso: local.toISOString() };
-        }
-        return { dataIso: new Date(date + "T" + time + ":00Z").toISOString() };
-      })();
+      const scheduledAtIso = formData.horarioIso && formData.horarioIso.length > 0
+        ? formData.horarioIso
+        : (() => {
+            const date = formData.data;
+            const time = formData.horario;
+            const [h, m] = time.split(":").map(Number);
+            if (!isNaN(h!) && !isNaN(m!)) {
+              const local = new Date(date + "T" + time + ":00");
+              return local.toISOString();
+            }
+            return new Date(date + "T" + time + ":00Z").toISOString();
+          })();
 
-      await create({ scheduledAt: dataIso, type: formData.tipoConsulta });
+  await create({ scheduledAt: scheduledAtIso, type: formData.tipoConsulta, durationMin: formData.durationMin });
       push({ type: "success", message: t("consultations.status.scheduled") });
       navigate("/dashboard");
     } catch (e: unknown) {
@@ -682,8 +690,8 @@ const AgendarConsultaPage: React.FC = () => {
               <AvailableSlots
                 date={formData.data}
                 selectedTime={formData.horario}
-                onTimeSelect={(time) =>
-                  setFormData((prev) => ({ ...prev, horario: time }))
+                onTimeSelect={(time, iso, duration) =>
+                  setFormData((prev) => ({ ...prev, horario: time, horarioIso: iso, durationMin: duration }))
                 }
               />
             </div>
