@@ -279,8 +279,8 @@ html {
   /* personalizáveis via CSS vars */
   --ab-border-width: 2px;
   --ab-radius: inherit;
-  --ab-color1: #2563eb; /* blue-600 */
-  --ab-color2: #22d3ee; /* cyan-400 */
+  --ab-color1: #16a34a; /* green-600 (default mais amigável ao CTA) */
+  --ab-color2: #34d399; /* emerald-400 */
   --ab-speed: 3s;
   --ab-fill: #fff; /* cor de preenchimento interno */
   border-radius: var(--ab-radius);
@@ -298,6 +298,19 @@ html {
 
 .animated-border:hover {
   animation-play-state: paused;
+}
+
+/* Glow sutil ao redor quando aplicado o atributo data-glow */
+.animated-border[data-glow]::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: calc(var(--ab-radius) + 6px);
+  background: radial-gradient(40% 40% at 50% 50%, color-mix(in oklab, var(--ab-color2) 40%, transparent) 0%, transparent 100%);
+  filter: blur(8px);
+  opacity: 0.5;
+  pointer-events: none;
+  z-index: -1;
 }
 
 @property --ab-angle {

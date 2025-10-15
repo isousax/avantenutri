@@ -235,17 +235,20 @@ const Consultas: React.FC = () => {
                       <div className="flex sm:flex-col gap-2 sm:gap-1">
                         {isToday && (
                           <div
-                            className="animated-border rounded-lg"
+                            className="animated-border inline-block rounded-lg sm:p-0.5"
                             style={
                               {
                                 ['--ab-radius']: '0.5rem', // rounded-lg ≈ 8px
                                 ['--ab-border-width']: '2px',
-                                ['--ab-color1']: '#2563eb',
-                                ['--ab-color2']: '#22d3ee',
-                                ['--ab-speed']: '2.8s',
+                                // paleta verde para casar com o CTA
+                                ['--ab-color1']: '#16a34a', // green-600
+                                ['--ab-color2']: '#34d399', // emerald-400
+                                ['--ab-speed']: '2.6s',
                                 ['--ab-fill']: 'transparent',
                               } as React.CSSProperties
                             }
+                            // leve glow para destacar sem exagero
+                            data-glow
                           >
                           <a
                             href={(() => {
