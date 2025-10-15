@@ -1,18 +1,18 @@
 import React, { useMemo, useState } from "react";
-import type { TranslationKey } from "../../../types/i18n";
+import type { TranslationKey } from "../../types/i18n";
 import { useNavigate } from "react-router-dom";
-import Button from "../../../components/ui/Button";
-import Card from "../../../components/ui/Card";
-import { SEO } from "../../../components/comum/SEO";
-import { useI18n } from "../../../i18n";
-import { useConsultationCreditsSummary } from "../../../hooks/useConsultationCredits";
-import { useConsultationPricing } from "../../../hooks/useConsultationPricing";
-import { useAuth as useAuthCtx } from "../../../contexts";
-import { useConsultations } from "../../../hooks/useConsultations";
-import { useToast } from "../../../components/ui/ToastProvider";
-import { useQuestionnaireStatus } from "../../../hooks/useQuestionnaireStatus";
-import { QuestionnaireConfirmModal } from "../../../components/dashboard/QuestionnaireConfirmModal";
-import { useQuestionario } from "../../../contexts/useQuestionario";
+import Button from "../../components/ui/Button";
+import Card from "../../components/ui/Card";
+import { SEO } from "../../components/comum/SEO";
+import { useI18n } from "../../i18n";
+import { useConsultationCreditsSummary } from "../../hooks/useConsultationCredits";
+import { useConsultationPricing } from "../../hooks/useConsultationPricing";
+import { useAuth as useAuthCtx } from "../../contexts";
+import { useConsultations } from "../../hooks/useConsultations";
+import { useToast } from "../../components/ui/ToastProvider";
+import { useQuestionnaireStatus } from "../../hooks/useQuestionnaireStatus";
+import { QuestionnaireConfirmModal } from "../../components/dashboard/QuestionnaireConfirmModal";
+import { useQuestionario } from "../../contexts/useQuestionario";
 import {
   ArrowLeft,
   Calendar,
@@ -25,7 +25,7 @@ import {
   Shield,
   Video,
 } from "lucide-react";
-import { API } from "../../../config/api";
+import { API } from "../../config/api";
 
 // Componente para slots disponíveis
 interface AvailableSlotsProps {
@@ -92,24 +92,26 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({
   return (
     <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
       {slots.map((slot, index) => {
-        const timeString = slot.start.split("T")[1].substring(0, 5);
+        const startDate = new Date(slot.start);
+        const timeString = startDate.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', hour12: false });
         const isSelected = selectedTime === timeString;
         const isAvailable = !slot.taken;
+        const isPast = startDate.getTime() <= Date.now() + 2 * 60 * 1000; // bloqueio visual para slots no passado
 
         return (
           <button
             key={index}
             type="button"
-            disabled={!isAvailable}
+            disabled={!isAvailable || isPast}
             onClick={() => {
-              if (!isAvailable) return;
+              if (!isAvailable || isPast) return;
               const dur = Math.max(1, Math.round((new Date(slot.end).getTime() - new Date(slot.start).getTime()) / 60000));
               onTimeSelect(timeString, slot.start, dur);
             }}
             className={`p-3 rounded-lg border text-sm font-medium transition-all ${
               isSelected
                 ? "border-blue-500 bg-blue-500 text-white"
-                : isAvailable
+                : isAvailable && !isPast
                 ? "border-gray-300 bg-white text-gray-700 hover:border-blue-300 hover:bg-blue-50"
                 : "border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed"
             }`}
@@ -712,7 +714,7 @@ const AgendarConsultaPage: React.FC = () => {
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={14} />
-                <span>Você receberá instruções pelo WhatsApp próximo ao horário agendado</span>
+                <span>Acesse o painel de consultas no dia do agendamento, será liberado um botão 'Falar com a Nutricionista'</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar size={14} />

@@ -37,7 +37,7 @@ import ResetPasswordPage from "./pages/login/ResetPasswordPage.tsx";
 import RefeicaoRegistroPage from "./pages/client/registroAtividades/RefeicaoRegistroPage.tsx";
 import PesoRegistroPage from "./pages/client/registroAtividades/PesoRegistroPage.tsx";
 import AguaRegistroPage from "./pages/client/registroAtividades/AguaRegistroPage.tsx";
-import AgendarConsultaPage from "./pages/client/registroAtividades/AgendarConsultaPage.tsx";
+import AgendarConsultaPage from "./pages/client/AgendarConsultaPage.tsx";
 import BillingHistoryPage from "./pages/client/BillingHistoryPage.tsx";
 import { ExerciciosPage } from "./pages/client/ExerciciosPage.tsx";
 import NotificationsPage from "./pages/client/NotificationsPage.tsx";
