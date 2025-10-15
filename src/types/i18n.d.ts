@@ -411,6 +411,7 @@ export type TranslationKey =
   | 'consultations.cancel.action'
   | 'consultations.cancel.confirm'
   | 'consultations.cancel.error'
+  | 'consultations.cancel.window_hint'
   | 'consultations.canceling'
   | 'consultations.credits.buy.avaliacao'
   | 'consultations.credits.buy.avaliacao_completa'

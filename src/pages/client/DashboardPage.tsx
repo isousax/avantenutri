@@ -88,7 +88,7 @@ const DietPlanCard: React.FC<{
   // Detectar formato da dieta (não exibido por enquanto)
 
   return (
-    <Card className="w-full max-w-full box-border overflow-hidden p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
+    <Card padding="p-5" className="w-full max-w-full box-border overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -1693,7 +1693,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4 overflow-x-hidden">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4 overflow-x-hidden min-w-0">
                 {creating &&
                   Array.from({ length: 3 }).map((_, i) => (
                     <SkeletonCard key={i} lines={4} className="h-48" />

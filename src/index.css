@@ -271,3 +271,49 @@ html {
 .prose li {
   margin-bottom: 0.5em;
 }
+
+/* Borda animada (conic-gradient) reutilizável */
+.animated-border {
+  position: relative;
+  isolation: isolate;
+  /* personalizáveis via CSS vars */
+  --ab-border-width: 2px;
+  --ab-radius: inherit;
+  --ab-color1: #2563eb; /* blue-600 */
+  --ab-color2: #22d3ee; /* cyan-400 */
+  --ab-speed: 3s;
+  --ab-fill: #fff; /* cor de preenchimento interno */
+  border-radius: var(--ab-radius);
+  border: var(--ab-border-width) solid transparent;
+  background:
+    linear-gradient(var(--ab-fill), var(--ab-fill)) padding-box,
+    conic-gradient(from var(--ab-angle),
+      var(--ab-color1) 80%,
+      var(--ab-color2) 88%,
+      var(--ab-color2) 92%,
+      var(--ab-color1) 100%
+    ) border-box;
+  animation: ab-spin var(--ab-speed) linear infinite;
+}
+
+.animated-border:hover {
+  animation-play-state: paused;
+}
+
+@property --ab-angle {
+  syntax: "<angle>";
+  inherits: true;
+  initial-value: 0turn;
+}
+
+@keyframes ab-spin {
+  to {
+    --ab-angle: 1turn;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animated-border {
+    animation: none !important;
+  }
+}

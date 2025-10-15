@@ -2,6 +2,7 @@ import { API } from '../config/api';
 import { useAuth } from '../contexts/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
+import { useI18n } from '../i18n';
 
 export interface Consultation {
   id: string;
@@ -21,6 +22,7 @@ interface CreateResponse { ok?: boolean; id?: string; status?: string; error?: s
 export function useConsultations() {
   const { getAccessToken } = useAuth();
   const qc = useQueryClient();
+  const { t } = useI18n();
 
   const fetchConsultations = useCallback(async (): Promise<Consultation[]> => {
     const accessToken = await getAccessToken();
@@ -75,8 +77,16 @@ export function useConsultations() {
         body: JSON.stringify({ reason }),
       });
       if (!res.ok) {
-        const data = await res.json();
-        throw new Error(data.error || 'erro');
+        let msg = 'erro';
+        try {
+          const data = await res.json();
+          if (data?.error === 'cancellation_window') {
+            msg = t('consultations.cancel.window_hint');
+          } else if (typeof data?.error === 'string') {
+            msg = data.error;
+          }
+  } catch { /* ignore parse error */ }
+        throw new Error(msg);
       }
     },
     onMutate: async ({ id }): Promise<CancelCtx> => {

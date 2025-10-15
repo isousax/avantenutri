@@ -187,9 +187,15 @@ const Consultas: React.FC = () => {
                 const now = new Date();
                 return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
               })();
+              const scheduledAt = new Date(consultation.scheduled_at);
+              const msLeft = scheduledAt.getTime() - Date.now();
+              const insideLockWindow = msLeft <= 51 * 60 * 60 * 1000; // < 51h - 48h + margem de 3h para alinhamento de fuso com servidor
 
               return (
-                <div key={consultation.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
+                <div
+                  key={consultation.id}
+                  className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300"
+                >
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3 mb-2">
@@ -228,6 +234,19 @@ const Consultas: React.FC = () => {
                     {consultation.status === 'scheduled' && (
                       <div className="flex sm:flex-col gap-2 sm:gap-1">
                         {isToday && (
+                          <div
+                            className="animated-border rounded-lg"
+                            style={
+                              {
+                                ['--ab-radius']: '0.5rem', // rounded-lg ≈ 8px
+                                ['--ab-border-width']: '2px',
+                                ['--ab-color1']: '#2563eb',
+                                ['--ab-color2']: '#22d3ee',
+                                ['--ab-speed']: '2.8s',
+                                ['--ab-fill']: 'transparent',
+                              } as React.CSSProperties
+                            }
+                          >
                           <a
                             href={(() => {
                               const phone = '558186653214';
@@ -247,29 +266,32 @@ const Consultas: React.FC = () => {
                             </svg>
                             Falar com a Nutricionista
                           </a>
+                          </div>
                         )}
-                        <button
-                          disabled={cancelingId === consultation.id}
-                          onClick={() => handleCancel(consultation.id)}
-                          className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm font-medium px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
-                        >
-                          {cancelingId === consultation.id ? (
-                            <>
-                              <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                              {t('consultations.canceling')}
-                            </>
-                          ) : (
-                            <>
-                              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                              </svg>
-                              {t('consultations.cancel.action')}
-                            </>
-                          )}
-                        </button>
+                        {!insideLockWindow && (
+                          <button
+                            disabled={cancelingId === consultation.id}
+                            onClick={() => handleCancel(consultation.id)}
+                            className="flex items-center gap-2 text-red-600 hover:text-red-700 text-sm font-medium px-3 py-2 bg-red-50 hover:bg-red-100 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
+                          >
+                            {cancelingId === consultation.id ? (
+                              <>
+                                <svg className="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                {t('consultations.canceling')}
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                                {t('consultations.cancel.action')}
+                              </>
+                            )}
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
