@@ -140,7 +140,8 @@ const AdminBillingPage: React.FC = () => {
       if (payConsultType) qs.consultation_type = payConsultType;
       
       const url = API.ADMIN_PAYMENTS + '?' + new URLSearchParams(qs).toString();
-      const r = await authenticatedFetch(url, { method: 'GET', autoLogout: true });
+  const r = await authenticatedFetch(url, { method: 'GET', autoLogout: true });
+  if (r.status === 401 || r.status === 403) { try { console.warn('[AdminBillingPage] fetch billing summary ->', r.status, 'autoLogout path'); } catch { /* noop */ } }
       if (!r.ok) throw new Error('HTTP ' + r.status);
       
       const data: ListPaymentsResp = await r.json();
@@ -154,8 +155,9 @@ const AdminBillingPage: React.FC = () => {
         setPayHasMore(len === PAGE_SIZE);
         setPayTotal(null);
       }
-    } catch (e: any) { 
-      setError(e.message || 'Erro'); 
+    } catch (e: unknown) { 
+      const msg = e instanceof Error ? e.message : 'Erro';
+      setError(msg); 
       push({ type: 'error', message: t('admin.billing.toast.loadPaymentsError') }); 
     } finally { 
       setLoading(false); 
@@ -169,10 +171,11 @@ const AdminBillingPage: React.FC = () => {
         method: 'GET', 
         autoLogout: true 
       });
+      if (!r.ok && (r.status === 401 || r.status === 403)) { try { console.warn('[AdminBillingPage] fetch pricing ->', r.status, 'autoLogout path'); } catch { /* noop */ } }
       if (!r.ok) throw new Error('HTTP ' + r.status);
       const data = await r.json();
       setPricing(data.pricing || []);
-    } catch (e: any) { 
+    } catch { 
       push({ type: 'error', message: 'Falha ao carregar preços' }); 
     } finally { 
       setLoadingPricing(false); 
@@ -210,8 +213,9 @@ const AdminBillingPage: React.FC = () => {
           attempts: 2 
         },
       ]);
-    } catch (e: any) { 
-      setError(e.message || 'Erro'); 
+    } catch (e: unknown) { 
+      const msg = e instanceof Error ? e.message : 'Erro';
+      setError(msg); 
       push({ type: 'error', message: t('admin.billing.toast.loadWebhooksError') }); 
     } finally { 
       setLoading(false); 
@@ -581,8 +585,8 @@ const AdminBillingPage: React.FC = () => {
                                     });
                                     if (!r.ok) throw new Error('fail');
                                     push({ type: 'success', message: 'Preço atualizado com sucesso' });
-                                    setPricingDirty(d => { const { [p.type]: _, ...rest } = d; return rest; });
-                                    setPricingActiveDirty(d => { const { [p.type]: _, ...rest } = d; return rest; });
+                                    setPricingDirty(d => { const clone = { ...d } as Record<string, number>; delete clone[p.type]; return clone as typeof d; });
+                                    setPricingActiveDirty(d => { const clone = { ...d } as Record<string, number>; delete clone[p.type]; return clone as typeof d; });
                                     loadPricing();
                                   } catch { 
                                     push({ type: 'error', message: 'Falha ao salvar preço' }); 

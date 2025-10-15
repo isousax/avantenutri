@@ -48,23 +48,25 @@ export function useConsultations() {
     placeholderData: (prev) => prev,
   });
 
-  const createMutation = useMutation<CreateResponse, Error, { scheduledAt: string; type: string; durationMin?: number; notes?: string; urgency?: string; }>({
-    mutationFn: async (input) => {
-      const accessToken = await getAccessToken();
-      if (!accessToken) throw new Error('no-auth');
-      const res = await fetch(API.CONSULTATIONS, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
-        body: JSON.stringify(input),
-      });
-      const data: CreateResponse = await res.json();
-      if (!res.ok) throw new Error(data.error || 'erro');
-      return data;
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['consultations'] });
-    },
-  });
+  const createMutation = useMutation<CreateResponse, Error, { scheduledAt: string; type: string; durationMin?: number; notes?: string; urgency?: string; }>(
+    {
+      mutationFn: async (input) => {
+        const accessToken = await getAccessToken();
+        if (!accessToken) throw new Error('no-auth');
+        const res = await fetch(API.CONSULTATIONS, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${accessToken}` },
+          body: JSON.stringify(input),
+        });
+        const data: CreateResponse & { message?: string } = await res.json();
+        if (!res.ok) throw new Error(data.message || data.error || 'erro');
+        return data;
+      },
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ['consultations'] });
+      },
+    }
+  );
 
   interface CancelCtx { prev?: Consultation[] }
   const cancelMutation = useMutation<void, Error, { id: string; reason?: string }, CancelCtx>({

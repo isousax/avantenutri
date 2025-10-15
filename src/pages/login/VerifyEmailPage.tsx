@@ -76,6 +76,7 @@ const CheckEmailPage: React.FC = () => {
   }, [feedbackMsg]);
 
   const handleLogout = () => {
+    try { console.info('[VerifyEmailPage] use another email clicked (clearing prefill)'); } catch { /* noop */ }
     sessionStorage.removeItem("prefill_email");
     setTimeout(() => navigate("/login"), 1000);
   };

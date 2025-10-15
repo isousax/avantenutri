@@ -71,6 +71,7 @@ export function useNotifications(onlyUnread = false, limit = 20, offset = 0) {
         return { notifications: [], total: 0, limit, offset };
       }
       if (!response.ok) {
+        if (response.status === 401 || response.status === 403) { try { console.warn('[useNotifications] fetch notifications ->', response.status, 'autoLogout path'); } catch { /* noop */ } }
         let detail: string | undefined;
         try {
           const js = await response.json();

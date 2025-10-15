@@ -174,7 +174,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   // contextual logout used by provider & refresh failure
-  const contextLogout = async () => {
+  const contextLogout = async (reason?: string, extra?: unknown) => {
+    try {
+      console.info(
+        "[AuthProvider] contextLogout invoked",
+        {
+          reason: reason || "(no-reason)",
+          extra,
+          ts: new Date().toISOString(),
+          isLeader: isLeaderRef.current,
+          visibility: document.visibilityState,
+        }
+      );
+    } catch {/* ignore logging errors */}
     try {
       const refresh = localStorage.getItem(STORAGE_REFRESH_KEY);
       if (refresh) {
@@ -207,10 +219,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     stopLeaderElection();
     cancelScheduledRefresh();
     await clearAllStorage();
+  try { console.info("[AuthProvider] user state -> null (contextLogout)"); } catch { /* noop */ }
     setUser(null);
     try {
-      window.dispatchEvent(new CustomEvent("auth:logout"));
-      if (bcRef.current) bcRef.current.postMessage({ type: "logout" });
+      console.info("[AuthProvider] dispatching auth:logout event & BC broadcast");
+      window.dispatchEvent(new CustomEvent("auth:logout", { detail: { reason: reason || "(no-reason)", ts: Date.now() } }));
+      if (bcRef.current) bcRef.current.postMessage({ type: "logout", reason, ts: Date.now() });
     } catch (err) {
       console.warn("[AuthProvider] logout event broadcast failed", err);
     }
@@ -288,7 +302,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         if (res.status === 401 || res.status === 403) {
           if (acquiredHere) releaseRefreshLock();
-          await contextLogout();
+          await contextLogout(`doRefreshWithRetry -> refresh returned ${res.status}`);
           return false;
         }
 
@@ -320,7 +334,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
 
     // exhausted attempts -> logout
-    await contextLogout();
+    await contextLogout("doRefreshWithRetry -> exhausted attempts");
     if (acquiredHere) releaseRefreshLock();
     return false;
   };
@@ -462,7 +476,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const access = localStorage.getItem(STORAGE_ACCESS_KEY);
       const refresh = localStorage.getItem(STORAGE_REFRESH_KEY) ?? null;
       const expiresAtIso = localStorage.getItem(STORAGE_EXPIRES_KEY) ?? null;
-      if (!access) { setUser(null); return; }
+      if (!access) {
+  try { console.info("[AuthProvider] rehydrate: no access token -> setUser(null)"); } catch { /* noop */ }
+        setUser(null);
+        return;
+      }
 
       const payload = decodeJwt(access);
       if (payload) {
@@ -583,6 +601,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           }
           if (ev.data.type === "logout") {
             // remote logout
+            try { console.info("[AuthProvider] BC logout message received -> clearing storage & setUser(null)"); } catch { /* noop */ }
             clearAllStorage();
             setUser(null);
           }
@@ -727,7 +746,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (r.status === 401 || r.status === 403) {
           setSessionVerified(false);
           verificationInProgressRef.current = false;
-          await contextLogout();
+          await contextLogout(`runSessionVerification -> /me returned ${r.status}`);
           return false;
         }
         setSessionVerified(false);
@@ -991,7 +1010,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     },
     logout: async () => {
-      await contextLogout();
+  try { console.info("[AuthProvider] logout() called by consumer"); } catch { /* noop */ }
+      await contextLogout("AuthContext.logout() consumer call");
     },
     updateUser: (partial) => {
       if (!user) return;
@@ -1157,10 +1177,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             (response.status === 401 || response.status === 403) &&
             autoLogout
           ) {
-            await contextLogout();
+            const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);
+            await contextLogout(`authenticatedFetch -> after retry still ${response.status}`, { url, status: response.status });
           }
         } else if (autoLogout) {
-          await contextLogout();
+          const url = typeof input === 'string' ? input : (input as Request)?.url || String(input);
+          await contextLogout("authenticatedFetch -> refresh failed and autoLogout=true", { url, status: response.status });
         }
       }
       return response;
@@ -1194,7 +1216,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             console.warn("Erro ao realizar SyncUser", err);
           }
           if (r.status === 401 || r.status === 403) {
-            await contextLogout();
+            await contextLogout(`syncUser -> /me returned ${r.status}`);
           }
           return false;
         }

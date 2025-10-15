@@ -135,6 +135,7 @@ const Perfil: React.FC = () => {
       } else {
         const changed = resp.headers.get("X-Password-Changed") === "1";
         if (changed) {
+          try { console.info('[Perfil] password changed -> enforcing re-auth (clearing tokens, broadcasting logout)'); } catch { /* noop */ }
           setMessage("Senha alterada. Será necessário autenticar novamente.");
           localStorage.removeItem("access_token");
           localStorage.removeItem("refresh_token");
@@ -143,6 +144,7 @@ const Perfil: React.FC = () => {
           localStorage.removeItem("@AvanteNutri:user");
           try {
             if (typeof BroadcastChannel !== "undefined") {
+              console.info('[Perfil] broadcasting logout via BroadcastChannel');
               const bc = new BroadcastChannel("avante-auth");
               bc.postMessage({ type: "logout" });
               bc.close();

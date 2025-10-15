@@ -461,6 +461,7 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
+    try { console.info('[DashboardPage] handleLogout called -> invoking logout'); } catch { /* noop */ }
     await logout();
     navigate("/login");
   };

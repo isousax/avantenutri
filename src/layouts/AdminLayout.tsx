@@ -186,7 +186,7 @@ const AdminLayout: React.FC = () => {
 
   const runCommand = useCallback((cmd: typeof filteredCommands[number]) => {
     if (cmd.type==='nav') { navigate(cmd.path); setCommandOpen(false); return; }
-    if (cmd.path==='#logout') { logout(); setCommandOpen(false); return; }
+    if (cmd.path==='#logout') { try { console.info('[AdminLayout] command palette -> logout'); } catch { /* noop */ } logout(); setCommandOpen(false); return; }
     if (cmd.path==='#reloadMetrics') {
       setMetrics(m=> m.map(mm=> ({...mm, loading:true})));
       void (async () => {

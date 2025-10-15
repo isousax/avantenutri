@@ -256,12 +256,18 @@ const AgendarConsultaPage: React.FC = () => {
         return;
       }
 
-      // Verificar se usuário tem créditos antes de avançar
+      // Verificar elegibilidade de reavaliação e créditos antes de avançar
       const needsCredit =
         formData.tipoConsulta === "avaliacao_completa" ||
         formData.tipoConsulta === "reavaliacao";
       const availableCredits =
         creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
+
+      // Se for reavaliação e não elegível e também não tem crédito disponível, impedir avançar
+      if (formData.tipoConsulta === "reavaliacao" && !canUseReavaliacao && availableCredits <= 0) {
+        push({ type: "error", message: t("consultations.credits.reavaliacao.rule") });
+        return;
+      }
 
       if (needsCredit && availableCredits <= 0) {
         // Sem créditos: iniciar checkout automaticamente e dar feedback mínimo
@@ -360,6 +366,8 @@ const AgendarConsultaPage: React.FC = () => {
       else if (raw.includes("questionnaire_required"))
         mapped =
           "É necessário completar o questionário antes de agendar uma consulta.";
+        else if (raw.includes("reavaliacao_not_allowed"))
+          mapped = t("consultations.credits.reavaliacao.rule");
       const finalMsg = mapped || t("consultations.schedule.error");
       setSubmitError(finalMsg);
       push({ type: "error", message: finalMsg });
@@ -404,12 +412,12 @@ const AgendarConsultaPage: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type, display_name: user?.display_name }),
       });
-      const data: { ok?: boolean; checkout_url?: string; error?: string } = await res.json();
+      const data: { ok?: boolean; checkout_url?: string; error?: string; message?: string } = await res.json();
       console.log("Billing intent data:", data);
       if (!res.ok || !data?.checkout_url) {
         push({
           type: "error",
-          message: data?.error || "Falha ao iniciar pagamento",
+          message: data?.message || data?.error || "Falha ao iniciar pagamento",
         });
         return;
       }
@@ -447,11 +455,11 @@ const AgendarConsultaPage: React.FC = () => {
             const hasCredits = needsCredit && availableCredits > 0;
             const isReavaliacao = tipo.value === "reavaliacao";
             const hasLockedReavaliacao = isReavaliacao && lockedCredits > 0 && availableCredits === 0;
-            // Elegível para seleção: NÃO permitir seleção se só possui locked (aguardar liberação)
-            const isEligible = !isReavaliacao || canUseReavaliacao || hasCredits; // não inclui somente locked
-            // Se há reavaliação bloqueada (reservada), não exibir 'Não elegível' banner
+            // Elegibilidade informativa: mostramos banner se não elegível, mas deixamos o usuário selecionar.
+            const isEligible = !isReavaliacao || canUseReavaliacao || hasCredits; // crédito disponível OU regra permite
             const showNotEligibleBanner = isReavaliacao && !isEligible && !hasLockedReavaliacao;
-            const isDisabled = !isEligible;
+            // Desabilitar quando reservado (locked) OU quando não elegível e sem crédito
+            const isDisabled = hasLockedReavaliacao || (isReavaliacao && !isEligible);
 
             const selected = formData.tipoConsulta === tipo.value;
 
@@ -469,10 +477,8 @@ const AgendarConsultaPage: React.FC = () => {
                       }`
                 }`}
                 onClick={() => {
-                  if (hasLockedReavaliacao) return; // bloqueia seleção
-                  if (!isDisabled) {
-                    setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }));
-                  }
+                  if (isDisabled) return; // bloqueia seleção quando reservado ou não elegível
+                  setFormData((prev) => ({ ...prev, tipoConsulta: tipo.value }));
                 }}
               >
                 {/* Conteúdo principal: ícone + título/preço */}
@@ -577,7 +583,7 @@ const AgendarConsultaPage: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Regra de Reavaliação (quando elegível mostramos a regra em bloco separado) */}
+                  {/* Aviso de expiração da reavaliação */}
                   {tipo.value === "reavaliacao" && isEligible && !hasLockedReavaliacao && (
                     <div className="mt-3 text-sm text-gray-500 bg-gray-50 p-3 rounded border">
                       {t("consultations.credits.reavaliacao.rule")}

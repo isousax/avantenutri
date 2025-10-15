@@ -41,6 +41,7 @@ export function useAdminCredits() {
         }
 
         if (res.status === 401 || res.status === 403) {
+          try { console.warn('[useAdminCredits] list credits returned', res.status, '-> potential autoLogout'); } catch { /* noop */ }
           throw new Error("Sem permissão para acessar dados de créditos");
         }
 
@@ -125,6 +126,7 @@ export function useAdjustCredits() {
         }
 
         if (res.status === 401 || res.status === 403) {
+          try { console.warn('[useAdminCredits] history returned', res.status, '-> potential autoLogout'); } catch { /* noop */ }
           throw new Error("Sem permissão para ajustar créditos");
         }
 

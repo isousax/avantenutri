@@ -75,6 +75,7 @@ const AdminUsersPage: React.FC = () => {
           autoLogout: true,
         }
       );
+      if (!r.ok && (r.status === 401 || r.status === 403)) { try { console.warn('[AdminUsersPage] list users ->', r.status, 'autoLogout path'); } catch { /* noop */ } }
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data: ApiResponse = await r.json();
       setUsers(data.results || []);
@@ -107,6 +108,7 @@ const AdminUsersPage: React.FC = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ new_role: newRole, reason: "UI change" }),
       });
+      if (!r.ok && (r.status === 401 || r.status === 403)) { try { console.warn('[AdminUsersPage] change role ->', r.status, 'autoLogout path'); } catch { /* noop */ } }
       if (!r.ok) throw new Error("Falha ao mudar role");
       await load();
       push({ type: "success", message: "Role alterada com sucesso" });
@@ -125,6 +127,7 @@ const AdminUsersPage: React.FC = () => {
       const r = await authenticatedFetch(API.adminUserForceLogout(userId), {
         method: "POST",
       });
+      if (!r.ok && (r.status === 401 || r.status === 403)) { try { console.warn('[AdminUsersPage] force-logout ->', r.status, 'autoLogout path'); } catch { /* noop */ } }
       if (!r.ok) throw new Error("Falha ao forçar logout");
       push({ type: "success", message: "Logout forçado com sucesso" });
     } catch (err) {
