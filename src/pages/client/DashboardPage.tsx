@@ -207,7 +207,8 @@ interface BottomTab {
 const BottomNav: React.FC<{
   activeTab: BottomTabId;
   onTabChange: (tab: BottomTabId) => void;
-}> = ({ activeTab, onTabChange }) => {
+  hasTodayConsultation?: boolean;
+}> = ({ activeTab, onTabChange, hasTodayConsultation }) => {
   const navigate = useNavigate();
   const tabs: BottomTab[] = [
     { id: "overview", label: "Visão", icon: "📊" },
@@ -220,24 +221,33 @@ const BottomNav: React.FC<{
   return (
     <nav className="fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-2xl shadow-black/10 z-40 md:hidden">
       <div className="flex justify-around p-1">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            onClick={() =>
-              tab.navigate ? navigate(tab.navigate) : onTabChange(tab.id)
-            }
-            className={`flex flex-col items-center py-2 px-1 flex-1 min-w-0 rounded-xl transition-all duration-300 ${
-              activeTab === tab.id
-                ? "text-green-600 bg-green-50/80"
-                : "text-gray-600 hover:text-gray-900 hover:bg-gray-50/50"
-            }`}
-          >
-            <span className="text-lg mb-1 transition-transform duration-300">
-              {tab.icon}
-            </span>
-            <span className="text-xs font-semibold truncate">{tab.label}</span>
-          </button>
-        ))}
+        {tabs.map((tab) => {
+          const isConsultasToday = hasTodayConsultation && tab.id === "consultas";
+          return (
+            <button
+              key={tab.id}
+              onClick={() =>
+                tab.navigate ? navigate(tab.navigate) : onTabChange(tab.id)
+              }
+              className={`flex flex-col items-center py-2 px-1 flex-1 min-w-0 rounded-xl transition-all duration-300${
+                activeTab === tab.id
+                  ? " text-green-600 bg-green-50/80"
+                  : " text-gray-600 hover:text-gray-900 hover:bg-gray-50/50"
+              }`}
+            >
+              <span className="text-lg mb-1 transition-transform duration-300 relative inline-flex">
+                {tab.icon}
+                {isConsultasToday && (
+                  <>
+                    <span className="absolute -top-0.5 -right-1 block h-2 w-2 rounded-full bg-emerald-500"></span>
+                    <span className="absolute -top-1 -right-1 block h-2 w-2 rounded-full bg-emerald-500 opacity-75 animate-ping"></span>
+                  </>
+                )}
+              </span>
+              <span className="text-xs font-semibold truncate">{tab.label}</span>
+            </button>
+          );
+        })}
       </div>
     </nav>
   );
@@ -901,6 +911,19 @@ const DashboardPage: React.FC = () => {
     .sort((a, b) => a.scheduled_at.localeCompare(b.scheduled_at))
     .slice(0, 5);
 
+  const hasTodayConsultation = React.useMemo(() => {
+    const now = new Date();
+    return consultations.some((c) => {
+      if (c.status !== 'scheduled') return false;
+      const d = new Date(c.scheduled_at);
+      return (
+        d.getFullYear() === now.getFullYear() &&
+        d.getMonth() === now.getMonth() &&
+        d.getDate() === now.getDate()
+      );
+    });
+  }, [consultations]);
+
   const { locale, t } = useI18n();
 
   const quickActions = [
@@ -1544,7 +1567,7 @@ const DashboardPage: React.FC = () => {
                     <Button
                       variant="secondary"
                       onClick={() => setActiveTab("dietas")}
-                      className="text-sm py-2 px-4 rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
+                      className="text-sm rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
                     >
                       Ver Todas
                     </Button>
@@ -1742,7 +1765,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Bottom Navigation for Mobile */}
-        <BottomNav activeTab={activeTab} onTabChange={setActiveTab} />
+  <BottomNav activeTab={activeTab} onTabChange={setActiveTab} hasTodayConsultation={hasTodayConsultation} />
 
         {/* Create Diet Modal - apenas para admin */}
         {canEditDiets && showCreateModal && (
