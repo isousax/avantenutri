@@ -55,12 +55,16 @@ const BlogPage: React.FC = () => {
     const fromQuery = searchParams.get("category");
     if (!fromQuery) return;
     // Evitar reaplicar para o mesmo valor
-    if (appliedQueryRef.current === fromQuery && selectedCategory === fromQuery) return;
+    if (appliedQueryRef.current === fromQuery && selectedCategory === fromQuery)
+      return;
     appliedQueryRef.current = fromQuery;
     if (fromQuery !== selectedCategory) setSelectedCategory(fromQuery);
     // Rolagem suave até a seção de categorias
     requestAnimationFrame(() => {
-      categoriesSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      categoriesSectionRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     });
   }, [searchParams, selectedCategory]);
 
@@ -337,7 +341,7 @@ const BlogPage: React.FC = () => {
         title={t("blog.list.seo.title")}
         description={t("blog.list.seo.desc")}
       />
-
+      
       {/* Header Corporativo */}
       <section className="relative bg-gradient-to-r from-gray-900 to-green-900 text-white py-10 sm:py-20 overflow-hidden">
         <div className="absolute inset-0 bg-black/20"></div>
@@ -552,13 +556,17 @@ const BlogPage: React.FC = () => {
                     onClick={() => {
                       setSelectedCategory(category.id);
                       // Atualiza a URL para compartilhar o filtro atual
-                      const params = new URLSearchParams(window.location.search);
+                      const params = new URLSearchParams(
+                        window.location.search
+                      );
                       if (category.id === "todos") {
                         params.delete("category");
                       } else {
                         params.set("category", category.id);
                       }
-                      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ""}`;
+                      const newUrl = `${window.location.pathname}${
+                        params.toString() ? `?${params.toString()}` : ""
+                      }`;
                       window.history.replaceState({}, "", newUrl);
                     }}
                     className={`px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-300 ${
