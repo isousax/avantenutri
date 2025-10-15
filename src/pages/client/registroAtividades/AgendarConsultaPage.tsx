@@ -7,7 +7,7 @@ import { SEO } from "../../../components/comum/SEO";
 import { useI18n } from "../../../i18n";
 import { useConsultationCreditsSummary } from "../../../hooks/useConsultationCredits";
 import { useConsultationPricing } from "../../../hooks/useConsultationPricing";
-import { useAuth } from "../../../contexts";
+import { useAuth as useAuthCtx } from "../../../contexts";
 import { useConsultations } from "../../../hooks/useConsultations";
 import { useToast } from "../../../components/ui/ToastProvider";
 import { useQuestionnaireStatus } from "../../../hooks/useQuestionnaireStatus";
@@ -43,7 +43,7 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({
     Array<{ start: string; end: string; taken: boolean; available?: boolean }>
   >([]);
   const [loading, setLoading] = useState(false);
-  const { authenticatedFetch } = useAuth();
+  const { authenticatedFetch } = useAuthCtx();
 
   React.useEffect(() => {
     if (!date) return;
@@ -132,7 +132,7 @@ const AgendarConsultaPage: React.FC = () => {
     horarioIso: "",
     durationMin: 40,
   });
-  const { authenticatedFetch, user } = useAuth();
+  const { authenticatedFetch, user } = useAuthCtx();
   const { create } = useConsultations();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -703,16 +703,16 @@ const AgendarConsultaPage: React.FC = () => {
           <div className="p-5">
             <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
               <Video size={18} />
-              Informações da Consulta
+              Atendimento via WhatsApp
             </h4>
             <div className="space-y-2 text-xs text-green-700">
               <div className="flex items-center gap-2">
                 <Shield size={14} />
-                <span>Consulta 100% online</span>
+                <span>Atendimento preferencialmente por WhatsApp (mensagens e/ou chamada de vídeo, se necessário)</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={14} />
-                <span>Link enviado por e-mail</span>
+                <span>Você receberá instruções pelo WhatsApp próximo ao horário agendado</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar size={14} />

@@ -88,7 +88,7 @@ const DietPlanCard: React.FC<{
   // Detectar formato da dieta (não exibido por enquanto)
 
   return (
-    <Card className="p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
+    <Card className="w-full max-w-full box-border overflow-hidden p-5 hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -97,11 +97,11 @@ const DietPlanCard: React.FC<{
                 isCurrent ? "bg-green-500 animate-pulse" : "bg-gray-300"
               }`}
             />
-            <h3 className="text-lg font-bold text-gray-900 truncate">
+            <h3 className="text-lg font-bold text-gray-900 truncate break-words">
               {diet.name}
             </h3>
           </div>
-          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed truncate">
+          <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed truncate break-words">
             {diet.description || "Sem descrição"}
           </p>
         </div>
@@ -1017,7 +1017,7 @@ const DashboardPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex overflow-x-hidden">
+  <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex overflow-x-hidden">
       <SEO
         title={t("dashboard.seo.title")}
         description={t("dashboard.seo.desc")}
@@ -1693,7 +1693,7 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
 
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
+              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4 overflow-x-hidden">
                 {creating &&
                   Array.from({ length: 3 }).map((_, i) => (
                     <SkeletonCard key={i} lines={4} className="h-48" />
@@ -1702,6 +1702,7 @@ const DashboardPage: React.FC = () => {
                   plans.map((diet) => (
                     <div
                       key={diet.id}
+                      className="w-full max-w-full min-w-0 overflow-hidden"
                       data-plan-id={diet.id}
                       onMouseEnter={() => {
                         const ctx = { qc, fetcher: authFetchCompat } as const;

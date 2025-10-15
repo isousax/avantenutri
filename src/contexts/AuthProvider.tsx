@@ -218,13 +218,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   // doRefresh with retry/backoff (leader only calls)
   const doRefreshWithRetry = async (
-    refreshToken: string
+    refreshToken: string,
+    opts?: { skipLock?: boolean }
   ) => {
     // Aquisição de lock global para evitar duas abas batendo /auth/refresh ao mesmo tempo
-    if (!(await acquireRefreshLock())) {
-      // Outra aba está fazendo refresh. Aguardar e reidratar.
-      const ok = await waitForOtherTabRefresh();
-      return ok;
+    let acquiredHere = false;
+    if (!opts?.skipLock) {
+      if (!(await acquireRefreshLock())) {
+        // Outra aba está fazendo refresh. Aguardar e reidratar.
+        const ok = await waitForOtherTabRefresh();
+        return ok;
+      }
+      acquiredHere = true;
     }
     const maxAttempts = 4; // 1 + 3 retries
     let attempt = 0;
@@ -277,12 +282,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           if (newAccess)
             scheduleRefreshLeader(newAccess, newRefresh, expiresAt);
 
+          if (acquiredHere) releaseRefreshLock();
           return true;
         }
 
         if (res.status === 401 || res.status === 403) {
+          if (acquiredHere) releaseRefreshLock();
           await contextLogout();
           return false;
+        }
+
+        if (res.status === 409) {
+          // Conflito de rotação (outra aba/processo rotacionou primeiro)
+          // Backoff curto e reidrata tokens antes de retry
+          await new Promise((r) => setTimeout(r, 250));
+          const maybeAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+          if (maybeAccess) {
+            try {
+              const p = decodeJwt(maybeAccess);
+              if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) {
+                if (acquiredHere) releaseRefreshLock();
+                return true; // já atualizado por outro fluxo
+              }
+            } catch { /* ignore decode errors */ }
+          }
+          // segue para novo retry com backoff normal
         }
 
         // transient error -> retry
@@ -297,7 +321,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // exhausted attempts -> logout
     await contextLogout();
-    releaseRefreshLock();
+    if (acquiredHere) releaseRefreshLock();
     return false;
   };
 
@@ -996,9 +1020,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               const ok = await waitForOtherTabRefresh();
               return ok;
             }
-            // Se líder, usa fluxo de retry existente
+            // Se líder, usa fluxo de retry existente (já possuímos o lock aqui)
             if (isLeaderRef.current) {
-              const res = await doRefreshWithRetry(refresh);
+              const res = await doRefreshWithRetry(refresh, { skipLock: true });
               releaseRefreshLock();
               return res;
             }
@@ -1024,6 +1048,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                     console.warn("Erro ao reidratar refresh");
                   }
                 }
+              }
+              if (r.status === 409) {
+                // Conflito: outra aba/processo finalizou a rotação
+                await new Promise((res) => setTimeout(res, 250));
+                const maybeAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+                if (maybeAccess) {
+                  try {
+                    const p = decodeJwt(maybeAccess);
+                    if (p?.exp && Date.now() < Number(p.exp) * 1000 - 30000) {
+                      releaseRefreshLock();
+                      return true;
+                    }
+                  } catch { /* ignore decode errors */ }
+                }
+                // reutiliza o lock atual e tenta fluxo robusto
+                const resRobust = await doRefreshWithRetry(refresh, { skipLock: true });
+                releaseRefreshLock();
+                return resRobust;
               }
               releaseRefreshLock();
               return false;

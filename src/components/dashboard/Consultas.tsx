@@ -6,6 +6,7 @@ import { useI18n, formatDate } from "../../i18n";
 import React from "react";
 import StatusPill, { getStatusTone } from "../ui/StatusPill";
 import { useToast } from "../ui/ToastProvider";
+import { useAuth } from "../../contexts/useAuth";
 
 const Consultas: React.FC = () => {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Consultas: React.FC = () => {
   const [cancelingId, setCancelingId] = React.useState<string | null>(null);
   const { locale, t } = useI18n();
   const { push } = useToast();
+  const { user } = useAuth();
   
   const typeLabel = React.useCallback((type: string) => {
     switch (type) {
@@ -180,6 +182,12 @@ const Consultas: React.FC = () => {
           <div className="space-y-4">
             {upcoming.map(consultation => {
               const statusConfig = getStatusConfig(consultation.status);
+              const isToday = (() => {
+                const d = new Date(consultation.scheduled_at);
+                const now = new Date();
+                return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+              })();
+
               return (
                 <div key={consultation.id} className="bg-white border border-gray-200 rounded-xl p-4 hover:shadow-md transition-all duration-300">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -219,6 +227,27 @@ const Consultas: React.FC = () => {
                     
                     {consultation.status === 'scheduled' && (
                       <div className="flex sm:flex-col gap-2 sm:gap-1">
+                        {isToday && (
+                          <a
+                            href={(() => {
+                              const phone = '558186653214';
+                              const who = user?.display_name || user?.full_name || 'Paciente';
+                              const mail = user?.email ? ` (${user.email})` : 'email ausente';
+                              const when = formatDate(consultation.scheduled_at, locale, { dateStyle: 'full', timeStyle: 'short' });
+                              const msg = `Olá! Sou ${who}${mail}. Tenho uma ${typeLabel(consultation.type)} agendada para ${when}. Podemos falar por aqui?`;
+                              return `https://wa.me/${phone}?text=${encodeURIComponent(msg)}`;
+                            })()}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-2 text-green-700 hover:text-green-800 text-sm font-medium px-3 py-2 bg-green-50 hover:bg-green-100 rounded-lg transition-colors whitespace-nowrap"
+                            title="Falar com a Nutricionista"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                              <path d="M20.52 3.48A11.94 11.94 0 0012 0C5.373 0 0 5.373 0 12c0 2.114.55 4.097 1.515 5.822L0 24l6.36-1.654A11.94 11.94 0 0012 24c6.627 0 12-5.373 12-12 0-3.194-1.268-6.096-3.48-8.52zM12 22a9.94 9.94 0 01-5.059-1.386l-.362-.216-3.77.98 1.008-3.673-.235-.376A9.94 9.94 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10zm5.49-7.134c-.3-.15-1.77-.873-2.042-.972-.273-.1-.472-.15-.672.15s-.772.972-.946 1.173-.35.225-.65.075c-.3-.15-1.266-.468-2.412-1.494-.892-.795-1.494-1.776-1.668-2.076-.174-.3-.018-.462.132-.612.135-.135.3-.35.45-.525.15-.175.2-.3.3-.5.1-.2.05-.375-.025-.525-.075-.15-.672-1.62-.92-2.22-.243-.584-.492-.504-.672-.51l-.573-.01c-.2 0-.525.075-.8.375s-1.05 1.026-1.05 2.5 1.075 2.9 1.225 3.1c.15.2 2.115 3.23 5.125 4.53.717.31 1.276.494 1.713.632.72.229 1.377.197 1.896.119.579-.087 1.77-.723 2.02-1.422.25-.7.25-1.3.175-1.425-.075-.125-.275-.2-.575-.35z" />
+                            </svg>
+                            Falar com a Nutricionista
+                          </a>
+                        )}
                         <button
                           disabled={cancelingId === consultation.id}
                           onClick={() => handleCancel(consultation.id)}

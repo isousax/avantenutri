@@ -1,5 +1,6 @@
 // AUTO-GENERATED FILE. DO NOT EDIT MANUALLY.
 export type TranslationKey =
+  | ' home.credits.promo.tooltip'
   | 'admin.audit.seo.desc'
   | 'admin.audit.seo.title'
   | 'admin.billing.export.changes'
