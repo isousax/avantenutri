@@ -1,4 +1,5 @@
 import React from "react";
+import { ensureAdSenseLoaded } from "../../utils/adsense";
 import { Link, useParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
@@ -11,6 +12,10 @@ import type { BlogPostDetail } from "../../services/blog";
 import { useQuery } from "@tanstack/react-query";
 
 const BlogPostPage: React.FC = () => {
+  // Carrega AdSense apenas nas páginas do blog
+  React.useEffect(() => {
+    ensureAdSenseLoaded();
+  }, []);
   const { slug } = useParams();
   const { locale, t } = useI18n();
   const { user, getAccessToken } = useAuth();
@@ -415,7 +420,7 @@ const BlogPostPage: React.FC = () => {
 
             {/* Conteúdo Principal */}
             <div className="max-w-4xl mx-auto px-4 py-8">
-              <div className="grid lg:grid-cols-4 gap-12">
+              <div className="grid lg:grid-cols gap-12">
                 {/* Conteúdo do Artigo */}
                 <main className="lg:col-span-3">
                   <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
@@ -425,7 +430,6 @@ const BlogPostPage: React.FC = () => {
                         className="prose prose-lg max-w-none 
                         prose-headings:font-bold prose-headings:text-gray-900 
                         prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl
-                        prose-p:text-gray-700 prose-p:leading-relaxed prose-p:text-lg
                         prose-a:text-green-600 prose-a:no-underline hover:prose-a:underline
                         prose-strong:text-gray-900 prose-strong:font-semibold
                         prose-ul:text-gray-700 prose-ol:text-gray-700
@@ -434,7 +438,10 @@ const BlogPostPage: React.FC = () => {
                         prose-blockquote:rounded-xl prose-blockquote:border-l-4
                         prose-table:border-gray-200 prose-table:rounded-lg
                         prose-img:rounded-xl prose-img:shadow-md
-                        prose-pre:bg-gray-900 prose-pre:text-gray-100"
+                        prose-pre:bg-gray-900 prose-pre:text-gray-100
+                        [&_a.cta]:inline-block [&_a.cta]:px-5 [&_a.cta]:py-3 [&_a.cta]:rounded-xl
+                        [&_a.cta]:bg-green-600 [&_a.cta]:text-white [&_a.cta]:font-semibold
+                        hover:[&_a.cta]:bg-green-700 [&_a.cta]:no-underline"
                       >
                         <div
                           dangerouslySetInnerHTML={{

@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from "react";
+import { ensureAdSenseLoaded } from "../../utils/adsense";
 import { fetchPosts, fetchCategories } from "../../services/blog";
 import type { BlogListItem, BlogListResponse } from "../../services/blog";
 import { useAuth } from "../../contexts/useAuth";
@@ -25,6 +26,10 @@ interface BlogPost {
 }
 
 const BlogPage: React.FC = () => {
+  // Carrega AdSense apenas nas páginas do blog
+  React.useEffect(() => {
+    ensureAdSenseLoaded();
+  }, []);
   // Habilita leitura/atualização de query string (?category=...)
   const [searchParams] = useSearchParams();
   const [selectedCategory, setSelectedCategory] = useState<string>("todos");
