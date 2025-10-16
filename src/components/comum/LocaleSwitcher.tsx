@@ -17,8 +17,7 @@ const LocaleSwitcher: React.FC<LocaleSwitcherProps> = ({
 
   const languages = [
     { value: "pt" as Locale, flag: "🇧🇷", label: "Português", short: "PT" },
-    { value: "en" as Locale, flag: "🇺🇸", label: "English", short: "EN" },
-    { value: "es" as Locale, flag: "�🇸", label: "Español", short: "ES" },
+    { value: "en" as Locale, flag: "🇺🇸", label: "English", short: "EN" }
   ];
 
   const currentLang = languages.find((lang) => lang.value === locale);
