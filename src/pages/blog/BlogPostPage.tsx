@@ -419,7 +419,7 @@ const BlogPostPage: React.FC = () => {
             </section>
 
             {/* Conteúdo Principal */}
-            <div className="max-w-4xl mx-auto px-4 py-8">
+            <div className="max-w-4xl mx-auto px-4 py-6">
               <div className="grid lg:grid-cols gap-12">
                 {/* Conteúdo do Artigo */}
                 <main className="lg:col-span-3">
