@@ -77,6 +77,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Controle de estado para evitar chamadas múltiplas
   const verificationInProgressRef = useRef<boolean>(false);
   const refreshInProgressRef = useRef<Promise<boolean> | null>(null);
+  const focusBackoffTimeoutRef = useRef<number | null>(null);
 
   const saveUserToStorage = (userData: User) => {
     const payload = {
@@ -688,6 +689,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (verificationInProgressRef.current && !force) {
         return sessionVerified ?? false;
       }
+      // Evita verificar em aba oculta quando não for forçado
+      if (!force && typeof document !== "undefined" && document.visibilityState === "hidden") {
+  try { console.info("[AuthProvider] runSessionVerification skipped: tab hidden"); } catch { /* noop */ }
+        return sessionVerified ?? false;
+      }
       
       const access = localStorage.getItem(STORAGE_ACCESS_KEY);
       if (!access) {
@@ -739,11 +745,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
               verificationInProgressRef.current = false;
               return false;
             }
+            // 401 sem payload esperado -> tentar refresh antes de deslogar
+            try { console.info("[AuthProvider] /me=401 without payload -> trying refresh before logout"); } catch { /* noop */ }
+            const refreshed = await contextValue.refreshSession?.();
+            if (refreshed) {
+              verificationInProgressRef.current = false;
+              // revalida após refresh
+              setTimeout(() => {
+                void runSessionVerification(true);
+              }, 300);
+              return false;
+            }
           }
         } catch (err) {
           console.warn("[setSessionLastVerified] erro: ", err);
         }
         if (r.status === 401 || r.status === 403) {
+          try { console.info("[AuthProvider] /me non-OK -> logout (no refresh or refresh failed)", { status: r.status }); } catch { /* noop */ }
           setSessionVerified(false);
           verificationInProgressRef.current = false;
           await contextLogout(`runSessionVerification -> /me returned ${r.status}`);
@@ -802,28 +820,59 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         clearInterval(verifyIntervalRef.current);
       }
       verifyIntervalRef.current = window.setInterval(() => {
-        void runSessionVerification(false);
+        if (typeof document === "undefined" || document.visibilityState === "visible") {
+          void runSessionVerification(false);
+        }
       }, 15 * 60 * 1000) as unknown as number; // 15 min ao invés de 10
+      const scheduleVerifyWithBackoff = () => {
+        if (focusBackoffTimeoutRef.current) {
+          clearTimeout(focusBackoffTimeoutRef.current);
+          focusBackoffTimeoutRef.current = null;
+        }
+        const jitter = 200 + Math.floor(Math.random() * 400); // 200-600ms
+        try { console.info("[AuthProvider] scheduling session verify with backoff", { jitter }); } catch { /* noop */ }
+        focusBackoffTimeoutRef.current = window.setTimeout(() => {
+          focusBackoffTimeoutRef.current = null;
+          if (document.visibilityState === "visible") {
+            // Só verifica no foco se faz mais de 5 minutos desde a última verificação
+            if (!sessionLastVerified || Date.now() - sessionLastVerified > 300000) {
+              void runSessionVerification(false);
+            }
+          }
+        }, jitter) as unknown as number;
+      };
       const onFocus = () => {
         if (document.visibilityState === "visible") {
-          // Só verifica no focus se faz mais de 5 minutos desde a última verificação
-          if (!sessionLastVerified || Date.now() - sessionLastVerified > 300000) {
-            void runSessionVerification(false);
-          }
+          scheduleVerifyWithBackoff();
+        }
+      };
+      const onVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          scheduleVerifyWithBackoff();
         }
       };
       window.addEventListener("focus", onFocus);
+      document.addEventListener("visibilitychange", onVisibilityChange);
       return () => {
         window.removeEventListener("focus", onFocus);
+        document.removeEventListener("visibilitychange", onVisibilityChange);
         if (verifyIntervalRef.current) {
           clearInterval(verifyIntervalRef.current);
           verifyIntervalRef.current = null;
+        }
+        if (focusBackoffTimeoutRef.current) {
+          clearTimeout(focusBackoffTimeoutRef.current);
+          focusBackoffTimeoutRef.current = null;
         }
       };
     } else {
       if (verifyIntervalRef.current) {
         clearInterval(verifyIntervalRef.current);
         verifyIntervalRef.current = null;
+      }
+      if (focusBackoffTimeoutRef.current) {
+        clearTimeout(focusBackoffTimeoutRef.current);
+        focusBackoffTimeoutRef.current = null;
       }
       setSessionVerified(null);
       setSessionLastVerified(null);
@@ -854,6 +903,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (refreshInProgressRef.current) {
         await refreshInProgressRef.current;
           return localStorage.getItem(STORAGE_ACCESS_KEY);
+      }
+      // Evita forçar refresh em segundo plano quando a aba está oculta; retorna null suave
+      if (typeof document !== "undefined" && document.visibilityState === "hidden") {
+        // agenda verificação quando voltar ao foco
+        setTimeout(() => { void runSessionVerification(false); }, 500);
+        return null;
       }
       const refreshed = await contextValue.refreshSession();
       if (!refreshed) return null;
@@ -1168,6 +1223,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (access) headers.set("Authorization", `Bearer ${access}`);
       let response = await fetch(input, { ...rest, headers });
       if (response.status === 401 || response.status === 403) {
+        const isHidden = typeof document !== "undefined" && document.visibilityState === "hidden";
+        if (isHidden) {
+          // Em abas ocultas, não derruba a sessão; tenta um refresh silencioso
+          const retriedBg = await contextValue.refreshSession?.();
+          if (retriedBg) {
+            const newAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
+            if (newAccess) headers.set("Authorization", `Bearer ${newAccess}`);
+            response = await fetch(input, { ...rest, headers });
+          }
+          // Retorna a resposta (pode ainda ser 401/403); quando a aba voltar, a verificação tratará
+          return response;
+        }
         const retried = await contextValue.refreshSession?.();
         if (retried) {
           const newAccess = localStorage.getItem(STORAGE_ACCESS_KEY);
