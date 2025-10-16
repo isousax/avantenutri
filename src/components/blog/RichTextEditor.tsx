@@ -136,8 +136,23 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       block = getCurrentBlock();
     }
     if (block) {
-      TEXT_SIZE_CLASSES.forEach(c => block!.classList.remove(c));
-      block.classList.add(cls);
+      // Se estiver dentro de uma lista, aplica na tag mãe <ul> ou <ol>
+      let parentList: HTMLElement | null = null;
+      let node: HTMLElement | null = block;
+      while (node && node !== root) {
+        if (node.tagName === 'UL' || node.tagName === 'OL') {
+          parentList = node;
+          break;
+        }
+        node = node.parentElement;
+      }
+      if (parentList) {
+        TEXT_SIZE_CLASSES.forEach(c => parentList!.classList.remove(c));
+        parentList.classList.add(cls);
+      } else {
+        TEXT_SIZE_CLASSES.forEach(c => block!.classList.remove(c));
+        block.classList.add(cls);
+      }
       // Trigger change
       handleInput();
     }
