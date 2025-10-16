@@ -439,6 +439,7 @@ const BlogPostPage: React.FC = () => {
                         prose-table:border-gray-200 prose-table:rounded-lg
                         prose-img:rounded-xl prose-img:shadow-md
                         prose-pre:bg-gray-900 prose-pre:text-gray-100
+                        md:[&_.text-xs]:text-sm md:[&_.text-sm]:text-base
                         [&_a.cta]:inline-block [&_a.cta]:px-5 [&_a.cta]:py-3 [&_a.cta]:rounded-xl
                         [&_a.cta]:bg-green-600 [&_a.cta]:text-white [&_a.cta]:font-semibold
                         hover:[&_a.cta]:bg-green-700 [&_a.cta]:no-underline"
