@@ -52,6 +52,7 @@ import { shouldShowSkeleton } from "../../utils/loadingHelpers";
 import { useIntersectionPrefetch } from "../../hooks/useIntersectionPrefetch";
 import { useWaterLogsInteligente } from "../../hooks/useWaterLogsInteligente";
 import { Download, LoaderCircle } from "lucide-react";
+import LocaleSwitcher from "../../components/comum/LocaleSwitcher";
 
 // Modern Diet Plan Card
 interface DietPlanCardProps {
@@ -88,7 +89,10 @@ const DietPlanCard: React.FC<{
   // Detectar formato da dieta (não exibido por enquanto)
 
   return (
-    <Card padding="p-5" className="w-full max-w-full box-border overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl">
+    <Card
+      padding="p-5"
+      className="w-full max-w-full box-border overflow-hidden hover:shadow-lg transition-all duration-300 border-0 bg-gradient-to-br from-white to-gray-50/50 rounded-2xl"
+    >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-2">
@@ -222,7 +226,8 @@ const BottomNav: React.FC<{
     <nav className="fixed bottom-4 left-4 right-4 bg-white/90 backdrop-blur-xl border border-gray-200/60 rounded-2xl shadow-2xl shadow-black/10 z-40 md:hidden">
       <div className="flex justify-around p-1">
         {tabs.map((tab) => {
-          const isConsultasToday = hasTodayConsultation && tab.id === "consultas";
+          const isConsultasToday =
+            hasTodayConsultation && tab.id === "consultas";
           return (
             <button
               key={tab.id}
@@ -244,7 +249,9 @@ const BottomNav: React.FC<{
                   </>
                 )}
               </span>
-              <span className="text-xs font-semibold truncate">{tab.label}</span>
+              <span className="text-xs font-semibold truncate">
+                {tab.label}
+              </span>
             </button>
           );
         })}
@@ -461,7 +468,11 @@ const DashboardPage: React.FC = () => {
   }, []);
 
   const handleLogout = async () => {
-    try { console.info('[DashboardPage] handleLogout called -> invoking logout'); } catch { /* noop */ }
+    try {
+      console.info("[DashboardPage] handleLogout called -> invoking logout");
+    } catch {
+      /* noop */
+    }
     await logout();
     navigate("/login");
   };
@@ -647,7 +658,8 @@ const DashboardPage: React.FC = () => {
             void err;
           }
 
-          const latestWeightKg: number | undefined = weightAgg?.latest?.weight_kg;
+          const latestWeightKg: number | undefined =
+            weightAgg?.latest?.weight_kg;
 
           const pick = (
             obj: Record<string, unknown>,
@@ -915,7 +927,7 @@ const DashboardPage: React.FC = () => {
   const hasTodayConsultation = React.useMemo(() => {
     const now = new Date();
     return consultations.some((c) => {
-      if (c.status !== 'scheduled') return false;
+      if (c.status !== "scheduled") return false;
       const d = new Date(c.scheduled_at);
       return (
         d.getFullYear() === now.getFullYear() &&
@@ -1041,7 +1053,7 @@ const DashboardPage: React.FC = () => {
   ];
 
   return (
-  <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30 flex overflow-x-hidden">
       <SEO
         title={t("dashboard.seo.title")}
         description={t("dashboard.seo.desc")}
@@ -1154,6 +1166,9 @@ const DashboardPage: React.FC = () => {
                 <span className="font-semibold text-sm">{item.label}</span>
               </button>
             ))}
+            <div className="mt-4 mb-2 flex justify-start">
+              <LocaleSwitcher usedIn="dashboard"/>
+            </div>
           </nav>
 
           {/* Footer */}
@@ -1225,8 +1240,8 @@ const DashboardPage: React.FC = () => {
           </div>
         </header>
 
-  {/* Content */}
-  <div className="p-5 overflow-x-hidden">
+        {/* Content */}
+        <div className="p-5 overflow-x-hidden">
           {activeTab === "overview" && (
             <div className="space-y-6">
               {/* Questionnaire Banner */}
@@ -1684,13 +1699,17 @@ const DashboardPage: React.FC = () => {
                       >
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-gray-900 text-sm truncate">
-                            {app.type === 'avaliacao_completa'
-                              ? t('consultations.schedule.type.avaliacao_completa.label')
-                              : app.type === 'reavaliacao'
-                              ? t('consultations.schedule.type.reavaliacao.label')
-                              : app.type === 'only_diet'
-                              ? t('consultations.schedule.type.only_diet.label')
-                              : app.type.replace(/_/g, ' ')}
+                            {app.type === "avaliacao_completa"
+                              ? t(
+                                  "consultations.schedule.type.avaliacao_completa.label"
+                                )
+                              : app.type === "reavaliacao"
+                              ? t(
+                                  "consultations.schedule.type.reavaliacao.label"
+                                )
+                              : app.type === "only_diet"
+                              ? t("consultations.schedule.type.only_diet.label")
+                              : app.type.replace(/_/g, " ")}
                           </p>
                           <p className="text-xs text-gray-600 mt-1">
                             {dateStr} às {timeStr}
@@ -1766,7 +1785,11 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Bottom Navigation for Mobile */}
-  <BottomNav activeTab={activeTab} onTabChange={setActiveTab} hasTodayConsultation={hasTodayConsultation} />
+        <BottomNav
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasTodayConsultation={hasTodayConsultation}
+        />
 
         {/* Create Diet Modal - apenas para admin */}
         {canEditDiets && showCreateModal && (

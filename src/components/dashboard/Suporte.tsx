@@ -16,12 +16,12 @@ const Consultas: React.FC = () => {
   ];
     
   return (
-    <div className="max-w-4xl mx-auto space-y-6 p-4 pb-20">
+    <div className="max-w-5xl mx-auto space-y-6 pb-20">
       {/* Header */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-3">Suporte</h1>
-        <p className="text-gray-600 text-lg">
-          Estamos aqui para ajudar você em sua jornada nutricional
+        <p className="text-gray-600">
+          Estamos aqui para ajudar você
         </p>
       </div>
 

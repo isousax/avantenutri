@@ -1,10 +1,11 @@
 import React from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import LogoCroped from "../ui/LogoCroped";
 import { useI18n } from "../../i18n";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();
+  const navigate = useNavigate();
   const { t } = useI18n();
 
   const scrollToSection = (sectionId: string) => {
@@ -93,6 +94,14 @@ const Footer: React.FC = () => {
                   className={`text-gray-400 hover:text-green-400 transition-colors`}
                 >
                   {t("nav.about")}
+                </button>
+              </li>
+              <li>
+                <button
+                  onClick={() => navigate("/blog")}
+                  className={`text-gray-400 hover:text-green-400 transition-colors`}
+                >
+                  Blog
                 </button>
               </li>
               <li>
