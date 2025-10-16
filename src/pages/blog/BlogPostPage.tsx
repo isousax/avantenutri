@@ -263,31 +263,35 @@ const BlogPostPage: React.FC = () => {
 
               <div className="relative max-w-6xl mx-auto px-4 py-20">
                 <div className="grid lg:grid-cols-2 gap-12 items-center">
-                  <div className="space-y-6">
+                  <div className="space-y-6 min-w-0">
                     {/* Breadcrumb */}
-                    <nav className="flex items-center gap-2 text-sm text-green-200 mb-6">
+                    <nav className="flex items-center gap-2 text-sm text-green-200 mb-6 min-w-0">
                       <Link
                         to="/"
-                        className="hover:text-white transition-colors"
+                        className="hover:text-white transition-colors shrink-0"
                       >
                         Início
                       </Link>
-                      <span className="text-green-400">/</span>
+                      <span className="text-green-400 shrink-0">/</span>
                       <Link
                         to="/blog"
-                        className="hover:text-white transition-colors"
+                        className="hover:text-white transition-colors shrink-0"
                       >
                         Blog
                       </Link>
-                      <span className="text-green-400">/</span>
+                      <span className="text-green-400 shrink-0">/</span>
                       <Link
-                        to={`/blog?category=${post.category}`}
-                        className="hover:text-white transition-colors"
+                        to={{ pathname: "/blog", search: `?${new URLSearchParams({ category: post.category || '' }).toString()}` }}
+                        className="hover:text-white transition-colors truncate min-w-0 max-w-[40vw] sm:max-w-[50vw] md:max-w-none"
+                        title={post.category || undefined}
                       >
                         {post.category}
                       </Link>
-                      <span className="text-green-400">/</span>
-                      <span className="text-white font-medium">
+                      <span className="text-green-400 shrink-0">/</span>
+                      <span
+                        className="text-white font-medium truncate min-w-0 flex-1"
+                        title={post.title || undefined}
+                      >
                         {post.title}
                       </span>
                     </nav>
@@ -324,7 +328,7 @@ const BlogPostPage: React.FC = () => {
                     </div>
 
                     {/* Título Principal */}
-                    <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold leading-tight text-white drop-shadow-2xl">
+                    <h1 className="text-2xl md:text-5xl lg:text-6xl font-bold leading-tight text-white drop-shadow-2xl break-words max-w-full">
                       {post.title}
                     </h1>
 
@@ -365,8 +369,8 @@ const BlogPostPage: React.FC = () => {
                   </div>
 
                   {/* Imagem Destacada */}
-                  <div className="relative">
-                    <div className="relative rounded-2xl overflow-hidden shadow-2xl">
+                  <div className="relative min-w-0">
+                    <div className="relative rounded-2xl overflow-hidden shadow-2xl max-w-full">
                       <img
                         src={post.cover_image_url || "/blog/placeholder.jpg"}
                         alt={post.title}
@@ -410,13 +414,13 @@ const BlogPostPage: React.FC = () => {
             </section>
 
             {/* Conteúdo Principal */}
-            <div className="max-w-4xl mx-auto px-4 py-12">
+            <div className="max-w-4xl mx-auto px-4 py-8">
               <div className="grid lg:grid-cols-4 gap-12">
                 {/* Conteúdo do Artigo */}
                 <main className="lg:col-span-3">
                   <article className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                     {/* Conteúdo HTML */}
-                    <div className="px-8 py-12">
+                    <div className="px-6 py-4">
                       <div
                         className="prose prose-lg max-w-none 
                         prose-headings:font-bold prose-headings:text-gray-900 
@@ -479,7 +483,7 @@ const BlogPostPage: React.FC = () => {
                       <h3 className="text-2xl font-bold text-gray-900 mb-3">
                         Gostou deste artigo?
                       </h3>
-                      <p className="text-gray-600 mb-6">
+                      <p className="text-gray-600 mb-6 text-sm sm:text-base">
                         Compartilhe com amigos e familiares que podem se
                         beneficiar
                       </p>
@@ -647,10 +651,10 @@ const BlogPostPage: React.FC = () => {
           <section className="bg-gray-50 py-16">
             <div className="max-w-6xl mx-auto px-4">
               <div className="text-center mb-12">
-                <h2 className="text-3xl font-bold text-gray-900 mb-4">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
                   Conteúdo Relacionado
                 </h2>
-                <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+                <p className="text-gray-600 max-w-2xl mx-auto text-sm sm:text-base">
                   Continue explorando artigos que podem te interessar
                 </p>
               </div>
@@ -719,21 +723,35 @@ const BlogPostPage: React.FC = () => {
 
                         <div className="flex items-center justify-between pt-4 border-t border-gray-100">
                           <div className="flex items-center">
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mr-3">
-                              <span className="text-white font-bold text-xs">
-                                AN
+                            <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mr-3 shadow-sm shrink-0">
+                              <span className="text-white font-bold text-sm">
+                                AC
                               </span>
                             </div>
-                            <span className="text-sm text-gray-600">
-                              Comitê Científico
-                            </span>
+                            <div>
+                              <p className="text-sm font-semibold text-gray-900 truncate">
+                                Andreina Cawanne
+                              </p>
+                              <p className="text-xs text-gray-500">
+                                Nutricionista
+                              </p>
+                            </div>
                           </div>
-                          <Button
-                            variant="secondary"
-                            className="text-sm font-medium group-hover:bg-green-600 group-hover:text-white transition-all"
-                          >
-                            Ler Estudo
-                          </Button>
+                          <button className="text-green-600 hover:text-green-700 font-semibold flex items-center justify-center hover:scale-105 transition-all duration-300">
+                            <svg
+                              className="w-4 h-4 ml-2"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M14 5l7 7m0 0l-7 7m7-7H3"
+                              ></path>
+                            </svg>
+                          </button>
                         </div>
                       </div>
                     </Link>
@@ -741,11 +759,11 @@ const BlogPostPage: React.FC = () => {
                 ))}
               </div>
 
-              <div className="text-center mt-12">
+              <div className="flex justify-center text-center mt-12">
                 <Link to="/blog">
                   <Button
                     variant="secondary"
-                    className="px-8 py-3 font-semibold"
+                    className="px-8 py-3 font-semibold flex items-center justify-center"
                   >
                     Explorar Todos os Artigos
                     <svg
@@ -770,7 +788,7 @@ const BlogPostPage: React.FC = () => {
 
         {/* CTA Corporativo */}
         {!loading && post && (
-          <section className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-16">
+          <section className="bg-gradient-to-r from-green-600 to-emerald-700 text-white py-12">
             <div className="max-w-4xl mx-auto px-4 text-center">
               <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-8">
                 <svg
@@ -788,11 +806,11 @@ const BlogPostPage: React.FC = () => {
                 </svg>
               </div>
 
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+              <h2 className="text-2xl md:text-4xl font-bold mb-6">
                 Pronto para Transformar sua Saúde?
               </h2>
 
-              <p className="text-green-200 mb-6">
+              <p className="text-green-200 mb-6 text-sm sm:text-base">
                 Mais de 5.000 pacientes já transformaram suas vidas conosco
               </p>
 

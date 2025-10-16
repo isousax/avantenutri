@@ -1,6 +1,20 @@
 /** @type {import('tailwindcss').Config} */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
+  safelist: [
+    // Text alignment
+    { pattern: /^text-(left|center|right|justify)$/ },
+    // Font sizes
+    { pattern: /^text-(xs|sm|base|lg|xl|2xl|3xl|4xl)$/ },
+    // Font weight
+    { pattern: /^font-(thin|extralight|light|normal|medium|semibold|bold|extrabold|black)$/ },
+    // Line height and tracking commonly used in articles
+    { pattern: /^leading-(none|tight|snug|normal|relaxed|loose)$/ },
+    { pattern: /^tracking-(tighter|tight|normal|wide|wider|widest)$/ },
+    // Simple image/content helpers that authors may use
+    { pattern: /^(block|inline-block)$/ },
+    { pattern: /^mx-auto$/ },
+  ],
   theme: {
     extend: {
       colors: {

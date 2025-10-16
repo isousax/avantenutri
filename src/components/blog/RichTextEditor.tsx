@@ -11,6 +11,7 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  AlignJustify,
   List,
   ListOrdered,
   Link as LinkIcon,
@@ -34,6 +35,9 @@ type Props = {
   placeholder?: string;
 };
 
+// Text size classes available (module scope for stable identity)
+const TEXT_SIZE_CLASSES = ['text-xs','text-sm','text-base','text-lg','text-xl','text-2xl','text-3xl','text-4xl','text-5xl'] as const;
+
 // Helper to run document.execCommand with focus management
 function runCmd(command: string, value?: string) {
   try {
@@ -52,6 +56,107 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
   const [uploading, setUploading] = useState(false);
   const editorWrapRef = useRef<HTMLDivElement | null>(null);
   const { push } = useToast();
+
+
+  // Helper: get current block element for selection
+  const getCurrentBlock = useCallback((): HTMLElement | null => {
+    const root = ref.current;
+    if (!root) return null;
+    const sel = document.getSelection();
+    if (!sel || !sel.focusNode) return null;
+    let node: Node | null = sel.focusNode;
+    if (node.nodeType === Node.TEXT_NODE) {
+      node = node.parentElement;
+    }
+    while (node && node instanceof HTMLElement) {
+      if (node === root) break;
+      const tag = node.tagName;
+      if (tag === 'P' || tag === 'DIV' || tag === 'LI' || tag === 'H1' || tag === 'H2' || tag === 'H3' || tag === 'H4' || tag === 'H5' || tag === 'H6') {
+        return node;
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }, []);
+
+  // Normalize and emit HTML on input/content changes
+  const handleInput = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    // Normalize presentational attributes/styles into Tailwind classes for persistence
+    const html = el.innerHTML
+      // align attribute to classes
+      .replace(/<(p|div|h1|h2|h3|h4|h5|h6)([^>]*?)\s+align="center"([^>]*)>/gi, '<$1$2 class="text-center"$3>')
+      .replace(/<(p|div|h1|h2|h3|h4|h5|h6)([^>]*?)\s+align="right"([^>]*)>/gi, '<$1$2 class="text-right"$3>')
+      .replace(/<(p|div|h1|h2|h3|h4|h5|h6)([^>]*?)\s+align="left"([^>]*)>/gi, '<$1$2 class="text-left"$3>')
+      .replace(/<(p|div|h1|h2|h3|h4|h5|h6)([^>]*?)\s+align="justify"([^>]*)>/gi, '<$1$2 class="text-justify"$3>')
+      // style text-align to classes (block and span)
+      .replace(/<(p|div|h1|h2|h3|h4|h5|h6|span)([^>]*?)\s+style="([^"]*?)text-align:\s*(left|right|center|justify);?([^"]*?)"([^>]*)>/gi, (_m, tag, pre, _preStyle, align, _postStyle, post) => {
+        const alignCls = align.toLowerCase() === 'center' ? 'text-center' : align.toLowerCase() === 'right' ? 'text-right' : align.toLowerCase() === 'left' ? 'text-left' : 'text-justify';
+        return `<${tag}${pre} class="${alignCls}"${post}>`;
+      })
+      // inline font-size to tailwind text-*
+      .replace(/<(p|span|div)([^>]*?)\s+style="([^"]*?)font-size:\s*(\d+)px;?([^"]*?)"([^>]*)>/gi, (_m, tag, pre, preStyle, size, postStyle, post) => {
+        const n = parseInt(size, 10) || 16;
+          // basic mapping
+          const sizeCls = n <= 12 ? 'text-xs' : n <= 14 ? 'text-sm' : n <= 16 ? 'text-base' : n <= 18 ? 'text-lg' : n <= 20 ? 'text-xl' : n <= 24 ? 'text-2xl' : n <= 30 ? 'text-3xl' : n <= 36 ? 'text-4xl' : 'text-5xl';
+        // also capture text-align if present in style to avoid losing it
+        const styleAll = `${preStyle} ${postStyle}`.toLowerCase();
+        let alignCls = '';
+        if (styleAll.includes('text-align')) {
+          if (styleAll.includes('text-align: center')) alignCls = 'text-center';
+          else if (styleAll.includes('text-align: right')) alignCls = 'text-right';
+          else if (styleAll.includes('text-align: left')) alignCls = 'text-left';
+          else if (styleAll.includes('text-align: justify')) alignCls = 'text-justify';
+        }
+        const classes = alignCls ? `${sizeCls} ${alignCls}` : sizeCls;
+        return `<${tag}${pre} class="${classes}"${post}>`;
+      })
+      // clear remaining style attributes (sanitizer vai remover de qualquer forma)
+      .replace(/\sstyle="[^"]*"/gi, '')
+      ;
+    onChange(html);
+  }, [onChange]);
+
+  // Apply Tailwind text size to current block (removing previous size classes)
+  const applyTextSizeClass = useCallback((cls: typeof TEXT_SIZE_CLASSES[number]) => {
+    const root = ref.current;
+    if (!root) return;
+    let block = getCurrentBlock();
+    if (!block) {
+      // If not inside a block, wrap selection into a P
+      runCmd('formatBlock', 'P');
+      block = getCurrentBlock();
+    }
+    if (block) {
+      TEXT_SIZE_CLASSES.forEach(c => block!.classList.remove(c));
+      block.classList.add(cls);
+      // Trigger change
+      handleInput();
+    }
+  }, [getCurrentBlock, handleInput]);
+
+  // Helpers to get and change current text size
+  const getCurrentTextSizeIndex = useCallback((): number => {
+    const block = getCurrentBlock();
+    if (!block) return TEXT_SIZE_CLASSES.indexOf('text-base');
+    for (let i = TEXT_SIZE_CLASSES.length - 1; i >= 0; i--) {
+      if (block.classList.contains(TEXT_SIZE_CLASSES[i])) return i;
+    }
+    return TEXT_SIZE_CLASSES.indexOf('text-base');
+  }, [getCurrentBlock]);
+
+  const increaseTextSize = useCallback(() => {
+    const idx = getCurrentTextSizeIndex();
+    const next = Math.min(idx + 1, TEXT_SIZE_CLASSES.length - 1);
+    applyTextSizeClass(TEXT_SIZE_CLASSES[next]);
+  }, [getCurrentTextSizeIndex, applyTextSizeClass]);
+
+  const decreaseTextSize = useCallback(() => {
+    const idx = getCurrentTextSizeIndex();
+    const next = Math.max(idx - 1, 0);
+    applyTextSizeClass(TEXT_SIZE_CLASSES[next]);
+  }, [getCurrentTextSizeIndex, applyTextSizeClass]);
 
   // Mobile states
   const [isMobile, setIsMobile] = useState(false);
@@ -129,12 +234,6 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       el.innerHTML = value || '';
     }
   }, [value]);
-
-  const handleInput = () => {
-    const el = ref.current;
-    if (!el) return;
-    onChange(el.innerHTML);
-  };
 
   const askLink = () => {
     const url = window.prompt('Informe a URL do link:');
@@ -388,6 +487,26 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Título H1" onClick={() => setBlock('H1')}><Heading1 size={isMobile ? 18 : 16} /></button>
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Título H2" onClick={() => setBlock('H2')}><Heading2 size={isMobile ? 18 : 16} /></button>
 
+      {/* Text size controls A-/A+ */}
+      <div className="inline-flex items-center ml-1">
+        <button
+          type="button"
+          className="px-2 py-1 hover:bg-gray-100 rounded text-sm font-medium touch-manipulation"
+          title="Diminuir tamanho (A-)"
+          onClick={decreaseTextSize}
+        >
+          A-
+        </button>
+        <button
+          type="button"
+          className="ml-1 px-2 py-1 hover:bg-gray-100 rounded text-sm font-medium touch-manipulation"
+          title="Aumentar tamanho (A+)"
+          onClick={increaseTextSize}
+        >
+          A+
+        </button>
+      </div>
+
       {(user?.role === 'admin' || user?.role === 'nutri') && (
         <button 
           type="button" 
@@ -414,6 +533,7 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Alinhar à esquerda" onClick={() => runCmd('justifyLeft')}><AlignLeft size={16} /></button>
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Centralizar" onClick={() => runCmd('justifyCenter')}><AlignCenter size={16} /></button>
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Alinhar à direita" onClick={() => runCmd('justifyRight')}><AlignRight size={16} /></button>
+  <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Justificar" onClick={() => runCmd('justifyFull')}><AlignJustify size={16} /></button>
 
       <span className="w-px h-5 bg-gray-200 mx-1" />
 
