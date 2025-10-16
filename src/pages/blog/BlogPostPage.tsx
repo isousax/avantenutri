@@ -205,13 +205,18 @@ const BlogPostPage: React.FC = () => {
       <div className="relative">
         {/* Loading State */}
         {loading && (
-          <div className="min-h-screen flex items-center justify-center py-16">
-            <div className="text-center">
-              <div className="w-20 h-20 border-4 border-green-200 border-t-green-600 rounded-full animate-spin mb-6 mx-auto"></div>
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Carregando Conteúdo
-              </h3>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 py-16">
+            {[...Array(6)].map((_, i) => (
+              <Card key={i} className="animate-pulse rounded-2xl">
+                <div className="h-48 bg-gray-200 rounded-t-2xl"></div>
+                <div className="p-6 space-y-3">
+                  <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                  <div className="h-3 bg-gray-200 rounded w-full"></div>
+                  <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                </div>
+              </Card>
+            ))}
           </div>
         )}
 
