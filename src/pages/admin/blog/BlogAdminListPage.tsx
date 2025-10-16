@@ -47,56 +47,75 @@ const BlogAdminListPage: React.FC = () => {
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<"all"|"draft"|"published"|"archived">("all");
+  const [statusFilter, setStatusFilter] = useState<
+    "all" | "draft" | "published" | "archived"
+  >("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const limit = 20;
   const canManage = user && user.role === "admin";
 
-  const loadPosts = useCallback(async () => {
+  // Carregador estável: recebe parâmetros para evitar recriação por dependências de filtro/página
+  const loadPosts = useCallback(
+    async (params: {
+      page: number;
+      searchTerm: string;
+      statusFilter: "all" | "draft" | "published" | "archived";
+      categoryFilter: string;
+    }) => {
+      if (!canManage) return;
+
+      setLoading(true);
+      setError(null);
+      try {
+        const accessToken = await getAccessToken?.();
+        const data = await fetchPosts({
+          page: params.page,
+          limit,
+          preview: true,
+          accessToken: accessToken || undefined,
+          ...(params.searchTerm && { search: params.searchTerm }),
+          ...(params.statusFilter !== "all" && { status: params.statusFilter }),
+          ...(params.categoryFilter !== "all" && { category: params.categoryFilter }),
+        });
+        setPosts(data.results as unknown as PostRow[]);
+        setTotal(data.total);
+      } catch (e) {
+        const message =
+          e instanceof Error ? e.message : "Falha ao carregar posts";
+        setError(message);
+        push({ type: "error", message });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [canManage, getAccessToken, limit, push]
+  );
+
+  // Removido carregamento inicial separado para evitar duplicidade com o efeito de página
+
+  // Debounce para filtros: quando filtros mudam, resetamos para página 1 e buscamos
+  useEffect(() => {
     if (!canManage) return;
-
-    setLoading(true);
-    setError(null);
-    try {
-      const accessToken = await getAccessToken?.();
-      const data = await fetchPosts({
-        page,
-        limit,
-        preview: true,
-        accessToken: accessToken || undefined,
-        ...(searchTerm && { search: searchTerm }),
-  ...(statusFilter !== "all" && { status: statusFilter }),
-        ...(categoryFilter !== "all" && { category: categoryFilter }),
-      });
-      setPosts(data.results as unknown as PostRow[]);
-      setTotal(data.total);
-    } catch (e) {
-      const message =
-        e instanceof Error ? e.message : "Falha ao carregar posts";
-      setError(message);
-      push({ type: "error", message });
-    } finally {
-      setLoading(false);
-    }
-  }, [canManage, categoryFilter, getAccessToken, limit, page, searchTerm, statusFilter, push]);
-
-  useEffect(() => {
-    loadPosts();
-  }, [page, canManage, loadPosts]);
-
-  useEffect(() => {
-    // Debounce search
     const timer = setTimeout(() => {
-      if (page === 1) {
-        loadPosts();
-      } else {
+      if (page !== 1) {
         setPage(1);
+      } else {
+        loadPosts({ page: 1, searchTerm, statusFilter, categoryFilter });
       }
     }, 500);
-
     return () => clearTimeout(timer);
-  }, [searchTerm, statusFilter, categoryFilter, page, loadPosts]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, statusFilter, categoryFilter, canManage]);
+
+  // Mudança de página: busca imediata sem debounce
+  useEffect(() => {
+    if (!canManage) return;
+    // Evitar conflito com debounce quando filtros resetam page para 1
+    // Só dispara quando não é o debounce alterando os filtros
+    loadPosts({ page, searchTerm, statusFilter, categoryFilter });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -137,7 +156,7 @@ const BlogAdminListPage: React.FC = () => {
       if (!token) throw new Error("Sem autorização");
       await updatePostStatus(postId, "archived", token);
       push({ type: "success", message: "Post arquivado" });
-      loadPosts();
+  loadPosts({ page, searchTerm, statusFilter, categoryFilter });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Falha ao arquivar";
       push({ type: "error", message });
@@ -151,7 +170,7 @@ const BlogAdminListPage: React.FC = () => {
       // Ao desarquivar, voltamos para rascunho para revisão rápida
       await updatePostStatus(postId, "draft", token);
       push({ type: "success", message: "Post desarquivado (rascunho)" });
-      loadPosts();
+  loadPosts({ page, searchTerm, statusFilter, categoryFilter });
     } catch (e) {
       const message = e instanceof Error ? e.message : "Falha ao desarquivar";
       push({ type: "error", message });
@@ -198,7 +217,9 @@ const BlogAdminListPage: React.FC = () => {
             <Button
               type="button"
               variant="secondary"
-              onClick={loadPosts}
+              onClick={() =>
+                loadPosts({ page, searchTerm, statusFilter, categoryFilter })
+              }
               disabled={loading}
               className="flex items-center gap-2"
               noBorder
@@ -226,7 +247,9 @@ const BlogAdminListPage: React.FC = () => {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={loadPosts}
+                onClick={() =>
+                  loadPosts({ page, searchTerm, statusFilter, categoryFilter })
+                }
                 disabled={loading}
                 className="hidden sm:flex items-center gap-2"
                 noBorder
@@ -275,7 +298,11 @@ const BlogAdminListPage: React.FC = () => {
               </label>
               <select
                 value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as "all"|"draft"|"published"|"archived")}
+                onChange={(e) =>
+                  setStatusFilter(
+                    e.target.value as "all" | "draft" | "published" | "archived"
+                  )
+                }
                 className="w-full border-2 border-gray-300 rounded-lg px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
               >
                 <option value="all">Todos os status</option>
@@ -306,7 +333,9 @@ const BlogAdminListPage: React.FC = () => {
             <div className="flex items-end gap-2">
               <Button
                 type="button"
-                onClick={loadPosts}
+                onClick={() =>
+                  loadPosts({ page, searchTerm, statusFilter, categoryFilter })
+                }
                 className="flex items-center gap-2 flex-1"
               >
                 <Search size={14} />
@@ -368,7 +397,9 @@ const BlogAdminListPage: React.FC = () => {
                 <div className="text-2xl font-bold text-gray-900">
                   {posts.reduce((sum, post) => sum + (post.views || 0), 0)}
                 </div>
-                <div className="text-xs text-gray-600">Visualizações</div>
+                <div className="text-xs text-gray-600 truncate">
+                  Visualizações
+                </div>
               </div>
             </div>
           </Card>
@@ -480,9 +511,10 @@ const BlogAdminListPage: React.FC = () => {
                         <td className="p-4">
                           <div className="flex items-center gap-2 text-sm text-gray-600">
                             <BarChart3 size={14} />
-                            {post.views || 0} visualizações
+                            <span>{post.views || 0} views</span>
                           </div>
                         </td>
+
                         <td className="p-4">
                           <div className="flex items-center gap-2">
                             <Link to={`/blog/${post.slug}`} target="_blank">
@@ -594,10 +626,10 @@ const BlogAdminListPage: React.FC = () => {
                         <FileText size={16} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="font-semibold text-gray-900 text-sm break-words">
+                        <div className="font-semibold text-gray-900 text-sm break-words truncate">
                           {post.title}
                         </div>
-                        <div className="text-xs text-gray-500 mt-0.5 break-all">
+                        <div className="text-xs text-gray-500 mt-0.5 break-all truncate">
                           /blog/{post.slug}
                         </div>
                       </div>
@@ -619,7 +651,7 @@ const BlogAdminListPage: React.FC = () => {
                       <div className="text-xs text-gray-500 mb-1">
                         Categoria
                       </div>
-                      <div className="flex items-center gap-1 text-gray-600">
+                      <div className="flex items-center gap-1 text-gray-600 truncate">
                         <Folder size={12} />
                         {post.category || "—"}
                       </div>

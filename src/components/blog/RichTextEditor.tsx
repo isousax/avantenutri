@@ -57,6 +57,13 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
   const editorWrapRef = useRef<HTMLDivElement | null>(null);
   const { push } = useToast();
 
+  // Floating selection tools (Word-like quick toolbar)
+  const [selToolsVisible, setSelToolsVisible] = useState(false);
+  const [selMenuOpen, setSelMenuOpen] = useState(false);
+  const [selPos, setSelPos] = useState<{ left: number; top: number } | null>(null);
+  const selBtnRef = useRef<HTMLButtonElement | null>(null);
+  const selMenuRef = useRef<HTMLDivElement | null>(null);
+
 
   // Helper: get current block element for selection
   const getCurrentBlock = useCallback((): HTMLElement | null => {
@@ -95,8 +102,8 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
         const alignCls = align.toLowerCase() === 'center' ? 'text-center' : align.toLowerCase() === 'right' ? 'text-right' : align.toLowerCase() === 'left' ? 'text-left' : 'text-justify';
         return `<${tag}${pre} class="${alignCls}"${post}>`;
       })
-      // inline font-size to tailwind text-*
-      .replace(/<(p|span|div)([^>]*?)\s+style="([^"]*?)font-size:\s*(\d+)px;?([^"]*?)"([^>]*)>/gi, (_m, tag, pre, preStyle, size, postStyle, post) => {
+      // inline font-size to tailwind text-* (including list items)
+      .replace(/<(p|span|div|li)([^>]*?)\s+style="([^"]*?)font-size:\s*(\d+)px;?([^"]*?)"([^>]*)>/gi, (_m, tag, pre, preStyle, size, postStyle, post) => {
         const n = parseInt(size, 10) || 16;
           // basic mapping
           const sizeCls = n <= 12 ? 'text-xs' : n <= 14 ? 'text-sm' : n <= 16 ? 'text-base' : n <= 18 ? 'text-lg' : n <= 20 ? 'text-xl' : n <= 24 ? 'text-2xl' : n <= 30 ? 'text-3xl' : n <= 36 ? 'text-4xl' : 'text-5xl';
@@ -234,6 +241,83 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       el.innerHTML = value || '';
     }
   }, [value]);
+
+  // Compute selection rect relative to editor wrapper
+  const computeSelectionPos = useCallback(() => {
+    const root = ref.current;
+    const wrap = editorWrapRef.current;
+    if (!root || !wrap) return null;
+    const sel = document.getSelection();
+    if (!sel || sel.rangeCount === 0) return null;
+    const range = sel.getRangeAt(0);
+    if (range.collapsed) return null;
+    const container = range.commonAncestorContainer as Node;
+    // ensure selection is within editor
+    let node: Node | null = container;
+    let within = false;
+    while (node) {
+      if (node === root) { within = true; break; }
+      node = (node as Node).parentNode;
+    }
+    if (!within) return null;
+    const rect = range.getBoundingClientRect();
+    if (!rect || rect.width === 0 && rect.height === 0) return null;
+    const wrapRect = wrap.getBoundingClientRect();
+    const margin = 8;
+    const width = 32; // approx btn width
+    const left = Math.min(
+      Math.max(rect.left + rect.width / 2 - width / 2 - wrapRect.left + editorScrollLeft(editorWrapRef.current), margin),
+      wrapRect.width - width - margin
+    );
+    const top = Math.max(rect.top - wrapRect.top + editorScrollTop(editorWrapRef.current) - 36, margin);
+    return { left: Math.round(left), top: Math.round(top) };
+  }, []);
+
+  // Selection change listener to show/hide quick toolbar
+  useEffect(() => {
+    const onSelChange = () => {
+      const pos = computeSelectionPos();
+      if (pos) {
+        setSelPos(pos);
+        setSelToolsVisible(true);
+      } else {
+        setSelToolsVisible(false);
+        setSelMenuOpen(false);
+      }
+    };
+    document.addEventListener('selectionchange', onSelChange);
+    return () => document.removeEventListener('selectionchange', onSelChange);
+  }, [computeSelectionPos]);
+
+  // Reposition on scroll/resize when visible
+  useEffect(() => {
+    if (!selToolsVisible) return;
+    const onWin = () => {
+      const pos = computeSelectionPos();
+      if (pos) setSelPos(pos);
+    };
+    window.addEventListener('scroll', onWin, true);
+    window.addEventListener('resize', onWin);
+    return () => {
+      window.removeEventListener('scroll', onWin, true);
+      window.removeEventListener('resize', onWin);
+    };
+  }, [selToolsVisible, computeSelectionPos]);
+
+  // Close menu on outside click
+  useEffect(() => {
+    if (!selMenuOpen) return;
+    const onDocClick = (e: MouseEvent) => {
+      const t = e.target as Node | null;
+      if (
+        selMenuRef.current && selMenuRef.current.contains(t as Node)
+      ) return;
+      if (selBtnRef.current && selBtnRef.current.contains(t as Node)) return;
+      setSelMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onDocClick);
+    return () => document.removeEventListener('mousedown', onDocClick);
+  }, [selMenuOpen]);
 
   const askLink = () => {
     const url = window.prompt('Informe a URL do link:');
@@ -747,6 +831,55 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
                   >{isMobile ? 'Excluir' : 'X'}</button>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Floating selection quick toolbar */}
+          {selToolsVisible && selPos && (
+            <div style={{ position: 'absolute', left: selPos.left, top: selPos.top, zIndex: 40 }}>
+              <button
+                ref={selBtnRef}
+                type="button"
+                className="pointer-events-auto p-1.5 rounded-full bg-white border border-gray-200 shadow-sm hover:bg-gray-50"
+                onMouseDown={(e)=>{ e.preventDefault(); }}
+                onClick={()=> setSelMenuOpen((v)=> !v)}
+                aria-label="Ferramentas de formatação"
+                title="Ferramentas de formatação"
+              >
+                <MoreVertical size={16} />
+              </button>
+
+              {selMenuOpen && (
+                <div
+                  ref={selMenuRef}
+                  className="pointer-events-auto mt-2 bg-white border border-gray-200 rounded-lg shadow-lg p-2 flex flex-wrap gap-1"
+                  style={{ minWidth: 180 }}
+                  onMouseDown={(e)=>{ e.preventDefault(); }}
+                >
+                  {/* Common quick actions */}
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Negrito" onClick={()=>{ runCmd('bold'); handleInput(); }}><Bold size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Itálico" onClick={()=>{ runCmd('italic'); handleInput(); }}><Italic size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Sublinhado" onClick={()=>{ runCmd('underline'); handleInput(); }}><Underline size={14} /></button>
+                  <span className="w-px h-4 bg-gray-200 mx-1" />
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Alinhar à esquerda" onClick={()=>{ runCmd('justifyLeft'); handleInput(); }}><AlignLeft size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Centralizar" onClick={()=>{ runCmd('justifyCenter'); handleInput(); }}><AlignCenter size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Alinhar à direita" onClick={()=>{ runCmd('justifyRight'); handleInput(); }}><AlignRight size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Justificar" onClick={()=>{ runCmd('justifyFull'); handleInput(); }}><AlignJustify size={14} /></button>
+                  <span className="w-px h-4 bg-gray-200 mx-1" />
+                  <button type="button" className="px-2 py-1 rounded text-[11px] font-medium hover:bg-gray-100" title="Diminuir (A-)" onClick={()=>{ decreaseTextSize(); }}>
+                    A-
+                  </button>
+                  <button type="button" className="px-2 py-1 rounded text-[11px] font-medium hover:bg-gray-100" title="Aumentar (A+)" onClick={()=>{ increaseTextSize(); }}>
+                    A+
+                  </button>
+                  <span className="w-px h-4 bg-gray-200 mx-1" />
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Lista não ordenada" onClick={()=>{ runCmd('insertUnorderedList'); handleInput(); }}><List size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Lista ordenada" onClick={()=>{ runCmd('insertOrderedList'); handleInput(); }}><ListOrdered size={14} /></button>
+                  <span className="w-px h-4 bg-gray-200 mx-1" />
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Inserir link" onClick={()=>{ askLink(); handleInput(); }}><LinkIcon size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Remover link" onClick={()=>{ runCmd('unlink'); handleInput(); }}><Unlink size={14} /></button>
+                </div>
+              )}
             </div>
           )}
         </div>
