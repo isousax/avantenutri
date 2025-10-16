@@ -509,7 +509,7 @@ const BlogAdminListPage: React.FC = () => {
                           </div>
                         </td>
                         <td className="p-4">
-                          <div className="flex items-center gap-2 text-sm text-gray-600">
+                          <div className="flex items-center gap-2 text-sm text-gray-600 truncate">
                             <BarChart3 size={14} />
                             <span>{post.views || 0} views</span>
                           </div>
