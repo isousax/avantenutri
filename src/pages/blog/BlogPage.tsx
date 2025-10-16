@@ -289,7 +289,7 @@ const BlogPage: React.FC = () => {
           <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-green-700 transition-colors duration-300 line-clamp-2 leading-tight">
             {post.title}
           </h3>
-          <p className="text-gray-600 mb-4 line-clamp-3 leading-relaxed">
+          <p className="text-gray-600 mb-4 line-clamp-3 leading-relaxed text-sm sm:text-base">
             {post.excerpt}
           </p>
 
@@ -494,10 +494,10 @@ const BlogPage: React.FC = () => {
                           </span>
                         </div>
 
-                        <h3 className="text-2xl lg:text-3xl font-bold text-gray-900 mb-4 leading-tight">
+                        <h3 className="text-xl lg:text-3xl font-bold text-gray-900 mb-4 leading-tight">
                           {featuredPost.title}
                         </h3>
-                        <p className="text-gray-600 mb-6 text-lg leading-relaxed">
+                        <p className="text-gray-600 mb-6 text-sm sm:text-base leading-relaxed">
                           {featuredPost.excerpt}
                         </p>
 
