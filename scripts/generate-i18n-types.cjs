@@ -12,7 +12,10 @@ while((m = keyRegex.exec(src))){
   keys.add(k);
 }
 const sorted = Array.from(keys).sort();
-const out = `// AUTO-GENERATED FILE. DO NOT EDIT MANUALLY.\nexport type TranslationKey =\n${sorted.map(k=>`  | '${k}'`).join('\n')};\n`;
+const out =
+  sorted.length === 0
+    ? `// AUTO-GENERATED FILE. DO NOT EDIT MANUALLY.\nexport type TranslationKey = string;\n`
+    : `// AUTO-GENERATED FILE. DO NOT EDIT MANUALLY.\nexport type TranslationKey =\n${sorted.map(k=>`  | '${k}'`).join('\n')};\n`;
 const outDir = resolve(__dirname,'..','src','types');
 mkdirSync(outDir,{recursive:true});
 const outFile = resolve(outDir,'i18n.d.ts');

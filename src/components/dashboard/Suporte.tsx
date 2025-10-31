@@ -1,8 +1,10 @@
 import Card from "../ui/Card";
 import { useState } from "react";
+import { useI18n } from "../../i18n/utils";
 
 const Consultas: React.FC = () => {
   const [activeFAQ, setActiveFAQ] = useState<number | null>(null);
+  const { t } = useI18n();
 
   const faqs = [
     {
@@ -34,7 +36,7 @@ const Consultas: React.FC = () => {
             </svg>
           </div>
           <div>
-            <h2 className="text-lg font-bold text-gray-900">Perguntas Frequentes</h2>
+            <h2 className="text-lg font-bold text-gray-900">{t('support.faq.title')}</h2>
           </div>
         </div>
 
@@ -73,8 +75,8 @@ const Consultas: React.FC = () => {
       {/* Informações Adicionais */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-2xl border border-blue-200">
         <div className="text-center">
-          <h3 className="text-lg font-bold text-gray-900 mb-2">Horário de Atendimento</h3>
-          <p className="text-gray-700 mb-1 text-sm">Segunda a Sexta: 8h às 18h</p>
+          <h3 className="text-lg font-bold text-gray-900 mb-2">{t('support.hours.title')}</h3>
+          <p className="text-gray-700 mb-1 text-sm">{t('support.hours.schedule')}</p>
         </div>
       </Card>
     </div>

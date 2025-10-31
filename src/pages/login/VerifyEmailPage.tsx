@@ -5,7 +5,7 @@ import { API } from "../../config/api";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 
 const CheckEmailPage: React.FC = () => {
   const navigate = useNavigate();

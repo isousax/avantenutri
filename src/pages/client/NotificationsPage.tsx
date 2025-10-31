@@ -4,15 +4,17 @@ import { useNavigate } from "react-router-dom";
 import { SEO } from "../../components/comum/SEO";
 import NotificationCenter from "../../components/notifications/NotificationCenter";
 import { ArrowLeft, Inbox } from "../../components/icons";
+import { useI18n } from "../../i18n/utils";
 
 const NotificationsPage: React.FC = () => {
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-cyan-50">
       <SEO
-        title="Notificações | Avante Nutri"
-        description="Visualize suas notificações e atualizações importantes"
+        title={t('notifications.seo.title')}
+        description={t('notifications.seo.description')}
       />
 
       {/* Header Modernizado */}
@@ -29,7 +31,7 @@ const NotificationsPage: React.FC = () => {
 
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-gray-900 truncate">
-                Central de Notificações
+                {t('notifications.title')}
               </h1>
             </div>
 

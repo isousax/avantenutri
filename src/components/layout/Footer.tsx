@@ -1,7 +1,7 @@
 import React from "react";
 import { Link, useNavigate } from "react-router-dom";
 import LogoCroped from "../ui/LogoCroped";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 
 const Footer: React.FC = () => {
   const currentYear = new Date().getFullYear();

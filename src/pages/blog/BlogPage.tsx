@@ -6,7 +6,7 @@ import { useAuth } from "../../contexts/useAuth";
 import { Link, useSearchParams } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
-import { useI18n, formatDate as fmtDate } from "../../i18n";
+import { useI18n, formatDate as fmtDate } from "../../i18n/utils";
 import { SEO } from "../../components/comum/SEO";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import Footer from "../../components/layout/Footer";

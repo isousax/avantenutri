@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 
 const stats: { titleKey: import('../../types/i18n').TranslationKey; value: string }[] = [
   { titleKey: 'home.stats.patients.title', value: "+1.000" },

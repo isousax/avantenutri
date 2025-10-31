@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuestionnaireStatus } from '../../hooks/useQuestionnaireStatus';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 import { useAuth } from '../../contexts';
 
 const BANNER_DISMISSAL_KEY = 'questionnaire-banner-dismissed';

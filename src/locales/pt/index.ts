@@ -1,0 +1,1 @@
+export { ptTranslations } from './translations';

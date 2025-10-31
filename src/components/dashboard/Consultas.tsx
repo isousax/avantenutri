@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
 import { useConsultations } from "../../hooks/useConsultations";
-import { useI18n, formatDate } from "../../i18n";
+import { useI18n, formatDate } from "../../i18n/utils";
 import React from "react";
 import StatusPill, { getStatusTone } from "../ui/StatusPill";
 import { useToast } from "../ui/ToastProvider";

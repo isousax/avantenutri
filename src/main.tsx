@@ -7,6 +7,7 @@ import { QuestionarioProvider } from "./contexts/QuestionarioProvider";
 import { queryClient } from './lib/queryClient';
 import "./index.css";
 import App from "./App";
+import { HelmetProvider } from "react-helmet-async";
 import DevQueryPanel from './panels/DevQueryPanel';
 import { API } from './config/api';
 
@@ -18,21 +19,23 @@ const Wrapper = import.meta.env.DEV ? React.Fragment : React.StrictMode;
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <Wrapper>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <QuestionarioProvider>
-          <BrowserRouter>
-            <App />
-            {import.meta.env.DEV && <DevQueryPanel />}
-            {/* Lazy load devtools only in development to avoid inflating production bundle */}
-            {import.meta.env.DEV && (
-              <React.Suspense fallback={null}>
-                {React.createElement(React.lazy(() => import('@tanstack/react-query-devtools').then(m => ({ default: m.ReactQueryDevtools }))), { initialIsOpen: false })}
-              </React.Suspense>
-            )}
-          </BrowserRouter>
-        </QuestionarioProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <HelmetProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <QuestionarioProvider>
+            <BrowserRouter>
+              <App />
+              {import.meta.env.DEV && <DevQueryPanel />}
+              {/* Lazy load devtools only in development to avoid inflating production bundle */}
+              {import.meta.env.DEV && (
+                <React.Suspense fallback={null}>
+                  {React.createElement(React.lazy(() => import('@tanstack/react-query-devtools').then(m => ({ default: m.ReactQueryDevtools }))), { initialIsOpen: false })}
+                </React.Suspense>
+              )}
+            </BrowserRouter>
+          </QuestionarioProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </HelmetProvider>
   </Wrapper>
 );

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 import { API } from '../../config/api';
 
 interface Props {

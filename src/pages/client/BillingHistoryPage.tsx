@@ -1,5 +1,5 @@
 import { useCallback, useState } from "react";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import { formatLocalDateTimeFromUTC } from "../../utils/date";
 import { SEO } from "../../components/comum/SEO";
 import { ArrowLeft, Calendar } from "../../components/icons";
@@ -70,7 +70,7 @@ export default function BillingHistoryPage() {
           bgColor: "bg-green-50",
           borderColor: "border-green-200",
           icon: CheckCircle,
-          label: "Pago",
+          label: t('billing.status.paid'),
         };
       case "pending":
       case "processing":
@@ -79,7 +79,7 @@ export default function BillingHistoryPage() {
           bgColor: "bg-yellow-50",
           borderColor: "border-yellow-200",
           icon: Clock,
-          label: "Pendente",
+          label: t('billing.status.pending'),
         };
       case "failed":
       case "cancelled":
@@ -89,7 +89,7 @@ export default function BillingHistoryPage() {
           bgColor: "bg-red-50",
           borderColor: "border-red-200",
           icon: XCircle,
-          label: "Falhou",
+          label: t('billing.status.failed'),
         };
       default:
         return {
@@ -127,7 +127,7 @@ export default function BillingHistoryPage() {
             <button
               onClick={() => navigate(-1)}
               className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
-              aria-label="Voltar"
+              aria-label={t('common.back')}
             >
               <ArrowLeft size={20} className="text-gray-700" />
             </button>
@@ -150,7 +150,7 @@ export default function BillingHistoryPage() {
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2 text-sm text-gray-600">
             <Calendar size={16} />
-            <span>Histórico de pagamentos</span>
+            <span>{t('billing.title')}</span>
           </div>
 
           <Button
@@ -192,7 +192,7 @@ export default function BillingHistoryPage() {
                 />
                 <div>
                   <h3 className="font-semibold text-red-800 mb-1">
-                    Erro ao carregar
+                    {t('billing.error.loadFailed')}
                   </h3>
                   <p className="text-red-700 text-sm">{String(error)}</p>
                   <Button
@@ -202,7 +202,7 @@ export default function BillingHistoryPage() {
                     disabled={loading || isFetching}
                   >
                     <RefreshCw size={14} className={(loading || isFetching) ? "animate-spin" : ""} />
-                    Tentar novamente
+                    {t('billing.action.tryAgain')}
                   </Button>
                 </div>
               </div>
@@ -229,7 +229,7 @@ export default function BillingHistoryPage() {
                         {t("billing.history.empty.payments")}
                       </h3>
                       <p className="text-gray-600 text-sm">
-                        Nenhum pagamento encontrado no seu histórico
+                        {t('billing.empty')}
                       </p>
                     </div>
                   </div>
@@ -262,14 +262,14 @@ export default function BillingHistoryPage() {
                                 {payment.consultation_type
                                   ? payment.consultation_type ===
                                     "avaliacao_completa"
-                                    ? "Avaliação Completa"
+                                    ? t('billing.type.evaluationComplete')
                                     : payment.consultation_type ===
                                       "reavaliacao"
-                                    ? "Reavaliação"
+                                    ? t('billing.type.reevaluation')
                                     : payment.consultation_type
                                   : payment.purpose === "consultation"
-                                  ? "Consulta"
-                                  : "Pagamento"}
+                                  ? t('billing.type.consultation')
+                                  : t('billing.type.payment')}
                               </h3>
                               <StatusPill
                                 label={statusConfig.label}
@@ -326,14 +326,14 @@ export default function BillingHistoryPage() {
                         <div className="flex items-center gap-1">
                           <button
                             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                            title="Ver detalhes"
+                            title={t('billing.action.viewDetails')}
                             onClick={() => handleViewDetails(payment.id)}
                           >
                             <Eye size={14} />
                           </button>
                           <button
                             className="w-8 h-8 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Baixar recibo"
+                            title={t('billing.action.downloadReceipt')}
                             onClick={() => handleDownloadReceipt(payment.id)}
                             disabled={
                               !["approved", "completed", "paid"].includes(
@@ -352,7 +352,7 @@ export default function BillingHistoryPage() {
                           <div className="flex items-center gap-2 text-xs text-gray-500">
                             <CheckCircle size={12} />
                             <span>
-                              Processado: {fmtDateTimeLocal(payment.processed_at)}
+                              {t('billing.status.processed')} {fmtDateTimeLocal(payment.processed_at)}
                             </span>
                           </div>
                         </div>
@@ -376,11 +376,10 @@ export default function BillingHistoryPage() {
             />
             <div>
               <h4 className="font-semibold text-gray-900 text-sm mb-2">
-                Precisa de ajuda com um pagamento?
+                {t('billing.help.title')}
               </h4>
               <p className="text-gray-600 text-xs mb-3">
-                Em caso de problemas com pagamentos, entre em contato com nosso
-                suporte.
+                {t('billing.help.description')}
               </p>
             </div>
           </div>

@@ -1,4 +1,5 @@
 import { useLocation } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 
 interface SEOProps {
   title: string;
@@ -87,39 +88,31 @@ export function SEO({
   } : undefined;
 
   return (
-    <div>
+    <Helmet>
       <title>{title}</title>
       <meta name="description" content={description} />
-
-      {/** Canonical URL */}
       <link rel="canonical" href={canonicalUrl} />
-
-      {/* Open Graph (Facebook, LinkedIn, etc.) */}
       <meta property="og:title" content={title || "Avante Nutri | Alimente-se Bem, Viva Melhor!"} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image || "/avantenutri.png"} />
       <meta property="og:url" content={canonicalUrl} />
       <meta property="og:email" content="avantenutri@gmail.com" />
-  <meta property="og:type" content={type === 'article' ? 'article' : 'website'} />
-  {type === 'article' && publishedTimeISO && <meta property="article:published_time" content={publishedTimeISO} />}
-  {type === 'article' && modifiedTimeISO && <meta property="article:modified_time" content={modifiedTimeISO} />}
-  {type === 'article' && section && <meta property="article:section" content={section} />}
-  {type === 'article' && tags && tags.map(tag => <meta key={tag} property="article:tag" content={tag} />)}
-    {imageWidth && <meta property="og:image:width" content={String(imageWidth)} />}
-    {imageHeight && <meta property="og:image:height" content={String(imageHeight)} />}
-
-      {/* Twitter */}
+      <meta property="og:type" content={type === 'article' ? 'article' : 'website'} />
+      {type === 'article' && publishedTimeISO && <meta property="article:published_time" content={publishedTimeISO} />}
+      {type === 'article' && modifiedTimeISO && <meta property="article:modified_time" content={modifiedTimeISO} />}
+      {type === 'article' && section && <meta property="article:section" content={section} />}
+      {type === 'article' && tags && tags.map(tag => <meta key={tag} property="article:tag" content={tag} />)}
+      {imageWidth && <meta property="og:image:width" content={String(imageWidth)} />}
+      {imageHeight && <meta property="og:image:height" content={String(imageHeight)} />}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image || "/avantenutri.png"} />
-  {imageWidth && <meta name="twitter:image:width" content={String(imageWidth)} />}
-  {imageHeight && <meta name="twitter:image:height" content={String(imageHeight)} />}
-
-      {/* Structured Data */}
+      {imageWidth && <meta name="twitter:image:width" content={String(imageWidth)} />}
+      {imageHeight && <meta name="twitter:image:height" content={String(imageHeight)} />}
       {mergedSchema && (
         <script type="application/ld+json">{JSON.stringify(mergedSchema)}</script>
       )}
-    </div>
+    </Helmet>
   );
 }

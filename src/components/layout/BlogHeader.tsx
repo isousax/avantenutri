@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import Button from "../ui/Button";
 import LogoCroped from "../ui/LogoCroped";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import LocaleSwitcher from "../comum/LocaleSwitcher";
 
 interface BlogHeaderProps {

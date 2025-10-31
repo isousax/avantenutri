@@ -23,7 +23,7 @@ import {
   Archive,
   RotateCcw,
 } from "lucide-react";
-import { useI18n, formatDate as fmtDate } from "../../../i18n";
+import { useI18n, formatDate as fmtDate } from "../../../i18n/utils";
 
 interface PostRow {
   id: string;

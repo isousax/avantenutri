@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 import Card from "../ui/Card";
 
 const Servicos: React.FC = () => {

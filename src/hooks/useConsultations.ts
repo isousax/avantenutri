@@ -2,7 +2,7 @@ import { API } from '../config/api';
 import { useAuth } from '../contexts/useAuth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/utils';
 
 export interface Consultation {
   id: string;

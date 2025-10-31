@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Link } from "react-router-dom";
 import Button from "../ui/Button";
 import LogoCroped from "../ui/LogoCroped";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import LocaleSwitcher from "../comum/LocaleSwitcher";
 import { Book, Menu, X, Heart, Users, User } from "lucide-react";
 

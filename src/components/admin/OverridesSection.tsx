@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { API } from '../../config/api';
 import { useAuth } from '../../contexts';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 
 export interface OverrideItem {
   id: string; user_id: string; type: 'capability-grant'|'capability-revoke'|'limit-set'; key: string; value: number|null; expires_at: string|null; reason: string|null; created_at: string; expired?: boolean;

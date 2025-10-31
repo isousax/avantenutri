@@ -6,7 +6,7 @@ import { SEO } from "../../../components/comum/SEO";
 import { useMealLogsInteligente } from "../../../hooks/useMealLogsInteligente";
 import { useMealData } from "../../../hooks/useMealData";
 import MiniSparkline from "../../../components/ui/MiniSparkline";
-import { useI18n, formatNumber } from "../../../i18n";
+import { useI18n, formatNumber } from "../../../i18n/utils";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import SeletorAlimentos from "../../../components/ui/SeletorAlimentos";
 import ProgressoNutricional from "../../../components/dashboard/ProgressoNutricional";
@@ -220,7 +220,7 @@ const RefeicaoRegistroPage: React.FC = () => {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (alimentosSelecionados.length === 0) {
-      setError("Adicione pelo menos um alimento à refeição");
+      setError('Adicione pelo menos um alimento');
       return;
     }
 
@@ -245,7 +245,7 @@ const RefeicaoRegistroPage: React.FC = () => {
   await mealBase.refetch();
       setAlimentosSelecionados([]);
     } catch (e: any) {
-      setError(e.message || "Erro ao registrar refeição");
+      setError(e.message || 'Erro ao salvar refeição');
     } finally {
       setSaving(false);
     }
@@ -262,10 +262,10 @@ const RefeicaoRegistroPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Nova Refeição
+                {t('meal.log.title')}
               </h2>
               <p className="text-sm text-gray-500">
-                Adicione os alimentos consumidos
+                Registre sua refeição
               </p>
             </div>
           </div>
@@ -275,7 +275,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             <div>
               <label className="text-sm font-medium text-gray-700 mb-2 flex items-center gap-2">
                 <Clock size={16} className="text-gray-500" />
-                Tipo de Refeição
+                {t('meal.form.type')}
               </label>
               <select
                 value={meal_type}
@@ -312,7 +312,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     Nenhum alimento adicionado
                   </p>
                   <p className="text-sm text-gray-400 mt-1">
-                    Clique no botão acima para começar
+                    Clique em "Adicionar Alimento" para começar
                   </p>
                 </div>
               ) : (
@@ -380,21 +380,21 @@ const RefeicaoRegistroPage: React.FC = () => {
                           <div className="font-bold text-green-700">
                             {totalNutricao.proteina.toFixed(1)}
                           </div>
-                          <div className="text-xs text-gray-600">Proteína</div>
+                          <div className="text-xs text-gray-600">{t('meal.nutrition.protein')}</div>
                         </div>
                         <div className="text-center">
                           <div className="font-bold text-blue-700">
                             {totalNutricao.carboidratos.toFixed(1)}
                           </div>
                           <div className="text-xs text-gray-600">
-                            Carboidratos
+                            {t('meal.nutrition.carbs')}
                           </div>
                         </div>
                         <div className="text-center">
                           <div className="font-bold text-purple-700">
                             {totalNutricao.gordura.toFixed(1)}
                           </div>
-                          <div className="text-xs text-gray-600">Gordura</div>
+                          <div className="text-xs text-gray-600">{t('meal.nutrition.fat')}</div>
                         </div>
                       </div>
                     </div>
@@ -422,7 +422,7 @@ const RefeicaoRegistroPage: React.FC = () => {
               ) : (
                 <span className="flex items-center justify-center gap-2">
                   <Check size={18} />
-                  Registrar Refeição
+                  {t('meal.form.save')}
                 </span>
               )}
             </Button>
@@ -454,7 +454,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             </div>
             <div className="flex-1">
               <h2 className="text-lg font-semibold text-gray-900">
-                Metas Nutricionais
+                {t('meal.goals.title')}
               </h2>
             </div>
             {!editingGoals ? (
@@ -488,7 +488,7 @@ const RefeicaoRegistroPage: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Calorias (kcal)
+                    {t('meal.goals.calories')}
                   </label>
                   <input
                     value={gCal}
@@ -499,7 +499,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Proteína (g)
+                    {t('meal.goals.protein')}
                   </label>
                   <input
                     value={gProt}
@@ -510,7 +510,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Carboidratos (g)
+                    {t('meal.goals.carbs')}
                   </label>
                   <input
                     value={gCarb}
@@ -521,7 +521,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Gordura (g)
+                    {t('meal.goals.fat')}
                   </label>
                   <input
                     value={gFat}
@@ -538,7 +538,7 @@ const RefeicaoRegistroPage: React.FC = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
             <div className="bg-gradient-to-br from-orange-50 to-red-50 rounded-xl p-4 border border-orange-200">
               <div className="text-xs font-semibold text-gray-700 mb-1">
-                Calorias Total
+                {t('meal.nutrition.totalCalories')}
               </div>
               <div className="text-lg font-bold text-orange-700">
                 {formatNumber(stats.totalCalories, locale)}
@@ -546,7 +546,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             </div>
             <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
               <div className="text-xs font-semibold text-gray-700 mb-1">
-                Proteína (g)
+                {t('meal.nutrition.totalProtein')}
               </div>
               <div className="text-lg font-bold text-green-700">
                 {formatNumber(stats.totalProtein, locale)}
@@ -554,7 +554,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             </div>
             <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200">
               <div className="text-xs font-semibold text-gray-700 mb-1">
-                Carboidratos (g)
+                {t('meal.nutrition.totalCarbs')}
               </div>
               <div className="text-lg font-bold text-blue-700">
                 {formatNumber(stats.totalCarbs, locale)}
@@ -562,7 +562,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             </div>
             <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
               <div className="text-xs font-semibold text-gray-700 mb-1">
-                Gordura (g)
+                {t('meal.nutrition.totalFat')}
               </div>
               <div className="text-lg font-bold text-purple-700">
                 {formatNumber(stats.totalFat, locale)}
@@ -579,7 +579,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     🔥 Calorias
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Meta: {goals.calorias || "Não definida"}
+                    Meta: {goals.calorias || t('meal.nutrition.goalNotSet')}
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-orange-600">
@@ -609,7 +609,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     💪 Proteína
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Meta: {goals.proteina || "Não definida"}
+                    Meta: {goals.proteina || t('meal.nutrition.goalNotSet')}
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-green-600">
@@ -639,7 +639,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     🍞 Carboidratos
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Meta: {goals.carboidratos || "Não definida"}
+                    Meta: {goals.carboidratos || t('meal.nutrition.goalNotSet')}
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-blue-600">
@@ -669,7 +669,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     🥑 Gordura
                   </div>
                   <div className="text-xs text-gray-500 mt-1">
-                    Meta: {goals.gordura || "Não definida"}
+                    Meta: {goals.gordura || t('meal.nutrition.goalNotSet')}
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-purple-600">
@@ -705,9 +705,9 @@ const RefeicaoRegistroPage: React.FC = () => {
           </div>
           <div className="flex-1">
             <h2 className="text-lg font-semibold text-gray-900">
-              Histórico de Refeições
+              {t('meal.history.title')}
             </h2>
-            <p className="text-sm text-gray-500">Suas refeições registradas</p>
+            <p className="text-sm text-gray-500">{t('meal.history.subtitle')}</p>
           </div>
           <span className="text-sm bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
             {logs.length}
@@ -720,10 +720,10 @@ const RefeicaoRegistroPage: React.FC = () => {
               <Utensils size={24} className="text-gray-400" />
             </div>
             <p className="text-gray-600 font-medium mb-1">
-              Nenhuma refeição registrada
+              {t('meal.history.noMealsTitle')}
             </p>
             <p className="text-sm text-gray-500">
-              Registre sua primeira refeição acima
+              {t('meal.history.noMealsDescription')}
             </p>
           </div>
         ) : (
@@ -819,7 +819,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     />
                   ) : (
                     <p className="text-xs sm:text-sm text-gray-700 line-clamp-2">
-                      {log.description || "Sem descrição"}
+                      {log.description || t('meal.history.noDescription')}
                     </p>
                   )}
                 </div>
@@ -827,7 +827,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                 {/* Valores nutricionais */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="text-center">
-                    <div className="text-xs text-gray-600">Calorias</div>
+                    <div className="text-xs text-gray-600">{t('meal.nutrition.calories')}</div>
                     {editingId === log.id ? (
                       <input
                         value={editCal}
@@ -843,7 +843,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     )}
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-gray-600">Proteína</div>
+                    <div className="text-xs text-gray-600">{t('meal.nutrition.protein')}</div>
                     {editingId === log.id ? (
                       <input
                         value={editProtein}
@@ -859,7 +859,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     )}
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-gray-600">Carboidratos</div>
+                    <div className="text-xs text-gray-600">{t('meal.nutrition.carbs')}</div>
                     {editingId === log.id ? (
                       <input
                         value={editCarbs}
@@ -875,7 +875,7 @@ const RefeicaoRegistroPage: React.FC = () => {
                     )}
                   </div>
                   <div className="text-center">
-                    <div className="text-xs text-gray-600">Gordura</div>
+                    <div className="text-xs text-gray-600">{t('meal.nutrition.fat')}</div>
                     {editingId === log.id ? (
                       <input
                         value={editFat}
@@ -913,14 +913,14 @@ const RefeicaoRegistroPage: React.FC = () => {
             <button
               onClick={() => navigate(-1)}
               className="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
-              aria-label="Voltar"
+              aria-label={t('common.back')}
             >
               <ArrowLeft size={18} className="text-gray-700" />
             </button>
 
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-gray-900 truncate">
-                Registro de Refeições
+                {t('meal.title')}
               </h1>
             </div>
 
@@ -945,7 +945,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <Plus size={16} />
-                Registrar
+                {t('meal.tabs.register')}
               </div>
             </button>
 
@@ -959,7 +959,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <BarChart3 size={16} />
-                Análise
+                {t('meal.tabs.analysis')}
               </div>
             </button>
 
@@ -973,7 +973,7 @@ const RefeicaoRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <History size={16} />
-                Histórico
+                {t('meal.tabs.history')}
               </div>
             </button>
           </div>
@@ -998,12 +998,12 @@ const RefeicaoRegistroPage: React.FC = () => {
       {/* Dialog de confirmação para exclusão */}
       <ConfirmDialog
         open={!!pendingDelete}
-        title="Confirmar Exclusão"
-        description={`Tem certeza que deseja excluir esta refeição? ${
-          logs.find((l) => l.id === pendingDelete)?.description || ""
-        }`}
-        confirmLabel="Excluir"
-        cancelLabel="Cancelar"
+        title={t('meal.delete.title')}
+        description={t('meal.delete.message', {
+          description: logs.find((l) => l.id === pendingDelete)?.description || ""
+        })}
+        confirmLabel={t('meal.delete.confirm')}
+        cancelLabel={t('meal.delete.cancel')}
         danger
         onClose={() => setPendingDelete(null)}
         onConfirm={() => {

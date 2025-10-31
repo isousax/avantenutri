@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import { useConsultationCreditsSummary } from "../../hooks/useConsultationCredits";
 import { useConsultationPricing } from "../../hooks/useConsultationPricing";
 import { useAuth as useAuthCtx } from "../../contexts";
@@ -32,12 +32,14 @@ interface AvailableSlotsProps {
   date: string;
   selectedTime: string;
   onTimeSelect: (time: string, slotIso: string, durationMin: number) => void;
+  t: (key: TranslationKey, vars?: Record<string, string | number>) => string;
 }
 
 const AvailableSlots: React.FC<AvailableSlotsProps> = ({
   date,
   selectedTime,
   onTimeSelect,
+  t,
 }) => {
   const [slots, setSlots] = useState<
     Array<{ start: string; end: string; taken: boolean; available?: boolean }>
@@ -84,7 +86,7 @@ const AvailableSlots: React.FC<AvailableSlotsProps> = ({
     return (
       <div className="text-center py-4 text-gray-500">
         <Clock size={24} className="mx-auto mb-2" />
-        <p>Nenhum horário disponível para esta data</p>
+        <p>{t('schedule.slots.noAvailable')}</p>
       </div>
     );
   }
@@ -251,7 +253,7 @@ const AgendarConsultaPage: React.FC = () => {
       if (!formData.tipoConsulta) {
         push({
           type: "error",
-          message: "Por favor, selecione um tipo de consulta.",
+          message: t('schedule.validation.selectType'),
         });
         return;
       }
@@ -272,7 +274,7 @@ const AgendarConsultaPage: React.FC = () => {
       if (needsCredit && availableCredits <= 0) {
         // Sem créditos: iniciar checkout automaticamente e dar feedback mínimo
         setRedirectingCheckout(true);
-        push({ type: "info", message: "Redirecionando para pagamento..." });
+        push({ type: "info", message: t('schedule.payment.redirecting') });
         await purchaseCredit(formData.tipoConsulta);
         setRedirectingCheckout(false);
         return;
@@ -286,7 +288,7 @@ const AgendarConsultaPage: React.FC = () => {
     if (!formData.data || !formData.horario) {
       push({
         type: "error",
-        message: "Por favor, selecione uma data e horário para sua consulta.",
+        message: t('schedule.validation.selectDateTime'),
       });
       return;
     }
@@ -309,7 +311,7 @@ const AgendarConsultaPage: React.FC = () => {
     const fetchedOk = await fetchFullQuestionnaire();
     if (!fetchedOk) {
       // fallback: permitir prosseguir mesmo sem dados (evita bloquear usuário)
-  push({ type: "info", message: "Não foi possível carregar dados do questionário atualizado, prosseguindo." });
+  push({ type: "info", message: t('schedule.info.questionnaireDataFailed') });
       await processBooking();
       return;
     }
@@ -331,7 +333,7 @@ const AgendarConsultaPage: React.FC = () => {
           creditsSummary?.summary?.[formData.tipoConsulta]?.available || 0;
         if (available <= 0) {
           setRedirectingCheckout(true);
-          push({ type: "info", message: "Redirecionando para pagamento..." });
+          push({ type: "info", message: t('schedule.payment.redirecting') });
           await purchaseCredit(formData.tipoConsulta);
           setRedirectingCheckout(false);
           return;
@@ -365,7 +367,7 @@ const AgendarConsultaPage: React.FC = () => {
         mapped = t("consultations.error.notAvailable");
       else if (raw.includes("questionnaire_required"))
         mapped =
-          "É necessário completar o questionário antes de agendar uma consulta.";
+          t('schedule.validation.questionnaireRequired');
         else if (raw.includes("reavaliacao_not_allowed"))
           mapped = t("consultations.credits.reavaliacao.rule");
       const finalMsg = mapped || t("consultations.schedule.error");
@@ -417,14 +419,14 @@ const AgendarConsultaPage: React.FC = () => {
       if (!res.ok || !data?.checkout_url) {
         push({
           type: "error",
-          message: data?.message || data?.error || "Falha ao iniciar pagamento",
+          message: data?.message || data?.error || t('schedule.payment.failure'),
         });
         return;
       }
       window.location.href = data.checkout_url;
     } catch (err: unknown) {
       const msg = getErrorMessage(err);
-      push({ type: "error", message: msg || "Erro inesperado" });
+      push({ type: "error", message: msg || t('schedule.error.unexpected') });
     } finally {
       // Caso não haja redirecionamento (erro), garantimos que o estado de redirecionamento seja liberado
       setRedirectingCheckout(false);
@@ -440,7 +442,7 @@ const AgendarConsultaPage: React.FC = () => {
             <Calendar size={28} className="text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Escolha o Tipo de Consulta
+            {t('schedule.step1.title')}
           </h2>
         </div>
 
@@ -513,11 +515,11 @@ const AgendarConsultaPage: React.FC = () => {
                           <div className="font-semibold text-sm text-green-600">
                             {hasCredits && (
                               <span>
-                                {availableCredits} crédito{availableCredits > 1 ? 's' : ''}
+                                {t('schedule.credits.count', { count: availableCredits, plural: availableCredits > 1 ? 's' : '' })}
                               </span>
                             )}
                             {hasLockedReavaliacao && (
-                              <span className="text-amber-600">Reservada</span>
+                              <span className="text-amber-600">{t('schedule.reavaliacao.reserved')}</span>
                             )}
                           </div>
                         ) : (
@@ -550,7 +552,7 @@ const AgendarConsultaPage: React.FC = () => {
                         <AlertCircle size={18} />
                       </div>
                       <div className="text-sm leading-tight">
-                        <strong>Não elegível</strong>{" "}
+                        <strong>{t('schedule.notEligible')}</strong>{" "}
                         <span className="text-yellow-800">
                           - {t("consultations.credits.reavaliacao.rule")}
                         </span>
@@ -566,19 +568,18 @@ const AgendarConsultaPage: React.FC = () => {
                       </div>
                       <div className="leading-tight">
                         <span>
-                          <strong>{availableCredits}</strong> crédito(s)
-                          disponível(is)
+                          <strong>{availableCredits}</strong> {t('schedule.credits.count', { count: availableCredits, plural: availableCredits > 1 ? 's' : '' })}
                         </span>
                       </div>
                     </div>
                   )}
                   {isReavaliacao && hasLockedReavaliacao && (
-                    <div className="flex items-start gap-3 p-3 rounded-lg text-xs sm:text-sm bg-amber-50 text-amber-700 border border-amber-200" role="note" aria-label="Reavaliação reservada">
+                    <div className="flex items-start gap-3 p-3 rounded-lg text-xs sm:text-sm bg-amber-50 text-amber-700 border border-amber-200" role="note" aria-label={t('schedule.notice.reevaluationReserved')}>
                       <div className="mt-0.5" aria-hidden="true">
                         <AlertCircle size={18} />
                       </div>
                       <div className="leading-tight">
-                        <strong>Reavaliação reservada</strong><br />Será liberada após a sua Avaliação ser <span className="font-semibold">realizada</span>. Agende e participe da avaliação para habilitar.
+                        <strong>{t('schedule.reavaliacao.reserved')}</strong><br />{t('schedule.reevaluation.willBeReleased')}
                       </div>
                     </div>
                   )}
@@ -612,7 +613,7 @@ const AgendarConsultaPage: React.FC = () => {
             <Clock size={28} className="text-white" />
           </div>
           <h2 className="text-xl font-bold text-gray-900 mb-2">
-            Detalhes do Agendamento
+            {t('schedule.step2.title')}
           </h2>
         </div>
 
@@ -647,7 +648,7 @@ const AgendarConsultaPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <CreditCard size={16} className="text-blue-500" />
                 <span className="text-sm font-medium text-gray-700">
-                  Créditos disponíveis:
+                  {t('schedule.credits.available')}
                 </span>
               </div>
               <span
@@ -670,7 +671,7 @@ const AgendarConsultaPage: React.FC = () => {
           <label className="block text-sm font-medium text-gray-700 mb-3">
             <div className="flex items-center gap-2">
               <Calendar size={16} className="text-blue-500" />
-              Selecione Data e Horário
+              {t('schedule.selectDateTime')}
             </div>
           </label>
 
@@ -701,6 +702,7 @@ const AgendarConsultaPage: React.FC = () => {
                 onTimeSelect={(time, iso, duration) =>
                   setFormData((prev) => ({ ...prev, horario: time, horarioIso: iso, durationMin: duration }))
                 }
+                t={t}
               />
             </div>
           )}
@@ -711,20 +713,20 @@ const AgendarConsultaPage: React.FC = () => {
           <div className="p-5">
             <h4 className="font-bold text-green-800 mb-3 flex items-center gap-2">
               <Video size={18} />
-              Atendimento via WhatsApp
+              {t('schedule.whatsapp.title')}
             </h4>
             <div className="space-y-2 text-xs text-green-700">
               <div className="flex items-center gap-2">
                 <Shield size={14} />
-                <span>Atendimento preferencialmente por WhatsApp (mensagens e/ou chamada de vídeo, se necessário)</span>
+                <span>{t('schedule.whatsapp.preferenceDescription')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock size={14} />
-                <span>Acesse o painel de consultas no dia do agendamento, será liberado um botão 'Falar com a Nutricionista'</span>
+                <span>{t('schedule.whatsapp.panelAccess')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <Calendar size={14} />
-                <span>Reagendamento com 48h de antecedência</span>
+                <span>{t('schedule.whatsapp.reschedule')}</span>
               </div>
             </div>
           </div>
@@ -747,16 +749,16 @@ const AgendarConsultaPage: React.FC = () => {
             <button
               onClick={() => navigate(-1)}
               className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
-              aria-label="Voltar"
+              aria-label={t('common.back')}
             >
               <ArrowLeft size={20} className="text-gray-700" />
             </button>
 
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900">
-                Agendar Consulta
+                {t('schedule.title')}
               </h1>
-              <p className="text-xs text-gray-500">Etapa {etapa} de 2</p>
+              <p className="text-xs text-gray-500">{t('schedule.step', { current: etapa, total: 2 })}</p>
             </div>
 
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
@@ -787,10 +789,10 @@ const AgendarConsultaPage: React.FC = () => {
                     {submitting || redirectingCheckout ? (
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        {redirectingCheckout ? "Redirecionando para pagamento..." : "Agendando..."}
+                        {redirectingCheckout ? t('schedule.redirecting') : t('schedule.scheduling')}
                       </div>
                     ) : (
-                      "Confirmar Agendamento"
+                      t('schedule.confirm')
                     )}
                   </Button>
 
@@ -799,7 +801,7 @@ const AgendarConsultaPage: React.FC = () => {
                     onClick={() => setEtapa(1)}
                     className="p-0 m-0 bg-transparent text-sm font-medium text-green-700 hover:text-green-900 hover:scale-105 focus:outline-none"
                   >
-                    Voltar
+                    {t('schedule.back')}
                   </button>
                 </>
               ) : (
@@ -816,7 +818,7 @@ const AgendarConsultaPage: React.FC = () => {
                       (etapa === 2 && (!formData.data || !formData.horario))
                     }
                   >
-                    {redirectingCheckout ? "Redirecionando para pagamento..." : "Continuar"}
+                    {redirectingCheckout ? t('schedule.redirecting') : t('schedule.continue')}
                   </Button>
                 </>
               )}

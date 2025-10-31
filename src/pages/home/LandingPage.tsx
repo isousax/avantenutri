@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import CreditsSection from "../../components/home/CreditsSection";
 import Servicos from "../../components/home/Servicos";
 import Footer from "../../components/layout/Footer";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import { testimonials } from "../../data/testimonials";
 import type { TranslationKey } from "../../types/i18n";
 

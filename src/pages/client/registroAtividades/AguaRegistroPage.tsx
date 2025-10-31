@@ -5,7 +5,7 @@ import Card from "../../../components/ui/Card";
 import { SEO } from "../../../components/comum/SEO";
 import { useWaterLogsInteligente } from "../../../hooks/useWaterLogsInteligente";
 import { ProgressoHidratacao } from "../../../components/dashboard/ProgressoHidratacao";
-import { useI18n, formatNumber } from "../../../i18n";
+import { useI18n, formatNumber } from "../../../i18n/utils";
 import { useToast } from "../../../components/ui/ToastProvider";
 import type { Toast } from "../../../components/ui/ToastProvider";
 import { parseYMDToLocalDate } from "../../../utils/date";
@@ -129,10 +129,10 @@ const AguaRegistroPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Registrar Água
+                {t('water.log.title')}
               </h2>
               <p className="text-sm text-gray-500">
-                Adicione seu consumo atual
+                {t('water.log.subheading')}
               </p>
             </div>
           </div>
@@ -155,7 +155,7 @@ const AguaRegistroPage: React.FC = () => {
                 {(coposHoje + pendingCops) * mlPorCopo}ml
               </p>
               <p className="text-sm text-gray-600">
-                {coposHoje + pendingCops} de {metaDiaria} copos
+                {coposHoje + pendingCops} {t('water.cups')}
               </p>
             </div>
           </div>
@@ -209,12 +209,12 @@ const AguaRegistroPage: React.FC = () => {
             {isSaving ? (
               <div className="flex items-center gap-2">
                 <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                Salvando...
+                {t('weight.register.saving')}
               </div>
             ) : (
               <span className="flex items-center justify-center gap-2">
                 <Check size={20} />
-                Confirmar {pendingCops > 0 && `(+${pendingCops})`}
+                {pendingCops > 0 ? t('water.save') : t('water.save')} {pendingCops > 0 && `(+${pendingCops})`}
               </span>
             )}
           </Button>
@@ -248,9 +248,9 @@ const AguaRegistroPage: React.FC = () => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-gray-900">
-                Seu Progresso
+                {t('water.progress.title')}
               </h2>
-              <p className="text-sm text-gray-500">Análise do seu consumo</p>
+              <p className="text-sm text-gray-500">{t('water.progress.subtitle')}</p>
             </div>
           </div>
           <ProgressoHidratacao />
@@ -269,8 +269,8 @@ const AguaRegistroPage: React.FC = () => {
               <History size={20} className="text-purple-600" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-semibold text-gray-900">Histórico</h2>
-              <p className="text-sm text-gray-500">Seus registros anteriores</p>
+              <h2 className="text-lg font-semibold text-gray-900">{t('water.history.title')}</h2>
+              <p className="text-sm text-gray-500">{t('water.history.subtitle')}</p>
             </div>
             <span className="text-sm bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
               {historico.length}
@@ -283,10 +283,10 @@ const AguaRegistroPage: React.FC = () => {
                 <Droplets size={24} className="text-gray-400" />
               </div>
               <p className="text-gray-600 font-medium mb-1">
-                Nenhum registro encontrado
+                {t('common.noRecordsFound')}
               </p>
               <p className="text-sm text-gray-500">
-                Comece registrando seu consumo acima
+                {t('water.emptyState.description')}
               </p>
             </div>
           ) : (
@@ -308,7 +308,7 @@ const AguaRegistroPage: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-baseline gap-2">
                         <p className="sm:text-lg font-semibold text-gray-900">
-                          {formatNumber(registro.copos, "pt")} copos
+                          {formatNumber(registro.copos, "pt")} {t('water.history.cupsUnit')}
                         </p>
                         <span
                           className={`text-[11px] px-1.5 py-0.5 rounded-full ${
@@ -318,7 +318,7 @@ const AguaRegistroPage: React.FC = () => {
                           }`}
                         >
                           {registro.copos >= registro.meta ? "✓" : "↓"}{" "}
-                          {Math.abs(registro.meta - registro.copos)} copos
+                          {Math.abs(registro.meta - registro.copos)} {t('water.history.cupsUnit')}
                         </span>
                       </div>
                       <p className="text-xs text-gray-500 mt-1">
@@ -371,14 +371,14 @@ const AguaRegistroPage: React.FC = () => {
             <button
               onClick={() => navigate(-1)}
               className="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
-              aria-label="Voltar"
+              aria-label={t('water.back')}
             >
               <ArrowLeft size={18} className="text-gray-700" />
             </button>
 
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-gray-900 truncate">
-                Hidratação
+                {t('water.page.title')}
               </h1>
             </div>
 
@@ -403,7 +403,7 @@ const AguaRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <Plus size={16} />
-                Registrar
+                {t('water.tabs.register')}
               </div>
             </button>
 
@@ -417,7 +417,7 @@ const AguaRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <BarChart3 size={16} />
-                Análise
+                {t('water.tabs.analysis')}
               </div>
             </button>
 
@@ -431,7 +431,7 @@ const AguaRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <History size={16} />
-                Histórico
+                {t('water.tabs.history')}
               </div>
             </button>
           </div>
@@ -503,10 +503,10 @@ const MetaEditor = ({
           </div>
           <div className="text-left">
             <h3 className="text-sm font-semibold text-gray-900">
-              Configurações
+              {t('water.settings.title')}
             </h3>
             <p className="text-xs text-gray-500">
-              Meta, capacidade e preferências
+              {t('water.settings.subtitle')}
             </p>
           </div>
         </div>
@@ -527,13 +527,13 @@ const MetaEditor = ({
         }`}
       >
         <div className="space-y-4 pl-2">
-          {/* Meta Diária */}
+          {/* {t('water.settings.dailyGoal')} */}
           <div className="bg-white rounded-xl p-4 border border-gray-200">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target size={16} className="text-blue-600" />
                 <span className="text-sm font-medium text-gray-700">
-                  Meta diária
+                  {t('water.settings.dailyGoal')}
                 </span>
               </div>
 
@@ -543,14 +543,14 @@ const MetaEditor = ({
                   className="flex items-center gap-1 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-colors border border-blue-200"
                 >
                   <Edit3 size={12} />
-                  Editar
+                  {t('common.edit')}
                 </button>
               ) : (
                 <div className="flex items-center gap-1">
                   <button
                     onClick={handleSaveGoal}
                     className="w-8 h-8 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
-                    title="Salvar"
+                    title={t('common.save')}
                   >
                     <Check size={14} />
                   </button>
@@ -560,7 +560,7 @@ const MetaEditor = ({
                       setGoalInput(metaDiaria?.toString() ?? "");
                     }}
                     className="w-8 h-8 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
-                    title="Cancelar"
+                    title={t('common.cancel')}
                   >
                     <X size={14} />
                   </button>
@@ -571,7 +571,7 @@ const MetaEditor = ({
             {!editingGoal ? (
               <div className="text-center py-2">
                 <p className="text-2xl font-bold text-blue-600">{metaDiaria}</p>
-                <p className="text-sm text-gray-500">copos por dia</p>
+                <p className="text-sm text-gray-500">{t('water.settings.cupsPerDay')}</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -604,7 +604,7 @@ const MetaEditor = ({
             t={t}
           />
 
-          {/* Meta Inteligente - Apenas se estiver em modo manual */}
+          {/* {t('water.settings.smartGoal')} - Apenas se estiver em modo manual */}
           {metasFinais.fonte === "manual" && (
             <div className="bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl p-4 border border-green-200">
               <div className="flex items-center gap-3">
@@ -613,10 +613,10 @@ const MetaEditor = ({
                 </div>
                 <div className="flex-1">
                   <p className="font-semibold text-green-800 text-sm">
-                    Meta Inteligente
+                    {t('water.settings.smartGoal')}
                   </p>
                   <p className="text-xs text-green-600 mt-1">
-                    Baseada no seu perfil
+                    {t('water.settings.smartGoalDescription')}
                   </p>
                 </div>
                 <button
@@ -624,13 +624,12 @@ const MetaEditor = ({
                     await onResetMetaAutomatica();
                     push({
                       type: "success",
-                      message:
-                        "Meta automática ativada com base no seu perfil!",
+                      message: t('water.settings.smartGoalActivated'),
                     });
                   }}
                   className="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors text-sm font-medium shadow-sm hover:shadow-md"
                 >
-                  Ativar
+                  {t('water.settings.activate')}
                 </button>
               </div>
             </div>
@@ -673,7 +672,7 @@ const CupSizeEditor = ({ current, onSave, push, t }: CupSizeEditorProps) => {
         <div className="flex items-center gap-2">
           <GlassWater size={16} className="text-blue-600" />
           <span className="text-sm font-medium text-gray-700">
-            Capacidade do copo
+            {t('water.settings.cupSize')}
           </span>
         </div>
 
@@ -683,14 +682,14 @@ const CupSizeEditor = ({ current, onSave, push, t }: CupSizeEditorProps) => {
             className="flex items-center gap-1 text-sm bg-blue-50 hover:bg-blue-100 text-blue-600 px-3 py-1.5 rounded-lg transition-colors border border-blue-200"
           >
             <Edit3 size={12} />
-            Editar
+            {t('water.settings.cupEdit')}
           </button>
         ) : (
           <div className="flex items-center gap-1">
             <button
               onClick={handleSave}
               className="w-8 h-8 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
-              title="Salvar"
+              title={t('common.save')}
             >
               <Check size={14} />
             </button>
@@ -700,7 +699,7 @@ const CupSizeEditor = ({ current, onSave, push, t }: CupSizeEditorProps) => {
                 setValue(String(current));
               }}
               className="w-8 h-8 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors flex items-center justify-center"
-              title="Cancelar"
+              title={t('common.cancel')}
             >
               <X size={14} />
             </button>
@@ -710,8 +709,8 @@ const CupSizeEditor = ({ current, onSave, push, t }: CupSizeEditorProps) => {
 
       {!editing ? (
         <div className="text-center py-2">
-          <p className="text-2xl font-bold text-blue-600">{current}ml</p>
-          <p className="text-sm text-gray-500">por copo</p>
+          <p className="text-2xl font-bold text-blue-600">{current}{t('water.settings.cupML')}</p>
+          <p className="text-sm text-gray-500">{t('water.settings.cupPerGlass')}</p>
         </div>
       ) : (
         <div className="space-y-3">
@@ -724,10 +723,10 @@ const CupSizeEditor = ({ current, onSave, push, t }: CupSizeEditorProps) => {
               inputMode="numeric"
               autoFocus
             />
-            <span className="text-gray-600 font-medium">ml</span>
+            <span className="text-gray-600 font-medium">{t('water.settings.cupML')}</span>
           </div>
           <p className="text-xs text-gray-500 text-center">
-            Tamanhos comuns: 200ml, 250ml, 300ml
+            {t('water.settings.cupSizes')}
           </p>
         </div>
       )}

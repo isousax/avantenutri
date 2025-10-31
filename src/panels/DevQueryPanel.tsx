@@ -58,11 +58,11 @@ const DevQueryPanel: React.FC = () => {
       {open && (
         <div style={{ marginTop:6, background:'white', border:'1px solid #e5e7eb', borderRadius:8, width:380, maxHeight:360, overflow:'auto', padding:8 }}>
           <div style={{ display:'flex', gap:8, marginBottom:8 }}>
-            <button onClick={invalidateAll} style={{ background:'#f59e0b', color:'#fff', padding:'4px 8px', borderRadius:6, fontSize:11 }}>Invalidate All</button>
-            <button onClick={refetchActive} style={{ background:'#2563eb', color:'#fff', padding:'4px 8px', borderRadius:6, fontSize:11 }}>Refetch Active</button>
-            <button onClick={()=> qc.clear()} style={{ background:'#dc2626', color:'#fff', padding:'4px 8px', borderRadius:6, fontSize:11 }}>Clear</button>
+            <button onClick={invalidateAll} style={{ background:'#f59e0b', color:'#fff', padding:'4px 8px', borderRadius:6, fontSize:11 }}>Invalidar Todas</button>
+            <button onClick={refetchActive} style={{ background:'#2563eb', color:'#fff', padding:'4px 8px', borderRadius:6, fontSize:11 }}>Refetch Ativas</button>
+            <button onClick={()=> qc.clear()} style={{ background:'#dc2626', color:'#fff', padding:'4px 8px', borderRadius:6, fontSize:11 }}>Limpar</button>
           </div>
-          {rows.length === 0 && <div style={{ padding:8, color:'#6b7280' }}>Nenhuma query</div>}
+          {rows.length === 0 && <div style={{ padding:8, color:'#6b7280' }}>Nenhuma query ativa</div>}
           {rows.map(r => {
             const tone = r.isFetching ? '#3b82f6' : r.status === 'error' ? '#dc2626' : r.isStale ? '#f59e0b' : '#16a34a';
             return (
@@ -70,19 +70,19 @@ const DevQueryPanel: React.FC = () => {
                 <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:6 }}>
                   <div style={{ fontWeight:600, whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis', flex:1 }}>{r.key}</div>
                   <div style={{ display:'flex', gap:4 }}>
-                    <button onClick={()=> qc.invalidateQueries({ queryKey: r.queryKey })} title='Invalidate' style={{ background:'#f59e0b', color:'#fff', borderRadius:4, padding:'2px 6px', fontSize:10 }}>Inv</button>
-                    <button onClick={()=> qc.refetchQueries({ queryKey: r.queryKey })} title='Refetch' style={{ background:'#2563eb', color:'#fff', borderRadius:4, padding:'2px 6px', fontSize:10 }}>Ref</button>
-                    <button onClick={()=> qc.removeQueries({ queryKey: r.queryKey })} title='Remove' style={{ background:'#64748b', color:'#fff', borderRadius:4, padding:'2px 6px', fontSize:10 }}>Del</button>
+                    <button onClick={()=> qc.invalidateQueries({ queryKey: r.queryKey })} title="Invalidar" style={{ background:'#f59e0b', color:'#fff', borderRadius:4, padding:'2px 6px', fontSize:10 }}>Inv</button>
+                    <button onClick={()=> qc.refetchQueries({ queryKey: r.queryKey })} title="Refetch" style={{ background:'#2563eb', color:'#fff', borderRadius:4, padding:'2px 6px', fontSize:10 }}>Ref</button>
+                    <button onClick={()=> qc.removeQueries({ queryKey: r.queryKey })} title="Remover" style={{ background:'#64748b', color:'#fff', borderRadius:4, padding:'2px 6px', fontSize:10 }}>Del</button>
                   </div>
                 </div>
                 <div style={{ display:'flex', gap:8, flexWrap:'wrap', color:'#475569', marginTop:4, fontSize:11 }}>
                   <span>Status: <span style={{ color:tone }}>{r.status}</span></span>
-                  <span>Obs: {r.observers}</span>
+                  <span>Observers: {r.observers}</span>
                   <span>Age: {r.ageSec}s</span>
                   <span>TTL: {r.remainingSec}s</span>
                   <span>Data: {r.hasData ? '✓' : '—'}</span>
                   <span>Fetching: {r.isFetching ? '●' : '—'}</span>
-                  <span>Stale: {r.isStale ? 'sim' : 'não'}</span>
+                  <span>Stale: {r.isStale ? 'Sim' : 'Não'}</span>
                 </div>
               </div>
             );

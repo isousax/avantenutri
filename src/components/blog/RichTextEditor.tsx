@@ -22,12 +22,14 @@ import {
   Image as ImageIcon,
   Palette,
   MoreVertical,
+  Youtube,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/useAuth';
 import { useToast } from '../../components/ui/ToastProvider';
 import { API } from '../../config/api';
 import { processImageToJpeg } from '../../utils/image';
 import { deleteBlogMediaByUrl } from '../../utils/blogMedia';
+import { convertYouTubeUrls, isYouTubeUrl, extractYouTubeId, createYouTubeEmbed } from '../../utils/youtube';
 
 type Props = {
   value: string;
@@ -90,8 +92,9 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
   const handleInput = useCallback(() => {
     const el = ref.current;
     if (!el) return;
+    
     // Normalize presentational attributes/styles into Tailwind classes for persistence
-    const html = el.innerHTML
+    let html = el.innerHTML
       // align attribute to classes
       .replace(/<(p|div|h1|h2|h3|h4|h5|h6)([^>]*?)\s+align="center"([^>]*)>/gi, '<$1$2 class="text-center"$3>')
       .replace(/<(p|div|h1|h2|h3|h4|h5|h6)([^>]*?)\s+align="right"([^>]*)>/gi, '<$1$2 class="text-right"$3>')
@@ -122,6 +125,38 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       // clear remaining style attributes (sanitizer vai remover de qualquer forma)
       .replace(/\sstyle="[^"]*"/gi, '')
       ;
+    
+    // Convert YouTube URLs to embeds automatically (with debounce to avoid excessive conversions)
+    const prevHtml = html;
+    html = convertYouTubeUrls(html);
+    
+    // If YouTube conversion happened, update the editor content
+    if (html !== prevHtml && el.innerHTML !== html) {
+      const selection = document.getSelection();
+      const range = selection?.rangeCount ? selection.getRangeAt(0) : null;
+      const startOffset = range?.startOffset || 0;
+      const endOffset = range?.endOffset || 0;
+      
+      el.innerHTML = html;
+      
+      // Try to restore cursor position after YouTube conversion
+      if (range && selection) {
+        try {
+          range.setStart(range.startContainer, startOffset);
+          range.setEnd(range.endContainer, endOffset);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        } catch {
+          // If cursor restoration fails, just place it at the end
+          const newRange = document.createRange();
+          newRange.selectNodeContents(el);
+          newRange.collapse(false);
+          selection.removeAllRanges();
+          selection.addRange(newRange);
+        }
+      }
+    }
+    
     onChange(html);
   }, [onChange]);
 
@@ -340,6 +375,59 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
     runCmd('createLink', url);
   };
 
+  const askYouTubeLink = () => {
+    const url = window.prompt('Informe a URL do vídeo do YouTube:');
+    if (!url) return;
+    
+    if (!isYouTubeUrl(url)) {
+      push({ type: 'error', message: 'URL do YouTube inválida. Use formatos como:\n• https://www.youtube.com/watch?v=...\n• https://youtu.be/...' });
+      return;
+    }
+
+    const videoId = extractYouTubeId(url);
+    if (!videoId) {
+      push({ type: 'error', message: 'Não foi possível extrair o ID do vídeo' });
+      return;
+    }
+
+    const embedHtml = createYouTubeEmbed(videoId, {
+      width: 560,
+      height: 315,
+      privacy: true
+    });
+
+    // Insert the embed at cursor position
+    const selection = document.getSelection();
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0);
+      range.deleteContents();
+      
+      // Create a new paragraph to contain the iframe
+      const p = document.createElement('p');
+      p.innerHTML = embedHtml;
+      const iframe = p.firstElementChild;
+      
+      if (iframe) {
+        range.insertNode(iframe);
+        
+        // Move cursor after the iframe
+        const newRange = document.createRange();
+        newRange.setStartAfter(iframe);
+        newRange.setEndAfter(iframe);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+        
+        // Insert a new paragraph after the iframe for continued editing
+        const newP = document.createElement('p');
+        newP.innerHTML = '<br>';
+        iframe.parentNode?.insertBefore(newP, iframe.nextSibling);
+      }
+    }
+    
+    handleInput();
+    push({ type: 'success', message: 'Vídeo do YouTube inserido com sucesso!' });
+  };
+
   const onClickUploadImage = () => {
     fileInputRef.current?.click();
   };
@@ -461,26 +549,56 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
     await deleteBlogMediaByUrl(src, getAccessToken);
   }, [getAccessToken]);
 
+  // Optimized mutation observer for image cleanup
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    const obs = new MutationObserver(async (mutations) => {
+    
+    // Debounce cleanup to avoid excessive API calls
+    let cleanupTimeout: NodeJS.Timeout;
+    
+    const obs = new MutationObserver((mutations) => {
+      const imagesToDelete: string[] = [];
+      
       for (const m of mutations) {
-        m.removedNodes.forEach(async (node) => {
+        m.removedNodes.forEach((node) => {
           if (node instanceof HTMLImageElement) {
             const src = node.getAttribute('src') || '';
-            await deleteImageFromR2(src);
+            if (src && src.includes('login-service.avantenutri.workers.dev')) {
+              imagesToDelete.push(src);
+            }
           } else if (node instanceof HTMLElement) {
-            node.querySelectorAll('img').forEach(async (img) => {
+            node.querySelectorAll('img').forEach((img) => {
               const src = img.getAttribute('src') || '';
-              await deleteImageFromR2(src);
+              if (src && src.includes('login-service.avantenutri.workers.dev')) {
+                imagesToDelete.push(src);
+              }
             });
           }
         });
       }
+      
+      if (imagesToDelete.length > 0) {
+        clearTimeout(cleanupTimeout);
+        cleanupTimeout = setTimeout(async () => {
+          // Batch delete images to reduce API calls
+          const uniqueSrcs = [...new Set(imagesToDelete)];
+          for (const src of uniqueSrcs) {
+            try {
+              await deleteImageFromR2(src);
+            } catch (error) {
+              console.warn('Failed to delete image:', src, error);
+            }
+          }
+        }, 1000); // 1 second debounce
+      }
     });
+    
     obs.observe(el, { childList: true, subtree: true });
-    return () => obs.disconnect();
+    return () => {
+      obs.disconnect();
+      clearTimeout(cleanupTimeout);
+    };
   }, [deleteImageFromR2]);
 
   function editorScrollTop(el: HTMLDivElement | null) { return el ? el.scrollTop : 0; }
@@ -607,16 +725,27 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
       </div>
 
       {(user?.role === 'admin' || user?.role === 'nutri') && (
-        <button 
-          type="button" 
-          className="p-2 hover:bg-gray-100 rounded touch-manipulation inline-flex items-center gap-1" 
-          title={uploading ? 'Enviando...' : 'Fazer upload de imagem'} 
-          onClick={onClickUploadImage} 
-          disabled={uploading}
-        >
-          <ImageIcon size={isMobile ? 18 : 16} />
-          {uploading && !isMobile && <span className="text-xs text-gray-700">Enviando...</span>}
-        </button>
+        <>
+          <button 
+            type="button" 
+            className="p-2 hover:bg-gray-100 rounded touch-manipulation inline-flex items-center gap-1" 
+            title={uploading ? 'Enviando...' : 'Fazer upload de imagem'} 
+            onClick={onClickUploadImage} 
+            disabled={uploading}
+          >
+            <ImageIcon size={isMobile ? 18 : 16} />
+            {uploading && !isMobile && <span className="text-xs text-gray-700">Enviando...</span>}
+          </button>
+          
+          <button 
+            type="button" 
+            className="p-2 hover:bg-gray-100 rounded touch-manipulation" 
+            title="Inserir vídeo do YouTube" 
+            onClick={askYouTubeLink}
+          >
+            <Youtube size={isMobile ? 18 : 16} />
+          </button>
+        </>
       )}
     </>
   );
@@ -643,6 +772,7 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
 
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Inserir link" onClick={askLink}><LinkIcon size={16} /></button>
       <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Remover link" onClick={() => runCmd('unlink')}><Unlink size={16} /></button>
+      <button type="button" className="p-2 hover:bg-gray-100 rounded touch-manipulation" title="Inserir vídeo do YouTube" onClick={askYouTubeLink}><Youtube size={16} /></button>
 
       <span className="w-px h-5 bg-gray-200 mx-1" />
 
@@ -893,6 +1023,7 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
                   <span className="w-px h-4 bg-gray-200 mx-1" />
                   <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Inserir link" onClick={()=>{ askLink(); handleInput(); }}><LinkIcon size={14} /></button>
                   <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Remover link" onClick={()=>{ runCmd('unlink'); handleInput(); }}><Unlink size={14} /></button>
+                  <button type="button" className="p-1.5 rounded hover:bg-gray-100" title="Vídeo YouTube" onClick={()=>{ askYouTubeLink(); }}><Youtube size={14} /></button>
                 </div>
               )}
             </div>
@@ -911,6 +1042,26 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
           height: auto;
           max-width: 100%;
         }
+        /* YouTube embed responsive styling */
+        .prose iframe[src*="youtube.com"], 
+        .prose iframe[src*="youtube-nocookie.com"] {
+          display: block;
+          margin: 16px auto;
+          max-width: 100%;
+          height: auto;
+          aspect-ratio: 16/9;
+          border-radius: 8px;
+          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        /* Mobile responsive for YouTube embeds */
+        @media (max-width: 640px) {
+          .prose iframe[src*="youtube.com"], 
+          .prose iframe[src*="youtube-nocookie.com"] {
+            width: 100% !important;
+            height: auto !important;
+            margin: 12px auto;
+          }
+        }
         /* Improve touch scrolling */
         .touch-manipulation {
           touch-action: manipulation;
@@ -925,6 +1076,45 @@ const RichTextEditor: React.FC<Props> = ({ value, onChange, placeholder }) => {
           [contenteditable] {
             font-size: 16px;
           }
+        }
+        /* Improve editor focus state */
+        [contenteditable]:focus {
+          outline: none;
+          box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        /* Better list styling in editor */
+        .prose ul, .prose ol {
+          margin: 8px 0;
+          padding-left: 24px;
+        }
+        .prose li {
+          margin: 4px 0;
+        }
+        /* Blockquote styling */
+        .prose blockquote {
+          border-left: 4px solid #e5e7eb;
+          padding-left: 16px;
+          margin: 16px 0;
+          font-style: italic;
+          color: #6b7280;
+        }
+        /* Code block styling */
+        .prose pre {
+          background-color: #f3f4f6;
+          border-radius: 6px;
+          padding: 12px;
+          overflow-x: auto;
+          margin: 12px 0;
+        }
+        .prose code {
+          background-color: #f3f4f6;
+          padding: 2px 4px;
+          border-radius: 3px;
+          font-size: 0.875em;
+        }
+        .prose pre code {
+          background-color: transparent;
+          padding: 0;
         }
       `}</style>
     </div>

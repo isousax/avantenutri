@@ -6,7 +6,7 @@ import LogoCroped from "../../components/ui/LogoCroped";
 import { normalizePhone } from "../../utils/normalizePhone";
 import { API } from "../../config/api";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 
 const RegisterPage: React.FC = () => {
   const { t } = useI18n();

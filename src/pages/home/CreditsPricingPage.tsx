@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import type { TranslationKey } from "../../types/i18n";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { Link } from "react-router-dom";
@@ -18,9 +18,9 @@ const CreditsPricingPage: React.FC = () => {
   const promos = [
     {
       icon: "🎉",
-      title: "🎉 Oferta relâmpago: até 20% OFF",
-      desc: "Desconto aplicado automaticamente no checkout por tempo limitado.",
-      cta: "Garantir desconto",
+      title: "🎉 Promoção Flash!",
+      desc: "Desconto especial por tempo limitado",
+      cta: "Aproveitar agora",
       color: "from-green-500 to-emerald-600",
       ctaGradient: "from-green-500 to-emerald-600",
       ctaHover: "hover:from-green-600 hover:to-emerald-700",
@@ -28,9 +28,9 @@ const CreditsPricingPage: React.FC = () => {
     },
     {
       icon: "⚡",
-      title: "⚡ Bônus de acompanhamento incluído",
-      desc: "Compre hoje e leve 7 dias extras de suporte pelo WhatsApp.",
-      cta: "Começar agora",
+      title: "💰 Bonus Extra!",
+      desc: "Créditos extras na compra de pacotes",
+      cta: "Ver pacotes",
       color: "from-amber-500 to-orange-600",
       ctaGradient: "from-amber-500 to-orange-600",
       ctaHover: "hover:from-amber-600 hover:to-orange-700",
@@ -38,9 +38,9 @@ const CreditsPricingPage: React.FC = () => {
     },
     {
       icon: "💎",
-      title: "💎 Avaliação Completa mais acessível",
-      desc: "Condições especiais para novos pacientes esta semana.",
-      cta: "Agendar avaliação",
+      title: "🔍 Avaliação Gratuita",
+      desc: "Primeira consulta sem custo para novos clientes",
+      cta: "Solicitar avaliação",
       color: "from-blue-600 to-cyan-600",
       ctaGradient: "from-blue-600 to-cyan-600",
       ctaHover: "hover:from-blue-700 hover:to-cyan-700",
@@ -92,13 +92,13 @@ const CreditsPricingPage: React.FC = () => {
       borderColor: "border-green-200",
       glowColor: "green",
       icon: "🔍",
-      badge: "🌟 Mais Completo",
+      badge: t('pricing.badge.complete'),
       features: [
-        "Avaliação física completa",
-        "Análise de composição corporal",
-        "Plano alimentar personalizado",
-        "Acompanhamento por 30 dias",
-        "Suporte por WhatsApp",
+        t('pricing.feature.fullEvaluation'),
+        t('pricing.feature.bodyAnalysis'),
+        t('pricing.feature.personalizedPlan'),
+        t('pricing.feature.support30'),
+        t('pricing.feature.whatsapp'),
       ],
     },
     only_diet: {
@@ -107,12 +107,12 @@ const CreditsPricingPage: React.FC = () => {
       borderColor: "border-blue-200",
       glowColor: "blue",
       icon: "📋",
-      badge: "⚡ Mais Rápido",
+      badge: t('pricing.badge.fast'),
       features: [
-        "Plano alimentar personalizado",
-        "Cardápio semanal completo",
-        "Lista de compras inteligente",
-        "Ajustes por 15 dias",
+        t('pricing.feature.personalizedPlan'),
+        t('pricing.feature.weeklyMenu'),
+        t('pricing.feature.shoppingList'),
+        t('pricing.feature.adjustments15'),
       ],
     },
     reavaliacao: {
@@ -121,13 +121,13 @@ const CreditsPricingPage: React.FC = () => {
       borderColor: "border-purple-200",
       glowColor: "purple",
       icon: "🔄",
-      badge: "💎 Para Clientes",
+      badge: t('pricing.badge.clients'),
       features: [
-        "Reavaliação completa",
-        "Ajustes no plano atual",
-        "Novas metas e objetivos",
-        "Acompanhamento contínuo",
-        "Preferência para agendamento",
+        t('pricing.feature.reevaluation'),
+        t('pricing.feature.planAdjustments'),
+        t('pricing.feature.newGoals'),
+        t('pricing.feature.continuousSupport'),
+        t('pricing.feature.schedulingPreference'),
       ],
     },
   };

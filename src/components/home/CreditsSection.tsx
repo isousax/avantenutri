@@ -1,7 +1,7 @@
 import React from "react";
 import Card from "../ui/Card";
 import Button from "../ui/Button";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import { Link } from "react-router-dom";
 
 /**

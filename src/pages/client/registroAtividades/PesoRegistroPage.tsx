@@ -10,7 +10,7 @@ import { AnalisePesoInteligente } from '../../../components/dashboard/AnalisePes
 import Sparkline from '../../../components/ui/Sparkline';
 import { usePermissions } from '../../../hooks/usePermissions';
 import { CAPABILITIES } from '../../../types/capabilities';
-import { useI18n, formatNumber } from '../../../i18n';
+import { useI18n, formatNumber } from '../../../i18n/utils';
 import { formatDateSafe } from '../../../utils/formatDate';
 import { ArrowLeft, Target, Plus, Check, X } from '../../../components/icons';
 import {  BarChart3, Sparkles, Scale, Edit3, History } from 'lucide-react';
@@ -102,8 +102,8 @@ const PesoRegistroPage: React.FC = () => {
               <Plus size={20} className="text-blue-600" />
             </div>
             <div>
-              <h2 className="text-lg font-semibold text-gray-900">Registrar peso</h2>
-              <p className="text-sm text-gray-500">Adicione sua medida atual</p>
+              <h2 className="text-lg font-semibold text-gray-900">{t('weight.log.title')}</h2>
+              <p className="text-sm text-gray-500">Monitore a evolução do seu peso</p>
             </div>
           </div>
           
@@ -115,7 +115,7 @@ const PesoRegistroPage: React.FC = () => {
             <form onSubmit={submit} className="space-y-6">
               <div className="space-y-3">
                 <label className="block text-sm font-medium text-gray-700">
-                  Peso em kg
+                  {t('weight.form.weight')}
                 </label>
                 <div className="relative">
                   <input 
@@ -126,7 +126,7 @@ const PesoRegistroPage: React.FC = () => {
                     }} 
                     type="text" 
                     inputMode="decimal" 
-                    placeholder="Ex: 72.5" 
+                    placeholder="Ex: 70.5" 
                     className="w-full text-4xl font-bold text-center border-2 border-gray-200 rounded-2xl px-4 py-6 text-gray-900 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200" 
                   />
                 </div>
@@ -137,7 +137,7 @@ const PesoRegistroPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <Target size={16} className="text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Meta pessoal</span>
+                    <span className="text-sm font-medium text-gray-700">{t('weight.goal.personal')}</span>
                   </div>
                   {!editingGoal ? (
                     <button 
@@ -145,7 +145,7 @@ const PesoRegistroPage: React.FC = () => {
                       onClick={() => setEditingGoal(true)} 
                       className="flex items-center gap-2 text-sm bg-white hover:bg-gray-100 text-gray-700 px-3 py-2 rounded-lg transition-colors duration-200 border border-gray-300"
                     >
-                      {goal != null ? `${formatNumber(+goal.toFixed(1), locale)} kg` : 'Definir'}
+                      {goal != null ? `${formatNumber(+goal.toFixed(1), locale)} ${t('weight.goal.kg')}` : t('weight.goal.set')}
                       <Edit3 size={14} />
                     </button>
                   ) : (
@@ -159,7 +159,7 @@ const PesoRegistroPage: React.FC = () => {
                           autoFocus
                         />
                       </div>
-                      <span className="text-gray-600 text-sm">kg</span>
+                      <span className="text-gray-600 text-sm">{t('weight.goal.kg')}</span>
                       <button 
                         type="button" 
                         onClick={saveGoal} 
@@ -201,7 +201,7 @@ const PesoRegistroPage: React.FC = () => {
                 ) : (
                   <span className="flex items-center justify-center gap-2">
                     <Plus size={18} />
-                    Registrar Peso
+                    {t('weight.save.today')}
                   </span>
                 )}
               </Button>
@@ -227,8 +227,8 @@ const PesoRegistroPage: React.FC = () => {
                 <BarChart3 size={20} className="text-green-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Sua Evolução</h2>
-                <p className="text-sm text-gray-500">Progresso ao longo do tempo</p>
+                <h2 className="text-lg font-semibold text-gray-900">{t('weight.analysis.title')}</h2>
+                <p className="text-sm text-gray-500">{t('weight.analysis.subtitle')}</p>
               </div>
             </div>
             
@@ -241,7 +241,7 @@ const PesoRegistroPage: React.FC = () => {
                     <Sparkles size={18} className="text-green-600" />
                     <div className="flex-1">
                       <div className="flex items-center justify-between mb-1">
-                        <p className="text-sm font-medium text-gray-700">Tendência atual</p>
+                        <p className="text-sm font-medium text-gray-700">{t('weight.analysis.currentTrend')}</p>
                         <StatusPill
                           label={analiseTendencia.direcao}
                           tone={getStatusTone(analiseTendencia.direcao)}
@@ -249,7 +249,7 @@ const PesoRegistroPage: React.FC = () => {
                         />
                       </div>
                       <p className="text-xs text-gray-500">
-                        {analiseTendencia.confiabilidade}% de confiabilidade • {analiseTendencia.velocidade}
+                        {analiseTendencia.confiabilidade}% {t('weight.analysis.reliability')} • {analiseTendencia.velocidade}
                       </p>
                     </div>
                   </div>
@@ -272,8 +272,8 @@ const PesoRegistroPage: React.FC = () => {
               <History size={20} className="text-purple-600" />
             </div>
             <div className="flex-1">
-              <h2 className="text-lg font-semibold text-gray-900">Histórico</h2>
-              <p className="text-sm text-gray-500">Seus registros anteriores</p>
+              <h2 className="text-lg font-semibold text-gray-900">{t('weight.history.title')}</h2>
+              <p className="text-sm text-gray-500">{t('weight.history.subtitle')}</p>
             </div>
             <span className="text-sm bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full font-medium">
               {logs.length}
@@ -285,8 +285,8 @@ const PesoRegistroPage: React.FC = () => {
               <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
                 <Scale size={24} className="text-gray-400" />
               </div>
-              <p className="text-gray-600 font-medium mb-1">Nenhum registro encontrado</p>
-              <p className="text-sm text-gray-500">Comece registrando seu peso acima</p>
+              <p className="text-gray-600 font-medium mb-1">{t('weight.history.empty')}</p>
+              <p className="text-sm text-gray-500">{t('weight.history.emptySubtitle')}</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -308,7 +308,7 @@ const PesoRegistroPage: React.FC = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-baseline gap-2">
                           <p className="sm:text-lg font-semibold text-gray-900">
-                            {formatNumber(+log.weight_kg.toFixed(1), locale)} kg
+                            {formatNumber(+log.weight_kg.toFixed(1), locale)} {t('weight.goal.kg')}
                           </p>
                           {goal && (() => {
                             const obj = inferWeightObjective(goal, (latest?.weight_kg ?? log.weight_kg), WEIGHT_TOLERANCE_KG);
@@ -316,7 +316,7 @@ const PesoRegistroPage: React.FC = () => {
                             const arrow = obj === 'maintain' ? '→' : (log.weight_kg > goal ? '↑' : '↓');
                             return (
                               <span className={`text-[11px] px-1.5 py-0.5 rounded-full ${cls}`}>
-                                {arrow} {Math.abs(goal - log.weight_kg).toFixed(1)}kg
+                                {arrow} {Math.abs(goal - log.weight_kg).toFixed(1)}{t('weight.goal.kg')}
                               </span>
                             );
                           })()}
@@ -385,14 +385,14 @@ const PesoRegistroPage: React.FC = () => {
             <button 
               onClick={() => navigate(-1)} 
               className="w-9 h-9 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
-              aria-label="Voltar"
+              aria-label={t('weight.back')}
             >
               <ArrowLeft size={18} className="text-gray-700" />
             </button>
             
             <div className="flex-1 min-w-0">
               <h1 className="text-lg font-semibold text-gray-900 truncate">
-                Controle de Peso
+                {t('weight.page.title')}
               </h1>
             </div>
 
@@ -417,7 +417,7 @@ const PesoRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <Plus size={16} />
-                Registrar
+                {t('weight.tabs.register')}
               </div>
             </button>
             
@@ -431,7 +431,7 @@ const PesoRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <BarChart3 size={16} />
-                Análise
+                {t('weight.tabs.analysis')}
               </div>
             </button>
             
@@ -445,7 +445,7 @@ const PesoRegistroPage: React.FC = () => {
             >
               <div className="flex items-center justify-center gap-2">
                 <History size={16} />
-                Histórico
+                {t('weight.tabs.history')}
               </div>
             </button>
           </div>

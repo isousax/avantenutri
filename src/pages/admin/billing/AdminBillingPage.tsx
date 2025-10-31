@@ -4,7 +4,7 @@ import Card from '../../../components/ui/Card';
 import Button from '../../../components/ui/Button';
 import { useAuth } from '../../../contexts';
 import { API } from '../../../config/api';
-import { useI18n } from '../../../i18n';
+import { useI18n } from '../../../i18n/utils';
 import { SEO } from '../../../components/comum/SEO';
 import Skeleton from '../../../components/ui/Skeleton';
 import { useToast } from '../../../components/ui/ToastProvider';

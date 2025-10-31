@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import Button from "../ui/Button";
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 
 export default function Faq() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { API } from '../../config/api';
 import { useAuth } from '../../contexts';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 
 interface LogItem { id:number; override_id:string|null; user_id:string; action:string; snapshot:any; created_by:string|null; created_at:string; }
 

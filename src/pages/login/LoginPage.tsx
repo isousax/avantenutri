@@ -6,7 +6,7 @@ import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import LogoCroped from "../../components/ui/LogoCroped";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 
 const LoginPage: React.FC = () => {
   const { login, user } = useAuth();

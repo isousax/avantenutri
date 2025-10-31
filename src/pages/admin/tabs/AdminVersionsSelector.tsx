@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { formatDate as fmtDate } from "../../../i18n";
+import { formatDate as fmtDate } from "../../../i18n/utils";
 import StructuredDietView from "../../../components/diet/StructuredDietView";
 import { copyDietJson } from "../../../utils/structuredDietExport";
 import type { StructuredDietData } from "../../../types/structuredDiet";

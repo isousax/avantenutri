@@ -1,7 +1,7 @@
 import React from 'react';
 import Button from '../ui/Button';
 import { useDietPlans } from '../../hooks/useDietPlans';
-import { useI18n } from '../../i18n';
+import { useI18n } from '../../i18n/utils';
 import DietPlanCardInternal from './DietPlanCardInternal';
 
 interface Props {

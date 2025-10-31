@@ -5,7 +5,7 @@ import Button from '../components/ui/Button';
 import { SEO } from '../components/comum/SEO';
 import Skeleton from '../components/ui/Skeleton';
 import { useToast } from '../components/ui/ToastProvider';
-import { useI18n } from '../i18n';
+import { useI18n } from '../i18n/utils';
 import { API } from '../config/api';
 import type { TranslationKey } from '../types/i18n.d';
 import { formatYMDLocal } from '../utils/date';

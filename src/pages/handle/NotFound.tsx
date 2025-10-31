@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import Button from "../../components/ui/Button";
 import Card from "../../components/ui/Card";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 
 const NotFound: React.FC = () => {
   const { t } = useI18n();

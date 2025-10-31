@@ -4,7 +4,7 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { API } from "../../config/api";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n, formatDate as fmtDate } from "../../i18n";
+import { useI18n, formatDate as fmtDate } from "../../i18n/utils";
 import { useToast } from "../../components/ui/ToastProvider";
 import { useAuthenticatedFetch } from "../../hooks/useApi";
 import {

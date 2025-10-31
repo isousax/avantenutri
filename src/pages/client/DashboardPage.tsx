@@ -20,9 +20,9 @@ import { API as Routes } from "../../config/api";
 import Perfil from "../../components/dashboard/Perfil";
 import Consultas from "../../components/dashboard/Consultas";
 import Suporte from "../../components/dashboard/Suporte";
-import { useConsultations } from "../../hooks/useConsultations"; // integração real de consultas
+import { useConsultations } from "../../hooks/useConsultations";
 import Sparkline from "../../components/ui/Sparkline";
-import { useI18n, formatDate as fmtDate } from "../../i18n";
+import { useI18n, formatDate as fmtDate } from "../../i18n/utils";
 import type { Locale } from "../../i18n";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { QuestionnaireBanner } from "../../components/dashboard/QuestionnaireBanner";
@@ -85,8 +85,7 @@ const DietPlanCard: React.FC<{
   downloading,
 }) => {
   const isCurrent = diet.status === "active";
-
-  // Detectar formato da dieta (não exibido por enquanto)
+  const { t } = useI18n();
 
   return (
     <Card
@@ -106,7 +105,7 @@ const DietPlanCard: React.FC<{
             </h3>
           </div>
           <p className="text-sm text-gray-600 line-clamp-2 leading-relaxed truncate break-words">
-            {diet.description || "Sem descrição"}
+            {diet.description || t('dashboard.diet.noDescription')}
           </p>
         </div>
         <div className="flex items-start gap-2 ml-3">
@@ -116,7 +115,7 @@ const DietPlanCard: React.FC<{
                 ? "bg-gray-100/50 text-gray-400 cursor-wait shadow-inner"
                 : "text-gray-600 hover:bg-gray-50/80 hover:text-gray-800 hover:shadow-md hover:border-gray-300/80 shadow-sm"
             }`}
-            title="Baixar versão mais recente"
+            title={t('dashboard.diet.downloadLatest')}
             onClick={(e) => {
               e.stopPropagation();
               onDownloadLatest(diet.id);
@@ -135,7 +134,7 @@ const DietPlanCard: React.FC<{
       <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
         <div className="space-y-1">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            Início
+            {t('dashboard.diet.start')}
           </span>
           <p className="font-semibold text-gray-900">
             {diet.start_date
@@ -145,7 +144,7 @@ const DietPlanCard: React.FC<{
         </div>
         <div className="space-y-1">
           <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
-            {isCurrent ? "Término" : "Fim"}
+            {isCurrent ? t('dashboard.diet.termination') : t('dashboard.diet.end')}
           </span>
           <p className="font-semibold text-gray-900">
             {diet.end_date
@@ -169,14 +168,14 @@ const DietPlanCard: React.FC<{
           className="flex-1 text-sm py-3 rounded-xl font-medium bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 border-0 text-white shadow-lg shadow-green-500/25"
           onClick={() => onView(diet.id)}
         >
-          Ver Detalhes
+          {t('dashboard.diet.viewDetails')}
         </Button>
         {canEdit && (
           <Button
             variant="secondary"
             className="px-4 py-3 min-w-[52px] rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm"
             onClick={() => onRevise && onRevise(diet.id)}
-            title="Nova Revisão"
+            title={t('dashboard.diet.newRevision')}
           >
             <svg
               className="w-5 h-5 text-gray-600"
@@ -214,12 +213,13 @@ const BottomNav: React.FC<{
   hasTodayConsultation?: boolean;
 }> = ({ activeTab, onTabChange, hasTodayConsultation }) => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const tabs: BottomTab[] = [
-    { id: "overview", label: "Visão", icon: "📊" },
-    { id: "dietas", label: "Dietas", icon: "🍽️" },
-    { id: "consultas", label: "Consultas", icon: "📅" },
-    { id: "perfil", label: "Perfil", icon: "👤" },
-    { id: "suporte", label: "Suporte", icon: "💬" },
+    { id: "overview", label: t('dashboard.overview'), icon: "📊" },
+    { id: "dietas", label: t('dashboard.diet.myDiets'), icon: "🍽️" },
+    { id: "consultas", label: t('dashboard.nav.consultations'), icon: "📅" },
+    { id: "perfil", label: t('dashboard.nav.profile'), icon: "👤" },
+    { id: "suporte", label: t('dashboard.nav.support'), icon: "💬" },
   ];
 
   return (
@@ -264,6 +264,7 @@ const BottomNav: React.FC<{
 const WeightSection: React.FC<{
   heightCm?: number;
 }> = ({ heightCm }) => {
+  const { t } = useI18n();
   // Substituído para novo hook baseado em React Query (cache compartilhado entre páginas)
   const {
     latest: latestWeight,
@@ -300,16 +301,16 @@ const WeightSection: React.FC<{
 
   const bmiClass = bmi
     ? bmi < 18.5
-      ? "Baixo peso"
+      ? t('dashboard.bmi.underweight')
       : bmi < 25
-      ? "Normal"
+      ? t('dashboard.bmi.normal')
       : bmi < 30
-      ? "Sobrepeso"
+      ? t('dashboard.bmi.overweight')
       : bmi < 35
-      ? "Obesidade I"
+      ? t('dashboard.bmi.obesityI')
       : bmi < 40
-      ? "Obesidade II"
-      : "Obesidade III"
+      ? t('dashboard.bmi.obesityII')
+      : t('dashboard.bmi.obesityIII')
     : undefined;
 
   // Cor da variação baseada no objetivo de peso do usuário
@@ -337,7 +338,7 @@ const WeightSection: React.FC<{
               <WeightIcon />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Peso Atual</h3>
+              <h3 className="font-semibold text-gray-900">{t('dashboard.weight.current')}</h3>
               <p className="text-2xl font-bold text-gray-900">
                 {latestWeight?.weight_kg
                   ? `${latestWeight.weight_kg.toFixed(1)} kg`
@@ -412,7 +413,7 @@ const WeightSection: React.FC<{
                   </svg>
                 </button>
                 <span className="font-medium text-sm sm:text-base">
-                  {goal != null ? `${goal.toFixed(1)} kg` : "Não definida"}
+                  {goal != null ? `${goal.toFixed(1)} kg` : t('dashboard.goal.notDefined')}
                 </span>
               </div>
             )}
@@ -616,7 +617,7 @@ const DashboardPage: React.FC = () => {
       // Garante dados atualizados do plano (includeData=1 já é padrão)
       await qc.invalidateQueries({ queryKey: ["diet-plan-detail", planId] });
       const d = await getDetail(planId);
-      if (!d || !d.versions?.length) throw new Error("Plano sem versões");
+      if (!d || !d.versions?.length) throw new Error(t('dashboard.diet.noVersions'));
       const v = d.versions[d.versions.length - 1];
 
       // Se for estruturada, gerar PDF no cliente com dados dinâmicos
@@ -704,7 +705,7 @@ const DashboardPage: React.FC = () => {
           );
           const isInfantil =
             qCategory === "infantil" ||
-            qCategory === "criança" ||
+            qCategory === t('dashboard.user.child') ||
             qCategory === "crianca" ||
             (qCategory === "" && hasChildKeys);
 
@@ -785,7 +786,7 @@ const DashboardPage: React.FC = () => {
             ? pickString(
                 qAnswers,
                 "nome_crianca",
-                "nome da criança",
+                t('dashboard.user.childName'),
                 "nome_da_crianca",
                 "crianca_nome"
               )
@@ -798,10 +799,10 @@ const DashboardPage: React.FC = () => {
             ),
             title: `${d.name} - v${v.version_number}`,
             showAlternatives: true,
-            headerText: "Plano Nutricional Personalizado",
-            footerText: "Avante Nutri - Nutrindo hábitos, transformando vidas",
+            headerText: t('dashboard.pdf.headerText'),
+            footerText: t('dashboard.pdf.footer'),
             showPageNumbers: true,
-            watermarkText: "Avante Nutri",
+            watermarkText: t('dashboard.pdf.watermarkText'),
             watermarkRepeat: true,
             watermarkOpacity: 0.05,
             cover: {
@@ -810,7 +811,7 @@ const DashboardPage: React.FC = () => {
               showTotals: true,
               notes:
                 v.notes ??
-                "Seguir o plano alimentar conforme orientado, com boa hidratação e prática regular de exercícios.",
+                t('dashboard.pdf.instructions'),
               date: new Date(),
               clientInfo: {
                 name:
@@ -827,30 +828,30 @@ const DashboardPage: React.FC = () => {
               },
               showMacronutrientChart: true,
               signature: {
-                name: "Avante Nutri",
-                role: "Nutricionista",
+                name: t('dashboard.pdf.nutritionistName'),
+                role: t('dashboard.pdf.nutritionistRole'),
                 license: "CRN-PE 43669",
               },
             },
             company: {
               logoUrl: "/logoName.png",
               logoheader: "/logoHeader.png",
-              name: "Avante Nutri",
+              name: t('dashboard.pdf.nutritionistName'),
               contact: "souzacawanne@gmail.com",
-              address: "Online",
+              address: t('dashboard.address.online'),
             },
           });
         } catch (err) {
           console.error(err);
-          alert("Falha ao gerar PDF");
+          alert(t('dashboard.alert.pdfGenerationFailed'));
         }
         return;
       }
 
-      alert("Formato de dieta não suportado para download");
+      alert(t('dashboard.alert.unsupportedFormat'));
     } catch (e) {
       console.error(e);
-      alert("Não foi possível baixar a dieta");
+      alert(t('dashboard.alert.downloadFailed'));
     } finally {
       setDownloadingMap((m) => ({ ...m, [planId]: false }));
     }
@@ -957,8 +958,8 @@ const DashboardPage: React.FC = () => {
         </svg>
       ),
       iconComponent: CalendarIcon,
-      label: "Agendar Consulta",
-      description: "Marque nova consulta",
+      label: t('dashboard.activity.schedule.label'),
+      description: t('dashboard.activity.schedule.description'),
       onClick: () => navigate("/agendar-consulta"),
       color: "purple",
     },
@@ -979,8 +980,8 @@ const DashboardPage: React.FC = () => {
         </svg>
       ),
       iconComponent: WeightIcon,
-      label: "Registrar Peso",
-      description: "Atualize seu peso atual",
+      label: t('dashboard.activity.weight.label'),
+      description: t('dashboard.activity.weight.description'),
       onClick: () => navigate("/registro-peso"),
       color: "green",
     },
@@ -1001,8 +1002,8 @@ const DashboardPage: React.FC = () => {
         </svg>
       ),
       iconComponent: MealIcon,
-      label: "Registrar Refeição",
-      description: "Adicione o que comeu hoje",
+      label: t('dashboard.activity.meal.label'),
+      description: t('dashboard.activity.meal.description'),
       onClick: () => navigate("/registro-refeicao"),
       color: "blue",
     },
@@ -1023,8 +1024,8 @@ const DashboardPage: React.FC = () => {
         </svg>
       ),
       iconComponent: WaterIcon,
-      label: "Registrar Água",
-      description: "Controle sua hidratação",
+      label: t('dashboard.activity.water.label'),
+      description: t('dashboard.activity.water.description'),
       onClick: () => navigate("/registro-agua"),
       color: "cyan",
     },
@@ -1045,8 +1046,8 @@ const DashboardPage: React.FC = () => {
         </svg>
       ),
       iconComponent: BillingIcon,
-      label: "Extrato",
-      description: "Histórico de pagamentos",
+      label: t('dashboard.billing.extract'),
+      description: t('dashboard.activity.billing.description'),
       onClick: () => navigate("/billing/historico"),
       color: "amber",
     },
@@ -1084,7 +1085,7 @@ const DashboardPage: React.FC = () => {
                 <LogoCroped />
               </div>
               <div className="pl-4">
-                <p className="text-xs text-gray-500 mt-1">Área do Paciente</p>
+                <p className="text-xs text-gray-500 mt-1">{t('dashboard.area.patient')}</p>
               </div>
             </div>
           </div>
@@ -1104,11 +1105,11 @@ const DashboardPage: React.FC = () => {
               />
               <div className="ml-4 min-w-0 flex-1">
                 <h3 className="font-bold text-gray-900 text-base truncate">
-                  {user?.display_name || user?.full_name || "Usuário"}
+                  {user?.display_name || user?.full_name || t('dashboard.user.defaultName')}
                 </h3>
                 <p className="text-green-600 font-semibold text-xs truncate flex items-center gap-1">
                   <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                  Ativo
+                  {t('dashboard.user.status.active')}
                 </p>
               </div>
             </div>
@@ -1117,24 +1118,24 @@ const DashboardPage: React.FC = () => {
           {/* Navigation */}
           <nav className="flex-1 p-4 overflow-y-auto">
             {[
-              { id: "overview", label: "Visão Geral", icon: "📊" },
-              { id: "perfil", label: "Meu Perfil", icon: "👤" },
-              { id: "consultas", label: "Consultas", icon: "📅" },
-              { id: "dietas", label: "Minhas Dietas", icon: "🍽️" },
+              { id: "overview", label: t('dashboard.overviewFull'), icon: "📊" },
+              { id: "perfil", label: t('dashboard.profile.my'), icon: "👤" },
+              { id: "consultas", label: t('dashboard.nav.consultations'), icon: "📅" },
+              { id: "dietas", label: t('dashboard.myDiets'), icon: "🍽️" },
               {
                 id: "exercicios",
-                label: "Exercícios",
+                label: t('dashboard.exercises'),
                 icon: "💪",
                 navigate: "/exercicios",
               },
-              { id: "questionario", label: "Questionário", icon: "📝" },
+              { id: "questionario", label: t('dashboard.questionnaire'), icon: "📝" },
               {
                 id: "notificacoes",
-                label: "Notificações",
+                label: t('dashboard.notifications'),
                 icon: "🔔",
                 navigate: "/notificacoes",
               },
-              { id: "suporte", label: "Suporte", icon: "💬" },
+              { id: "suporte", label: t('dashboard.nav.support'), icon: "💬" },
             ].map((item) => (
               <button
                 key={item.id}
@@ -1191,7 +1192,7 @@ const DashboardPage: React.FC = () => {
                   d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
                 />
               </svg>
-              Sair
+              {t('dashboard.logout')}
             </Button>
           </div>
         </div>
@@ -1224,10 +1225,10 @@ const DashboardPage: React.FC = () => {
                 </button>
                 <div className="min-w-0">
                   <h1 className="text-xl font-bold text-gray-900 truncate capitalize">
-                    {activeTab === "overview" && "Visão Geral"}
-                    {activeTab === "dietas" && "Minhas Dietas"}
-                    {activeTab === "consultas" && "Minhas Consultas"}
-                    {activeTab === "perfil" && "Meu Perfil"}
+                    {activeTab === "overview" && t('dashboard.overviewFull')}
+                    {activeTab === "dietas" && t('dashboard.diet.myDiets')}
+                    {activeTab === "consultas" && t('dashboard.consultations.myConsultations')}
+                    {activeTab === "perfil" && t('dashboard.profile.my')}
                     {activeTab === "suporte" && "Suporte"}
                   </h1>
                 </div>
@@ -1266,7 +1267,7 @@ const DashboardPage: React.FC = () => {
                         />
                       </svg>
                     </div>
-                    Ações Rápidas
+                    {t('dashboard.quickActions')}
                   </h2>
                 </div>
 
@@ -1436,7 +1437,7 @@ const DashboardPage: React.FC = () => {
                     return (
                       <ErrorBoundary>
                         <StatsCard
-                          title="Hidratação"
+                          title={t('dashboard.hydration.title')}
                           valuePrimary={
                             <>
                               {waterToday}{" "}
@@ -1463,7 +1464,7 @@ const DashboardPage: React.FC = () => {
                 >
                   <ErrorBoundary>
                     <StatsCard
-                      title="Adesão à Dieta"
+                      title={t('dashboard.dietAdherence.title')}
                       value={adherence ? `${adherence.percentage}%` : "-"}
                       description={
                         adherence ? (
@@ -1501,7 +1502,7 @@ const DashboardPage: React.FC = () => {
                             >
                               <span
                                 role="img"
-                                aria-label="Fórmula de cálculo"
+                                aria-label={t('dashboard.calculation.formula')}
                                 className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-100 text-purple-700 text-[10px] font-bold border border-purple-200 cursor-help hover:bg-purple-200"
                               >
                                 ?
@@ -1509,7 +1510,7 @@ const DashboardPage: React.FC = () => {
                             </Tooltip>
                           </span>
                         ) : (
-                          "Registre suas refeições"
+                          <span>{t('dashboard.registerMeals')}</span>
                         )
                       }
                       icon="stats"
@@ -1535,13 +1536,13 @@ const DashboardPage: React.FC = () => {
                   <Card className="p-5 bg-gradient-to-br from-white to-gray-50/50 border-0 rounded-2xl min-w-0 overflow-hidden">
                     <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                       <span>🎯</span>
-                      Progresso dos Objetivos
+                      {t('dashboard.goals.progress')}
                     </h3>
                     <div className="space-y-4">
                       <Progress
                         current={latestWeight?.weight_kg || 0}
                         target={goal || 70}
-                        label="Meta de Peso"
+                        label={t('dashboard.goals.weight')}
                         unit="kg"
                         size="sm"
                         gradient="from-green-500 to-emerald-600"
@@ -1549,7 +1550,7 @@ const DashboardPage: React.FC = () => {
                       <Progress
                         current={caloriesToday}
                         target={mealGoals?.calories || 2000}
-                        label="Meta de Calorias"
+                        label={t('dashboard.goals.calories')}
                         unit="kcal"
                         size="sm"
                         gradient="from-amber-500 to-orange-600"
@@ -1557,7 +1558,7 @@ const DashboardPage: React.FC = () => {
                       <Progress
                         current={waterToday}
                         target={waterTargetMl || 2000}
-                        label="Hidratação"
+                        label={t('dashboard.goals.hydration')}
                         unit="ml"
                         size="sm"
                         gradient="from-blue-500 to-cyan-600"
@@ -1565,7 +1566,7 @@ const DashboardPage: React.FC = () => {
                       <Progress
                         current={adherence?.percentage || 0}
                         target={100}
-                        label="Adesão à Dieta"
+                        label={t('dashboard.goals.adherence')}
                         unit="%"
                         size="sm"
                         gradient="from-purple-500 to-indigo-600"
@@ -1578,14 +1579,14 @@ const DashboardPage: React.FC = () => {
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                       <span>🍽️</span>
-                      Dietas Recentes
+                      {t('dashboard.diet.recentDiets')}
                     </h3>
                     <Button
                       variant="secondary"
                       onClick={() => setActiveTab("dietas")}
                       className="text-sm rounded-xl border-gray-200 hover:border-gray-300 bg-white/80 backdrop-blur-sm font-semibold"
                     >
-                      Ver Todas
+                      {t('dashboard.diet.viewAll')}
                     </Button>
                   </div>
                   <div className="space-y-4">
@@ -1633,17 +1634,17 @@ const DashboardPage: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
                     <span>📅</span>
-                    Próximas Consultas
+                    {t('dashboard.consultations.upcoming')}
                   </h3>
                 </div>
                 {consultationsLoading && (
                   <div className="text-sm text-gray-500 py-6 text-center">
-                    Carregando...
+                    {t('dashboard.loading')}
                   </div>
                 )}
                 {consultationsError && !consultationsLoading && (
                   <div className="text-sm text-red-600 py-4 text-center bg-red-50 rounded-lg border border-red-200">
-                    Erro ao carregar consultas
+                    {t('dashboard.error.consultations')}
                   </div>
                 )}
                 {!consultationsLoading &&
@@ -1651,13 +1652,13 @@ const DashboardPage: React.FC = () => {
                   upcomingAppointments.length === 0 && (
                     <div className="py-8 text-center bg-white/60 rounded-xl border border-dashed border-gray-300">
                       <p className="text-sm text-gray-600 font-medium">
-                        Nenhuma consulta futura
+                        {t('dashboard.consultations.none')}
                       </p>
                       <button
                         onClick={() => navigate("/agendar-consulta")}
                         className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-green-600 hover:text-green-700"
                       >
-                        Agendar agora
+                        {t('dashboard.consultations.scheduleNow')}
                         <svg
                           className="w-3 h-3"
                           fill="none"
@@ -1771,8 +1772,7 @@ const DashboardPage: React.FC = () => {
                   ))}
                 {!creating && plans.length === 0 && (
                   <div className="col-span-full text-sm text-gray-500 text-center py-8 bg-gray-50 rounded-lg">
-                    Nenhum plano de dieta ainda. Agende uma consulta para
-                    receber sua primeira dieta!
+                    {t('dashboard.diet.noDiets')}
                   </div>
                 )}
               </div>
@@ -1795,10 +1795,10 @@ const DashboardPage: React.FC = () => {
         {canEditDiets && showCreateModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-              <h2 className="text-lg font-semibold">Criar Nova Dieta</h2>
+              <h2 className="text-lg font-semibold">{t('dashboard.diet.createNew')}</h2>
               <form onSubmit={handleCreate} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Nome</label>
+                  <label className="block text-sm font-medium mb-1">{t('common.name')}</label>
                   <input
                     value={creatingName}
                     onChange={(e) => setCreatingName(e.target.value)}
@@ -1808,7 +1808,7 @@ const DashboardPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    Descrição
+                    {t('common.description')}
                   </label>
                   <textarea
                     value={creatingDesc}
@@ -1826,7 +1826,7 @@ const DashboardPage: React.FC = () => {
                       checked={planFormat === "structured"}
                       onChange={() => setPlanFormat("structured")}
                     />{" "}
-                    Estruturado
+                    {t('common.structured')}
                   </label>
                   <label className="flex items-center gap-1 cursor-pointer">
                     <input
@@ -1843,7 +1843,7 @@ const DashboardPage: React.FC = () => {
                 {planFormat === "pdf" && (
                   <div className="space-y-2 text-sm">
                     <label className="block text-sm font-medium mb-1">
-                      Arquivo PDF
+                      {t('common.file.pdf')}
                     </label>
                     <input
                       type="file"
@@ -1856,7 +1856,7 @@ const DashboardPage: React.FC = () => {
                           return;
                         }
                         if (f.size > 5 * 1024 * 1024) {
-                          alert("Limite de 5MB");
+                          alert(t('dashboard.file.limitExceeded'));
                           return;
                         }
                         setPdfName(f.name);
@@ -1871,7 +1871,7 @@ const DashboardPage: React.FC = () => {
                     />
                     {pdfName && (
                       <p className="text-xs text-gray-600">
-                        Selecionado: {pdfName}
+                        {t('common.selected')}: {pdfName}
                       </p>
                     )}
                   </div>
@@ -1880,7 +1880,7 @@ const DashboardPage: React.FC = () => {
                 {planFormat === "structured" && (
                   <div className="mt-2 border rounded p-2 bg-white/60">
                     <h5 className="text-xs font-semibold mb-2">
-                      Montar Dieta Estruturada
+                      {t('dashboard.diet.buildStructured')}
                     </h5>
                     <p className="text-[11px] text-gray-600 mb-2">
                       Adicione alimentos por refeição. Totais são calculados
@@ -1900,10 +1900,10 @@ const DashboardPage: React.FC = () => {
                     onClick={() => setShowCreateModal(false)}
                     className="text-sm"
                   >
-                    Cancelar
+                    {t('common.cancel')}
                   </Button>
                   <Button type="submit" disabled={creating} className="text-sm">
-                    {creating ? "Criando..." : "Criar"}
+                    {creating ? t('common.creating') : t('common.create')}
                   </Button>
                 </div>
               </form>
@@ -1916,7 +1916,7 @@ const DashboardPage: React.FC = () => {
           <div className="fixed inset-0 z-50 flex items-start md:items-center justify-center bg-black/50 p-3 overflow-y-auto">
             <div className="bg-white rounded-xl shadow-lg w-full max-w-3xl p-2 space-y-4 max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center p-4">
-                <h2 className="text-lg font-semibold">Plano de Dieta</h2>
+                <h2 className="text-lg font-semibold">{t('dashboard.diet.plan')}</h2>
                 <button
                   onClick={() => {
                     if (selectedPlanId) unlockDetail(selectedPlanId);
@@ -1931,7 +1931,7 @@ const DashboardPage: React.FC = () => {
               {/* Controles removidos: sempre buscamos com includeData=1 */}
               {detailLoading && (
                 <div className="text-sm text-gray-500 text-center py-4">
-                  Carregando detalhes...
+                  {t('dashboard.details.loading')}
                 </div>
               )}
               {!detailLoading && selectedPlanId && (

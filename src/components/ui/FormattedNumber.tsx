@@ -1,5 +1,5 @@
 import React from 'react';
-import { useI18n, formatNumber } from '../../i18n';
+import { useI18n, formatNumber } from '../../i18n/utils';
 
 interface Props {
   value: number | null | undefined;

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SEO } from '../../../components/comum/SEO';
 import { useAuth } from '../../../contexts/useAuth';
-import { useI18n } from '../../../i18n';
+import { useI18n } from '../../../i18n/utils';
 import { API } from '../../../config/api';
 
 export default function BillingPendingPage() {

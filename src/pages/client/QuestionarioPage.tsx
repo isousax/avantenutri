@@ -4,7 +4,7 @@ import Card from "../../components/ui/Card";
 import Button from "../../components/ui/Button";
 import { useQuestionario } from "../../contexts/useQuestionario";
 import { SEO } from "../../components/comum/SEO";
-import { useI18n } from "../../i18n";
+import { useI18n } from "../../i18n/utils";
 import { useSaveQuestionnaire } from "../../hooks/useQuestionnaire";
 import { useToast } from "../../components/ui/ToastProvider";
 import {
@@ -45,49 +45,7 @@ interface Categoria {
   gradient: string;
 }
 
-// Categorias com ícones modernos
-const categorias: Categoria[] = [
-  {
-    label: "Nutrição Infantil",
-    value: "infantil",
-    icon: <Baby size={24} />,
-    description: "Para crianças de 0 a 12 anos",
-    color: "from-blue-50 to-blue-100",
-    borderColor: "border-blue-200",
-    activeColor: "border-blue-500 bg-blue-50",
-    gradient: "from-blue-500 to-cyan-500",
-  },
-  {
-    label: "Nutrição na Gestação",
-    value: "gestante",
-    icon: <Heart size={24} />,
-    description: "Acompanhamento pré e pós-parto",
-    color: "from-pink-50 to-pink-100",
-    borderColor: "border-pink-200",
-    activeColor: "border-pink-500 bg-pink-50",
-    gradient: "from-pink-500 to-rose-500",
-  },
-  {
-    label: "Nutrição Adulto/Idoso",
-    value: "adulto",
-    icon: <User size={24} />,
-    description: "Para adultos e melhor idade",
-    color: "from-green-50 to-green-100",
-    borderColor: "border-green-200",
-    activeColor: "border-green-500 bg-green-50",
-    gradient: "from-green-500 to-emerald-500",
-  },
-  {
-    label: "Nutrição Esportiva",
-    value: "esportiva",
-    icon: <Activity size={24} />,
-    description: "Otimização de performance",
-    color: "from-orange-50 to-orange-100",
-    borderColor: "border-orange-200",
-    activeColor: "border-orange-500 bg-orange-50",
-    gradient: "from-orange-500 to-red-500",
-  },
-];
+// Note: Categorias are now dynamically translated using categoriasT
 
 // Perguntas por categoria (mantidas iguais)
 const perguntasPorCategoria: Record<CategoriaType, Pergunta[]> = {
@@ -311,6 +269,50 @@ const QuestionarioPage: React.FC = () => {
   const saveQuestionnaire = useSaveQuestionnaire();
   const { push } = useToast();
 
+  // Categorias traduzidas
+  const categoriasT: Categoria[] = [
+    {
+      label: t('questionnaire.categories.childNutrition'),
+      value: "infantil",
+      icon: <Baby size={24} />,
+      description: t('questionnaire.categories.childDesc'),
+      color: "from-blue-50 to-blue-100",
+      borderColor: "border-blue-200",
+      activeColor: "border-blue-500 bg-blue-50",
+      gradient: "from-blue-500 to-cyan-500",
+    },
+    {
+      label: t('questionnaire.categories.pregnancyNutrition'),
+      value: "gestante",
+      icon: <Heart size={24} />,
+      description: t('questionnaire.categories.pregnancyDesc'),
+      color: "from-pink-50 to-pink-100",
+      borderColor: "border-pink-200",
+      activeColor: "border-pink-500 bg-pink-50",
+      gradient: "from-pink-500 to-rose-500",
+    },
+    {
+      label: t('questionnaire.categories.adultNutrition'),
+      value: "adulto",
+      icon: <User size={24} />,
+      description: t('questionnaire.categories.adultDesc'),
+      color: "from-green-50 to-green-100",
+      borderColor: "border-green-200",
+      activeColor: "border-green-500 bg-green-50",
+      gradient: "from-green-500 to-emerald-500",
+    },
+    {
+      label: t('questionnaire.categories.sportsNutrition'),
+      value: "esportiva",
+      icon: <Activity size={24} />,
+      description: t('questionnaire.categories.sportsDesc'),
+      color: "from-orange-50 to-orange-100",
+      borderColor: "border-orange-200",
+      activeColor: "border-orange-500 bg-orange-50",
+      gradient: "from-orange-500 to-red-500",
+    },
+  ];
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, [step]);
@@ -324,7 +326,7 @@ const QuestionarioPage: React.FC = () => {
       const perguntas = perguntasPorCategoria[categoria as CategoriaType];
       perguntas.forEach((perguntaObj: Pergunta) => {
         if (!respostas[perguntaObj.id]?.trim()) {
-          novosErros[perguntaObj.id] = "Campo obrigatório";
+          novosErros[perguntaObj.id] = t('questionnaire.requiredField');
         }
       });
     }
@@ -420,7 +422,7 @@ const QuestionarioPage: React.FC = () => {
                 {pergunta.pergunta}
               </h2>
               <p className="text-gray-600 text-[11px] mt-1 flex items-center justify-start">
-                Pergunta {currentQuestionIndex + 1} de{" "}
+                {t('questionnaire.question')} {currentQuestionIndex + 1} {t('questionnaire.of')}{" "}
                 {perguntasPorCategoria[categoria as CategoriaType].length}
               </p>
             </div>
@@ -447,7 +449,7 @@ const QuestionarioPage: React.FC = () => {
               className="w-full px-4 py-4 border-2 rounded-xl text-lg flex pr-10 bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20"
               value={respostas[pergunta.id] || ""}
               onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
-              placeholder={`Digite ${pergunta.pergunta.toLowerCase()}`}
+              placeholder={`${t('questionnaire.typeHere')} ${pergunta.pergunta.toLowerCase()}`}
               autoFocus
             />
           )}
@@ -458,7 +460,7 @@ const QuestionarioPage: React.FC = () => {
               className="w-full px-4 py-4 border-2 rounded-xl text-lg flex pr-10 bg-background ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium focus-visible:outline-none focus-visible:ring-0 focus-visible:ring-ring focus-visible:ring-offset-0 disabled:cursor-not-allowed disabled:opacity-50 border-gray-300 placeholder:text-gray-400 focus:border-green-800 focus:ring-green-700/20 text-center"
               value={respostas[pergunta.id] || ""}
               onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
-              placeholder={`Digite ${pergunta.pergunta.toLowerCase()}`}
+              placeholder={`${t('questionnaire.typeHere')} ${pergunta.pergunta.toLowerCase()}`}
               autoFocus
             />
           )}
@@ -471,7 +473,7 @@ const QuestionarioPage: React.FC = () => {
                 onChange={(e) => handleInputChange(pergunta.id, e.target.value)}
                 autoFocus
               >
-                <option value="">Selecione uma opção</option>
+                <option value="">{t('questionnaire.selectOption')}</option>
                 {pergunta.opcoes?.map((o: string, i: number) => (
                   <option key={i} value={o}>
                     {o}
@@ -493,7 +495,7 @@ const QuestionarioPage: React.FC = () => {
                       )
                     }
                     placeholder={
-                      pergunta.placeholderExt || "Por favor, especifique"
+                      pergunta.placeholderExt || t('questionnaire.pleaseSpecify')
                     }
                     autoFocus
                   />
@@ -526,8 +528,8 @@ const QuestionarioPage: React.FC = () => {
             <Star size={20} className="text-blue-500 flex-shrink-0" />
             <p className="text-blue-700 text-xs">
               {currentQuestionIndex === 0
-                ? "Ótimo começo! Suas informações nos ajudarão a personalizar sua experiência."
-                : "Continue assim! Isso nos permite criar uma experiência feita sob medida para você."}
+                ? t('questionnaire.motivation.start')
+                : t('questionnaire.motivation.continue')}
             </p>
           </div>
         </div>
@@ -543,15 +545,15 @@ const QuestionarioPage: React.FC = () => {
       <div className="space-y-8">
         <div className="text-center mb-6">
           <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-3">
-            Como podemos te ajudar?
+            {t('questionnaire.howCanWeHelp')}
           </h2>
           <p className="text-gray-600 text-xs sm:text-sm">
-            Escolha a categoria que melhor se adequa às suas necessidades
+            {t('questionnaire.chooseCategory')}
           </p>
         </div>
 
         <div className="grid gap-4 md:gap-6">
-          {categorias.map((cat) => (
+          {categoriasT.map((cat) => (
             <div
               key={cat.value}
               className={`p-6 border-2 rounded-2xl cursor-pointer transition-all duration-300 transform hover:scale-105 group ${
@@ -601,7 +603,7 @@ const QuestionarioPage: React.FC = () => {
               onClick={() => navigate("/dashboard")}
               className="cursor-pointer"
             >
-              Voltar
+              {t('common.back')}
             </span>
           </Button>
           <Button
@@ -609,7 +611,7 @@ const QuestionarioPage: React.FC = () => {
             className="flex-1 py-4 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 border-0 text-white shadow-lg shadow-green-500/25 flex items-center justify-center gap-2"
             disabled={!categoria}
           >
-            Continuar
+            {t('questionnaire.continue')}
             <ChevronRight size={20} />
           </Button>
         </div>
@@ -629,7 +631,7 @@ const QuestionarioPage: React.FC = () => {
             variant="secondary"
             className="flex-1 border-none p-10 text-sm hover:bg-transparent cursor-default"
           >
-            {currentQuestionIndex === 0 ? "Voltar" : "Anterior"}
+            {currentQuestionIndex === 0 ? t('questionnaire.back') : t('questionnaire.previous')}
           </Button>
           <Button
             onClick={handleNext}
@@ -637,8 +639,8 @@ const QuestionarioPage: React.FC = () => {
             disabled={!respostas[perguntaAtual.id]?.trim()}
           >
             {currentQuestionIndex === perguntas.length - 1
-              ? "Revisar"
-              : "Próxima"}
+              ? t('questionnaire.review')
+              : t('questionnaire.next')}
             <ChevronRight size={20} />
           </Button>
         </div>
@@ -649,7 +651,7 @@ const QuestionarioPage: React.FC = () => {
       ? perguntasPorCategoria[categoria as CategoriaType]
       : [];
 
-    const categoriaSelecionada = categorias.find(
+    const categoriaSelecionada = categoriasT.find(
       (cat) => cat.value === categoria
     );
 
@@ -660,9 +662,9 @@ const QuestionarioPage: React.FC = () => {
             <Award size={32} className="text-white" />
           </div>
           <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-3">
-            Perfeito! ✨
+            {t('questionnaire.perfect')}
           </h2>
-          <p className="text-gray-600 text-sm">Confirme suas informações</p>
+          <p className="text-gray-600 text-sm">{t('questionnaire.confirmInfo')}</p>
         </div>
 
         {/* Card de resumo */}
@@ -707,7 +709,7 @@ const QuestionarioPage: React.FC = () => {
             className="flex-1 py-3 border-gray-300 hover:border-gray-400"
             disabled={saveQuestionnaire.isPending}
           >
-            Editar
+            {t('questionnaire.edit')}
           </Button>
           <Button
             onClick={handleSubmit}
@@ -717,12 +719,12 @@ const QuestionarioPage: React.FC = () => {
             {saveQuestionnaire.isPending ? (
               <>
                 <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                Salvando...
+                {t('questionnaire.saving')}
               </>
             ) : (
               <>
                 <CheckCircle size={20} />
-                Salvar
+                {t('questionnaire.save')}
               </>
             )}
           </Button>
@@ -745,17 +747,17 @@ const QuestionarioPage: React.FC = () => {
             <button
               onClick={() => navigate(-1)}
               className="w-10 h-10 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-xl transition-all duration-200 active:scale-95"
-              aria-label="Voltar"
+              aria-label={t('questionnaire.back')}
             >
               <ArrowLeft size={20} className="text-gray-700" />
             </button>
 
             <div className="flex-1">
               <h1 className="text-lg font-semibold text-gray-900">
-                Questionário de Saúde
+                {t('questionnaire.healthQuestionnaire')}
               </h1>
               <p className="text-xs text-gray-500">
-                Etapa {step + 1} de {etapas.length} • {etapas[step]}
+                {t('questionnaire.step')} {step + 1} {t('questionnaire.of')} {etapas.length} • {etapas[step]}
               </p>
             </div>
           </div>
@@ -772,7 +774,7 @@ const QuestionarioPage: React.FC = () => {
         {!saveQuestionnaire.isPending && step !== 2 && (
           <div className="text-center mt-6">
             <p className="text-xs text-gray-500">
-              Leva menos de 2 minutos • Suas informações estão seguras
+              {t('questionnaire.footer.time')} • {t('questionnaire.footer.secure')}
             </p>
           </div>
         )}
