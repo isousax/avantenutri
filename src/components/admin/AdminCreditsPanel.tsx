@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import SpinnerLoading from '../ui/SpinnerLoading';
 import { useAdminCredits, useAdjustCredits } from '../../hooks/useAdminCredits';
 
 const badge = (num: number, cls: string) => (
@@ -42,7 +43,7 @@ const AdminCreditsPanel: React.FC = () => {
         <input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrar por nome/email" className="border rounded px-2 py-1 text-sm" />
         {adjust.isPending && <span className="text-xs text-amber-600 animate-pulse">Salvando ajuste...</span>}
       </div>
-      {isLoading && <div className="text-sm text-gray-500">Carregando créditos...</div>}
+  {isLoading && <div className="py-12 text-center"><SpinnerLoading text="Carregando créditos..." /></div>}
       {error && (
         <div className="border border-red-200 bg-red-50 rounded p-3">
           <div className="text-sm text-red-600 font-medium">Erro ao carregar dados de créditos</div>

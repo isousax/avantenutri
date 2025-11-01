@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import Card from "../../../components/ui/Card";
 import Button from "../../../components/ui/Button";
 import { useAuth } from "../../../contexts";
@@ -9,6 +9,7 @@ import AdminVersionsSelector from "./AdminVersionsSelector";
 import type { PlanDetail as _PlanDetail } from "./AdminVersionsSelector";
 import type { StructuredDietData } from "../../../types/structuredDiet";
 import { parseSQLDateTimeAssumingUTC } from "../../../utils/date";
+import SpinnerLoading from '../../../components/ui/SpinnerLoading';
 
 interface AdminUser {
   id: string;
@@ -37,7 +38,6 @@ function isStructured(x: unknown): x is StructuredDietData {
   return d.versao === 1 && Array.isArray(d.meals);
 }
 
-// Snapshot flexível do questionário
 interface QuestionnaireSnapshot {
   category?: string | null;
   answers?: Record<string, unknown>;
@@ -47,6 +47,16 @@ interface QuestionnaireSnapshot {
 
 const DietasTab: React.FC = () => {
   const { getAccessToken } = useAuth();
+  
+  // Estados para busca/filtro principal
+  const [searchTerm, setSearchTerm] = useState("");
+  const [users, setUsers] = useState<AdminUser[]>([]);
+  const [usersLoading, setUsersLoading] = useState(false);
+  const [filterUserId, setFilterUserId] = useState("");
+  const [filterUserLabel, setFilterUserLabel] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+
+  // Estados principais
   const [plans, setPlans] = useState<PlanListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,59 +65,80 @@ const DietasTab: React.FC = () => {
   const [creatingName, setCreatingName] = useState("");
   const [creatingDesc, setCreatingDesc] = useState("");
   const [planFormat, setPlanFormat] = useState<"structured">("structured");
-  const [structuredCreateData, setStructuredCreateData] =
-    useState<StructuredDietData | null>(null);
+  const [structuredCreateData, setStructuredCreateData] = useState<StructuredDietData | null>(null);
+  
+  // Estados para busca no modal
   const [targetUserQuery, setTargetUserQuery] = useState("");
   const [targetUserId, setTargetUserId] = useState("");
   const [targetUserLabel, setTargetUserLabel] = useState("");
   const [searchingUsers, setSearchingUsers] = useState(false);
   const [userOptions, setUserOptions] = useState<AdminUser[]>([]);
-  const [filterUserId, setFilterUserId] = useState("");
-  const [filterUserLabel, setFilterUserLabel] = useState("");
+
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detail, setDetail] = useState<PlanDetail | null>(null);
-  const [questionnaire, setQuestionnaire] =
-    useState<QuestionnaireSnapshot | null>(null);
+  const [questionnaire, setQuestionnaire] = useState<QuestionnaireSnapshot | null>(null);
   const [revNotes, setRevNotes] = useState("");
   const [revMode] = useState<"json" | "structured">("structured");
-  const [revStructuredData, setRevStructuredData] =
-    useState<StructuredDietData | null>(null);
+  const [revStructuredData, setRevStructuredData] = useState<StructuredDietData | null>(null);
   const [revPatchJson, setRevPatchJson] = useState("{}");
   const [revising, setRevising] = useState(false);
   const [exportShowAlternatives, setExportShowAlternatives] = useState(true);
-  const [searchFocused, setSearchFocused] = useState(false);
   const [hasLoaded, setHasLoaded] = useState(false);
-  const [showQuestionnairePreview, setShowQuestionnairePreview] =
-    useState(false);
-  const [collapsedGroups, setCollapsedGroups] = useState<
-    Record<string, boolean>
-  >(() => {
-    try {
-      const raw = localStorage.getItem("admin.diets.groupCollapsed");
-      return raw ? JSON.parse(raw) : {};
-    } catch {
-      return {};
-    }
-  });
-  useEffect(() => {
-    try {
-      localStorage.setItem(
-        "admin.diets.groupCollapsed",
-        JSON.stringify(collapsedGroups)
-      );
-    } catch {
-      // ignore persist error
-    }
-  }, [collapsedGroups]);
-  // Validade (criação)
+  const [showQuestionnairePreview, setShowQuestionnairePreview] = useState(false);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
   const [showCreateValidity, setShowCreateValidity] = useState(false);
   const [creatingStartDate, setCreatingStartDate] = useState<string>("");
   const [creatingEndDate, setCreatingEndDate] = useState<string>("");
-  // Validade (revisão)
   const [showRevValidity, setShowRevValidity] = useState(false);
   const [revStartDate, setRevStartDate] = useState<string>("");
   const [revEndDate, setRevEndDate] = useState<string>("");
+
+  // Busca de pacientes para o filtro principal
+  useEffect(() => {
+    let ignore = false;
+    async function load() {
+      setUsersLoading(true);
+      try {
+        const access = await getAccessToken();
+        if (!access) {
+          if (!ignore) setUsers([]);
+          return;
+        }
+        const params = new URLSearchParams({
+          page: "1",
+          pageSize: "20",
+        });
+        if (searchTerm) params.set("q", searchTerm);
+        const r = await fetch(`${API.ADMIN_USERS}?${params.toString()}`, {
+          headers: { authorization: `Bearer ${access}` },
+        });
+        if (!r.ok) throw new Error("fail");
+        const data = await r.json();
+        if (ignore) return;
+        setUsers(data.results || []);
+      } catch {
+        if (!ignore) setUsers([]);
+      } finally {
+        if (!ignore) setUsersLoading(false);
+      }
+    }
+    load();
+    return () => {
+      ignore = true;
+    };
+  }, [searchTerm, getAccessToken]);
+
+  const filteredUsers = useMemo(() => {
+    if (!searchTerm) return users;
+    const s = searchTerm.toLowerCase();
+    return users.filter(
+      (u) =>
+        (u.display_name || "").toLowerCase().includes(s) ||
+        u.email.toLowerCase().includes(s)
+    );
+  }, [users, searchTerm]);
 
   const preventFormSubmitFromBuilder = (e: React.MouseEvent) => {
     const target = e.target as HTMLElement;
@@ -124,28 +155,16 @@ const DietasTab: React.FC = () => {
   useEffect(() => {
     const isModalOpen = showCreate || !!detailId;
     const body = document.body;
-    const html = document.documentElement;
     const prevBodyOverflow = body.style.overflow;
-    const prevHtmlOverflow = html.style.overflow;
-    const prevPaddingRight = body.style.paddingRight;
 
     if (isModalOpen) {
-      const scrollbarWidth = window.innerWidth - html.clientWidth;
       body.style.overflow = "hidden";
-      html.style.overflow = "hidden";
-      if (scrollbarWidth > 0) {
-        body.style.paddingRight = `${scrollbarWidth}px`;
-      }
     } else {
-      body.style.overflow = prevBodyOverflow || "";
-      html.style.overflow = prevHtmlOverflow || "";
-      body.style.paddingRight = prevPaddingRight || "";
+      body.style.overflow = prevBodyOverflow;
     }
 
     return () => {
       body.style.overflow = prevBodyOverflow;
-      html.style.overflow = prevHtmlOverflow;
-      body.style.paddingRight = prevPaddingRight;
     };
   }, [showCreate, detailId]);
 
@@ -179,7 +198,7 @@ const DietasTab: React.FC = () => {
     }
   }, [detailId, detail]);
 
-  // Busca de pacientes (debounced)
+  // Busca de pacientes para o modal
   useEffect(() => {
     if (!targetUserQuery) {
       setUserOptions([]);
@@ -191,9 +210,7 @@ const DietasTab: React.FC = () => {
       try {
         const access = await getAccessToken();
         if (!access) return;
-        const url = `${
-          API.ADMIN_USERS
-        }?page=1&pageSize=6&q=${encodeURIComponent(targetUserQuery)}`;
+        const url = `${API.ADMIN_USERS}?page=1&pageSize=6&q=${encodeURIComponent(targetUserQuery)}`;
         const r = await fetch(url, {
           headers: { authorization: `Bearer ${access}` },
           signal: ctrl.signal,
@@ -226,7 +243,6 @@ const DietasTab: React.FC = () => {
         const data: Record<string, unknown> = (await r
           .json()
           .catch(() => ({}))) as Record<string, unknown>;
-        // Backend retorna direto: { category, answers, created_at, updated_at }
         const cat = (data["category"] as string | undefined) ?? null;
         const answers =
           (data["answers"] as Record<string, unknown> | undefined) || undefined;
@@ -240,7 +256,6 @@ const DietasTab: React.FC = () => {
           created_at: createdAt,
           updated_at: updatedAt,
         });
-        // Nada adicional a derivar: todo conteúdo está em answers
       } catch {
         if (!cancelled) setQuestionnaire(null);
       }
@@ -251,26 +266,24 @@ const DietasTab: React.FC = () => {
     };
   }, [showCreate, targetUserId, getAccessToken]);
 
-  // Carregamento inicial automático (evita exigir clique em "Listar dietas")
+  // Carregamento inicial automático
   useEffect(() => {
     if (hasLoaded) return;
-    if (showCreate || detailId) return; // evita refetch enquanto modal aberto
+    if (showCreate || detailId) return;
     const t = setTimeout(() => {
       void load();
     }, 150);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hasLoaded, showCreate, detailId]);
 
-  // Refetch automático ao alterar filtro de paciente (com debounce)
+  // Refetch automático ao alterar filtro de paciente
   useEffect(() => {
-    if (!hasLoaded) return; // se ainda não carregou, deixa o hook acima cuidar
-    if (showCreate || detailId) return; // não refetcha com modal aberto
+    if (!hasLoaded) return;
+    if (showCreate || detailId) return;
     const t = setTimeout(() => {
       void load();
     }, 350);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterUserId, showCreate, detailId, hasLoaded]);
 
   const load = async () => {
@@ -324,7 +337,6 @@ const DietasTab: React.FC = () => {
       alert("Dieta estruturada vazia.");
       return;
     }
-    // Validação simples de datas
     if (creatingStartDate && creatingEndDate) {
       const sd = new Date(creatingStartDate).getTime();
       const ed = new Date(creatingEndDate).getTime();
@@ -342,7 +354,6 @@ const DietasTab: React.FC = () => {
         planFormat === "structured" && structuredCreateData
           ? structuredCreateData
           : undefined;
-      // Anexar dados do paciente oriundos do questionário (quando disponíveis)
       const dataWithQuestionnaire: StructuredDietData | undefined = dataObj
         ? { ...dataObj, questionnaire: questionnaire || undefined }
         : undefined;
@@ -377,7 +388,7 @@ const DietasTab: React.FC = () => {
       try {
         localStorage.removeItem("structuredDietDraft");
       } catch {
-        // ignore cleanup error
+        console.error("Erro ao limpar rascunho");
       }
       setTargetUserId("");
       setTargetUserLabel("");
@@ -400,7 +411,6 @@ const DietasTab: React.FC = () => {
       alert("Dieta estruturada vazia.");
       return;
     }
-    // Validação simples de datas (se usuário optou por editar validade)
     if (showRevValidity && revStartDate && revEndDate) {
       const sd = new Date(revStartDate).getTime();
       const ed = new Date(revEndDate).getTime();
@@ -427,7 +437,6 @@ const DietasTab: React.FC = () => {
       } else if (revMode === "structured") {
         structuredData = revStructuredData || undefined;
       }
-      // Opcionalmente aplicar update de validade antes da revisão
       if (showRevValidity && detail) {
         const metaPayload: Record<string, unknown> = {};
         if (
@@ -465,7 +474,6 @@ const DietasTab: React.FC = () => {
         }
       }
 
-      // Back-end aceita: data (substituição completa) ou dataPatch (patch JSON). Para "structured", enviamos data.
       const payload: Record<string, unknown> = {
         notes: revNotes || undefined,
       };
@@ -488,7 +496,6 @@ const DietasTab: React.FC = () => {
       await load();
       setRevNotes("");
       setRevPatchJson("{}");
-      // manter revStartDate/revEndDate preenchidos com o que foi salvo
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Erro revisão";
       setError(msg);
@@ -497,57 +504,94 @@ const DietasTab: React.FC = () => {
     }
   };
 
-  const [mostrarDetalhes, setMostrarDetalhes] = useState(false);
-
   return (
-    <Card className="p-0 overflow-hidden" padding="p-3 sm:p-6">
-      <div className="min-h-screen">
-        {/* Header Principal */}
-        <div className="bg-white border-b border-gray-200 sticky top-0">
-          <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center py-4">
-              <div className="flex items-center gap-3">
-                <div>
-                  <h1 className="text-lg font-bold text-gray-900">
-                    Gerenciar Dietas
-                  </h1>
-                </div>
-              </div>
-              <Button
-                onClick={() => setShowCreate(true)}
-                className="bg-green-600 hover:bg-green-700 text-white flex items-center justify-center text-sm"
-                noBorder
-                noFocus
-              >
-                <svg
-                  className="w-4 h-4 mr-2"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 4v16m8-8H4"
-                  />
-                </svg>
-                Nova
-              </Button>
-            </div>
-          </div>
-        </div>
+    <Card className="p-0 overflow-hidden">
+      {/* Header com Busca - Igual ao PacientesTab */}
+      <div className="p-3 sm:p-4 border-b flex flex-col sm:flex-row gap-3 sm:gap-4 sm:items-center">
+        <div className="flex-1 relative">
+          <input
+            type="text"
+            placeholder="Buscar por nome ou email..."
+            className="w-full px-3 sm:px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm sm:text-base"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setTimeout(() => setSearchFocused(false), 200)}
+          />
+          <svg
+            className="absolute right-3 top-2.5 h-4 w-4 sm:h-5 sm:w-5 text-gray-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
 
-        {/* Filtros e Busca */}
-        <div className="bg-white border-b border-gray-200">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-              {/* Busca de Pacientes */}
-              <div className="flex-1 w-full">
-                <div className="relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          {/* Dropdown de resultados da busca */}
+          {(searchFocused || searchTerm) && searchTerm && (
+            <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full max-h-60 overflow-y-auto">
+              {usersLoading ? (
+                <div className="p-4 text-center text-gray-500">
+                  <div className="flex items-center justify-center gap-2">
                     <svg
-                      className="h-4 w-4 text-gray-400"
+                      className="w-4 h-4 animate-spin text-green-600"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Buscando pacientes...
+                  </div>
+                </div>
+              ) : filteredUsers.length > 0 ? (
+                filteredUsers.map((u) => (
+                  <button
+                    key={u.id}
+                    type="button"
+                    onClick={() => {
+                      setFilterUserId(u.id);
+                      setFilterUserLabel(u.display_name || u.email);
+                      setSearchTerm("");
+                      setSearchFocused(false);
+                    }}
+                    className="flex items-center gap-3 w-full p-3 hover:bg-green-50 border-b border-gray-100 last:border-b-0 transition-colors"
+                  >
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                      {u.display_name?.charAt(0).toUpperCase() ||
+                        u.email.charAt(0).toUpperCase()}
+                    </div>
+                    <div className="text-left flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate text-sm">
+                        {u.display_name || "Sem nome"}
+                      </div>
+                      <div className="text-xs text-gray-500 truncate">
+                        {u.email}
+                      </div>
+                    </div>
+                  </button>
+                ))
+              ) : (
+                <div className="p-4 text-center text-gray-500">
+                  <div className="flex flex-col items-center gap-2">
+                    <svg
+                      className="w-8 h-8 text-gray-300"
                       fill="none"
                       viewBox="0 0 24 24"
                       stroke="currentColor"
@@ -555,405 +599,285 @@ const DietasTab: React.FC = () => {
                       <path
                         strokeLinecap="round"
                         strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                        strokeWidth={1}
+                        d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                       />
                     </svg>
-                  </div>
-                  <input
-                    value={targetUserQuery}
-                    onChange={(e) => setTargetUserQuery(e.target.value)}
-                    onFocus={() => setSearchFocused(true)}
-                    onBlur={() =>
-                      setTimeout(() => setSearchFocused(false), 200)
-                    }
-                    placeholder="Buscar paciente por nome ou email..."
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
-                  />
-
-                  {/* Resultados da Busca */}
-                  {(searchFocused || targetUserQuery) && targetUserQuery && (
-                    <div className="absolute z-20 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg w-full max-h-60 overflow-y-auto">
-                      {searchingUsers ? (
-                        <div className="p-4 text-center text-gray-500">
-                          <div className="flex items-center justify-center gap-2">
-                            <svg
-                              className="w-4 h-4 animate-spin text-green-600"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="currentColor"
-                                strokeWidth="4"
-                              ></circle>
-                              <path
-                                className="opacity-75"
-                                fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                              ></path>
-                            </svg>
-                            Buscando pacientes...
-                          </div>
-                        </div>
-                      ) : userOptions.length > 0 ? (
-                        userOptions.map((u) => (
-                          <button
-                            key={u.id}
-                            type="button"
-                            onClick={() => {
-                              setFilterUserId(u.id);
-                              setFilterUserLabel(u.display_name || u.email);
-                              setTargetUserQuery("");
-                              setSearchFocused(false);
-                            }}
-                            className="flex items-center gap-3 w-full p-3 hover:bg-green-50 border-b border-gray-100 last:border-b-0 transition-colors"
-                          >
-                            <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
-                              {u.display_name?.charAt(0).toUpperCase() ||
-                                u.email.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="text-left flex-1 min-w-0">
-                              <div className="font-medium text-gray-900 truncate text-sm">
-                                {u.display_name || "Sem nome"}
-                              </div>
-                              <div className="text-xs text-gray-500 truncate">
-                                {u.email}
-                              </div>
-                            </div>
-                          </button>
-                        ))
-                      ) : (
-                        <div className="p-4 text-center text-gray-500">
-                          <div className="flex flex-col items-center gap-2">
-                            <svg
-                              className="w-8 h-8 text-gray-300"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={1}
-                                d="M9.172 16.172a4 4 0 015.656 0M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                              />
-                            </svg>
-                            <span className="text-sm">
-                              Nenhum paciente encontrado
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Filtro Ativo e Ações */}
-              <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-                {filterUserId && (
-                  <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
-                    <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
-                      {filterUserLabel.charAt(0).toUpperCase()}
-                    </div>
-                    <span className="text-sm text-green-800 font-medium truncate max-w-32">
-                      {filterUserLabel}
+                    <span className="text-sm">
+                      Nenhum paciente encontrado
                     </span>
-                    <button
-                      onClick={() => {
-                        setFilterUserId("");
-                        setFilterUserLabel("");
-                      }}
-                      className="text-green-600 hover:text-green-800 p-1"
-                    >
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M6 18L18 6M6 6l12 12"
-                        />
-                      </svg>
-                    </button>
                   </div>
-                )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Filtro Ativo */}
+        {filterUserId && (
+          <div className="flex items-center gap-2 bg-green-50 px-3 py-2 rounded-lg border border-green-200">
+            <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center text-white text-xs font-bold">
+              {filterUserLabel.charAt(0).toUpperCase()}
+            </div>
+            <span className="text-sm text-green-800 font-medium truncate max-w-32">
+              {filterUserLabel}
+            </span>
+            <button
+              onClick={() => {
+                setFilterUserId("");
+                setFilterUserLabel("");
+              }}
+              className="text-green-600 hover:text-green-800 p-1"
+            >
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+        )}
+
+        <Button
+          onClick={() => setShowCreate(true)}
+          className="bg-green-600 hover:bg-green-700 text-white whitespace-nowrap"
+        >
+          Criar Nova Dieta
+        </Button>
+      </div>
+
+      {/* Conteúdo Principal */}
+      <div className="p-4">
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
+            <div className="flex items-center gap-3">
+              <svg
+                className="w-5 h-5 text-red-600"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+              <div>
+                <div className="font-medium text-red-800">Erro</div>
+                <div className="text-sm text-red-600 mt-1">{error}</div>
               </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Conteúdo Principal */}
-        <div className="max-w-7xl mx-auto px-1 sm:px-4 lg:px-6 py-6">
-          {error && (
-            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">
-              <div className="flex items-center gap-3">
-                <svg
-                  className="w-5 h-5 text-red-600"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <div>
-                  <div className="font-medium text-red-800">Erro</div>
-                  <div className="text-sm text-red-600 mt-1">{error}</div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Grid de Planos */}
-          {loading && plans.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-12">
+        {/* Grid de Planos */}
+        {loading && plans.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-12">
+            <SpinnerLoading text="Carregando planos..." />
+          </div>
+        ) : plans.length === 0 ? (
+          <div className="text-center py-12">
+            <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md mx-auto">
               <svg
-                className="w-12 h-12 animate-spin text-green-600 mb-4"
+                className="w-16 h-16 text-gray-300 mx-auto mb-4"
                 fill="none"
                 viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <circle
-                  className="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                ></circle>
                 <path
-                  className="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1}
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                />
               </svg>
-              <p className="text-gray-600">Carregando planos...</p>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Nenhum plano de dieta
+              </h3>
+              <p className="text-gray-600 mb-6">
+                {filterUserId 
+                  ? "Nenhum plano encontrado para este paciente."
+                  : "Comece criando seu primeiro plano nutricional."
+                }
+              </p>
+              <Button
+                onClick={() => setShowCreate(true)}
+                className="bg-green-600 hover:bg-green-700 text-white"
+              >
+                Criar Primeira Dieta
+              </Button>
             </div>
-          ) : plans.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="bg-white rounded-2xl border border-gray-200 p-8 max-w-md mx-auto">
-                <svg
-                  className="w-16 h-16 text-gray-300 mx-auto mb-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                  />
-                </svg>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                  Nenhum plano de dieta
-                </h3>
-                <p className="text-gray-600 mb-6">
-                  Comece criando seu primeiro plano nutricional.
-                </p>
-                <Button
-                  onClick={() => setShowCreate(true)}
-                  className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                  Criar Primeira Dieta
-                </Button>
-              </div>
-            </div>
-          ) : (
-            (() => {
-              // Agrupar por usuário
-              type Group = {
-                id: string;
-                label: string;
-                subtitle?: string;
-                plans: PlanListItem[];
+          </div>
+        ) : (
+          (() => {
+            type Group = {
+              id: string;
+              label: string;
+              subtitle?: string;
+              plans: PlanListItem[];
+            };
+            const userLabelCache = new Map<string, string>();
+            if (filterUserId && filterUserLabel)
+              userLabelCache.set(filterUserId, filterUserLabel);
+            const groupsMap = new Map<string, Group>();
+            const unknownKey = "__none__";
+            
+            for (const p of plans) {
+              const uid = p.user_id || unknownKey;
+              const labelFromApi = p.user_display_name || p.user_email || null;
+              const label = uid === unknownKey
+                ? "Sem paciente"
+                : labelFromApi || userLabelCache.get(uid) || `${uid.slice(0, 6)}...`;
+              const subtitle = p.user_email && p.user_display_name
+                ? p.user_email
+                : undefined;
+              const g = groupsMap.get(uid) || {
+                id: uid,
+                label,
+                subtitle,
+                plans: [],
               };
-              const userLabelCache = new Map<string, string>();
-              if (targetUserId && targetUserLabel)
-                userLabelCache.set(targetUserId, targetUserLabel);
-              const groupsMap = new Map<string, Group>();
-              const unknownKey = "__none__";
-              for (const p of plans) {
-                const uid = p.user_id || unknownKey;
-                const labelFromApi =
-                  p.user_display_name || p.user_email || null;
-                const label =
-                  uid === unknownKey
-                    ? "Sem paciente"
-                    : labelFromApi ||
-                      userLabelCache.get(uid) ||
-                      `${uid.slice(0, 6)}...`;
-                const subtitle =
-                  p.user_email && p.user_display_name
-                    ? p.user_email
-                    : undefined;
-                const g = groupsMap.get(uid) || {
-                  id: uid,
-                  label,
-                  subtitle,
-                  plans: [],
-                };
-                g.plans.push(p);
-                groupsMap.set(uid, g);
-              }
-              const groups = Array.from(groupsMap.values()).sort((a, b) => {
-                if (a.id === unknownKey) return 1;
-                if (b.id === unknownKey) return -1;
-                return a.label.localeCompare(b.label, "pt-BR");
-              });
+              g.plans.push(p);
+              groupsMap.set(uid, g);
+            }
+            
+            const groups = Array.from(groupsMap.values()).sort((a, b) => {
+              if (a.id === unknownKey) return 1;
+              if (b.id === unknownKey) return -1;
+              return a.label.localeCompare(b.label, "pt-BR");
+            });
 
-              return (
-                <div className="space-y-6">
-                  {groups.map((g) => (
-                    <div
-                      key={g.id}
-                      className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
-                    >
-                      <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                            {g.label.charAt(0).toUpperCase()}
-                          </div>
-                          <div className="grid grid-cols items-start">
-                            <div className="font-semibold text-gray-900">
-                              {g.label}
-                            </div>
-
-                            <div className="text-xs text-gray-500">
-                              {g.subtitle ? (
-                                <span>{g.subtitle}</span>
-                              ) : (
-                                <span>-</span> // ou null, se preferir omitir
-                              )}
-                            </div>
-
-                            <div className="text-xs text-gray-500">
-                              {g.plans.length} plano
-                              {g.plans.length !== 1 ? "s" : ""}
-                            </div>
-                          </div>
+            return (
+              <div className="space-y-6">
+                {groups.map((g) => (
+                  <div
+                    key={g.id}
+                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
+                  >
+                    <div className="flex items-center justify-between p-4 bg-gray-50 border-b">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                          {g.label.charAt(0).toUpperCase()}
                         </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            className="px-3 py-1 text-xs rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
-                            onClick={() =>
-                              setCollapsedGroups((m) => ({
-                                ...m,
-                                [g.id]: !m[g.id],
-                              }))
-                            }
-                          >
-                            {collapsedGroups[g.id] ? "Expandir" : "Recolher"}
-                          </button>
+                        <div>
+                          <div className="font-semibold text-gray-900">
+                            {g.label}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {g.subtitle || "-"}
+                          </div>
+                          <div className="text-xs text-gray-500">
+                            {g.plans.length} plano{g.plans.length !== 1 ? "s" : ""}
+                          </div>
                         </div>
                       </div>
-                      {!collapsedGroups[g.id] && (
-                        <div className="p-4">
-                          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {g.plans.map((p) => (
-                              <div
-                                key={p.id}
-                                className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
-                              >
-                                <div className="flex justify-between items-start mb-3">
-                                  <div className="flex-1 min-w-0">
-                                    <h3 className="font-bold text-gray-900 text-lg truncate">
-                                      {p.name}
-                                    </h3>
-                                    <p className="text-gray-600 text-sm mt-1 line-clamp-2">
-                                      {p.description ||
-                                        "Plano nutricional personalizado"}
-                                    </p>
-                                  </div>
-                                  <span
-                                    className={`px-2.5 py-1 rounded-full text-xs font-medium ${
-                                      p.status === "active"
-                                        ? "bg-green-100 text-green-800"
-                                        : "bg-gray-100 text-gray-600"
-                                    }`}
-                                  >
-                                    {p.status === "active"
-                                      ? "Ativo"
-                                      : "Inativo"}
-                                  </span>
-                                </div>
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                  {p.format && (
-                                    <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-medium">
-                                      {p.format}
-                                    </span>
-                                  )}
-                                  {p.start_date && (
-                                    <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs">
-                                      Início:{" "}
-                                      {new Date(
-                                        p.start_date
-                                      ).toLocaleDateString("pt-BR")}
-                                    </span>
-                                  )}
-                                  {p.user_id && (
-                                    <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-lg text-xs">
-                                      Paciente: {p.user_id.slice(0, 6)}...
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    variant="secondary"
-                                    className="flex-1 text-sm flex items-center justify-center"
-                                    noFocus
-                                    onClick={() => openDetail(p.id)}
-                                  >
-                                    <svg
-                                      className="w-4 h-4 mr-2"
-                                      fill="none"
-                                      viewBox="0 0 24 24"
-                                      stroke="currentColor"
-                                    >
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                                      />
-                                      <path
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                        strokeWidth={2}
-                                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                                      />
-                                    </svg>
-                                    Detalhes
-                                  </Button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          className="px-3 py-1 text-xs rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300"
+                          onClick={() =>
+                            setCollapsedGroups((m) => ({
+                              ...m,
+                              [g.id]: !m[g.id],
+                            }))
+                          }
+                        >
+                          {collapsedGroups[g.id] ? "Expandir" : "Recolher"}
+                        </button>
+                      </div>
                     </div>
-                  ))}
-                </div>
-              );
-            })()
-          )}
-        </div>
+                    {!collapsedGroups[g.id] && (
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                          {g.plans.map((p) => (
+                            <div
+                              key={p.id}
+                              className="bg-white rounded-2xl border border-gray-200 p-5 hover:shadow-md transition-shadow"
+                            >
+                              <div className="flex justify-between items-start mb-3">
+                                <div className="flex-1 min-w-0">
+                                  <h3 className="font-bold text-gray-900 text-lg truncate">
+                                    {p.name}
+                                  </h3>
+                                  <p className="text-gray-600 text-sm mt-1 line-clamp-2">
+                                    {p.description || "Plano nutricional personalizado"}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`px-2.5 py-1 rounded-full text-xs font-medium ${
+                                    p.status === "active"
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}
+                                >
+                                  {p.status === "active" ? "Ativo" : "Inativo"}
+                                </span>
+                              </div>
+                              <div className="flex flex-wrap gap-2 mb-4">
+                                {p.format && (
+                                  <span className="px-2 py-1 bg-amber-100 text-amber-800 rounded-lg text-xs font-medium">
+                                    {p.format}
+                                  </span>
+                                )}
+                                {p.start_date && (
+                                  <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded-lg text-xs">
+                                    Início: {new Date(p.start_date).toLocaleDateString("pt-BR")}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex gap-2">
+                                <Button
+                                  variant="secondary"
+                                  className="flex-1 text-sm flex items-center justify-center"
+                                  noFocus
+                                  onClick={() => openDetail(p.id)}
+                                >
+                                  <svg
+                                    className="w-4 h-4 mr-2"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                                    />
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                                    />
+                                  </svg>
+                                  Detalhes
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          })()
+        )}
       </div>
 
-      {/* Create modal */}
+      {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 p-1 md:p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl my-2 max-h-[98vh] overflow-hidden flex flex-col">

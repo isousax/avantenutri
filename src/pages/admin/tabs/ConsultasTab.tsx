@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import SpinnerLoading from '../../../components/ui/SpinnerLoading';
 import Card from "../../../components/ui/Card";
 import { useAuth } from "../../../contexts";
 import { API } from "../../../config/api";
@@ -179,13 +180,8 @@ const ConsultasTab: React.FC = () => {
           <tbody>
             {consultLoading && (
               <tr>
-                <td colSpan={7} className="py-6 px-4">
-                  <div className="flex items-center gap-2 text-gray-500">
-                    <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" />
-                    </svg>
-                    Carregando consultas...
-                  </div>
+                <td colSpan={7} className="py-12 px-4 text-center">
+                  <SpinnerLoading text="Carregando consultas..." />
                 </td>
               </tr>
             )}

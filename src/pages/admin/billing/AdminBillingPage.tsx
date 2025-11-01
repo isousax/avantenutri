@@ -14,7 +14,6 @@ import {
   RefreshCw,
   CreditCard,
   BarChart3,
-  Webhook,
   CheckCircle,
   XCircle,
   Calendar,
@@ -53,22 +52,12 @@ interface ListPaymentsResp {
   };
 }
 
-interface WebhookDelivery { 
-  id: string; 
-  event: string; 
-  status: string; 
-  received_at: string; 
-  latency_ms?: number; 
-  attempts?: number; 
-}
-
 const AdminBillingPage: React.FC = () => {
   const { authenticatedFetch } = useAuth();
   const { push } = useToast();
   const { locale, t } = useI18n();
   const [view, setView] = useState<'payments'|'webhooks'|'summary'>('payments');
   const [payments, setPayments] = useState<PaymentRow[]>([]);
-  const [webhooks, setWebhooks] = useState<WebhookDelivery[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -182,54 +171,10 @@ const AdminBillingPage: React.FC = () => {
     }
   }, [authenticatedFetch, push]);
 
-  const loadWebhooks = useCallback(async () => {
-    setLoading(true); 
-    setError(null);
-    try {
-      await new Promise(r => setTimeout(r, 250));
-      setWebhooks([
-        { 
-          id: 'wh_1', 
-          event: 'payment.approved', 
-          status: 'processed', 
-          received_at: new Date(Date.now() - 3600_000).toISOString(), 
-          latency_ms: 120, 
-          attempts: 1 
-        },
-        { 
-          id: 'wh_2', 
-          event: 'payment.pending', 
-          status: 'processed', 
-          received_at: new Date(Date.now() - 7200_000).toISOString(), 
-          latency_ms: 200, 
-          attempts: 1 
-        },
-        { 
-          id: 'wh_3', 
-          event: 'payment.failed', 
-          status: 'error', 
-          received_at: new Date(Date.now() - 10800_000).toISOString(), 
-          latency_ms: 350, 
-          attempts: 2 
-        },
-      ]);
-    } catch (e: unknown) { 
-      const msg = e instanceof Error ? e.message : 'Erro';
-      setError(msg); 
-      push({ type: 'error', message: t('admin.billing.toast.loadWebhooksError') }); 
-    } finally { 
-      setLoading(false); 
-    }
-  }, [push, t]);
-
   // Carregar conforme view ou mudança de filtros
   useEffect(() => {
     if (view === 'payments') loadPayments();
   }, [view, loadPayments]);
-  
-  useEffect(() => { 
-    if (view === 'webhooks') loadWebhooks(); 
-  }, [view, loadWebhooks]);
   
   useEffect(() => { 
     if (view === 'summary') loadPricing(); 
@@ -284,7 +229,7 @@ const AdminBillingPage: React.FC = () => {
             <Button
               type="button"
               variant="secondary"
-              onClick={() => view === 'payments' ? loadPayments() : view === 'webhooks' ? loadWebhooks() : loadPricing()}
+              onClick={() => view === 'payments' ? loadPayments() : loadPricing()}
               disabled={loading}
               className="flex items-center gap-2"
               noBorder
@@ -305,7 +250,7 @@ const AdminBillingPage: React.FC = () => {
                   {t('admin.billing.title')}
                 </h1>
                 <p className="text-xs text-gray-600 mt-0.5">
-                  Gerencie pagamentos, preços e webhooks
+                  Gerencie pagamentos e preços
                 </p>
               </div>
             </div>
@@ -351,7 +296,7 @@ const AdminBillingPage: React.FC = () => {
               <Button
                 type="button"
                 variant="secondary"
-                onClick={() => view === 'payments' ? loadPayments() : view === 'webhooks' ? loadWebhooks() : loadPricing()}
+                onClick={() => view === 'payments' ? loadPayments() : loadPricing()}
                 disabled={loading}
                 className="flex items-center gap-2"
                 noBorder
@@ -837,168 +782,6 @@ const AdminBillingPage: React.FC = () => {
                 </div>
               </div>
             )}
-          </>
-        )}
-
-        {/* Webhooks View */}
-        {view === 'webhooks' && (
-          <>
-            {/* Desktop Table */}
-            <Card className="p-0 overflow-hidden hidden lg:block">
-              <div className="p-4 border-b border-gray-200 bg-white">
-                <h3 className="font-semibold text-gray-900">Webhooks Recebidos</h3>
-              </div>
-              
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="p-4 text-left font-semibold text-gray-700">ID</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Evento</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Status</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Recebido em</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Latência</th>
-                      <th className="p-4 text-left font-semibold text-gray-700">Tentativas</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading && (
-                      <tr>
-                        <td colSpan={6} className="p-4">
-                          <div className="space-y-3">
-                            {Array.from({ length: 3 }).map((_, i) => (
-                              <Skeleton key={i} lines={1} className="h-12" />
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                    {!loading && webhooks.map(w => (
-                      <tr key={w.id} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors">
-                        <td className="p-4">
-                          <div className="font-mono text-xs text-gray-900 select-all">
-                            {w.id}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="font-mono text-xs text-gray-600">
-                            {w.event}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                            w.status === 'processed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                          }`}>
-                            {w.status}
-                          </span>
-                        </td>
-                        <td className="p-4 text-sm text-gray-600">
-                          {new Date(w.received_at).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')}
-                        </td>
-                        <td className="p-4 text-sm text-gray-600">
-                          {w.latency_ms != null ? `${w.latency_ms}ms` : '—'}
-                        </td>
-                        <td className="p-4 text-sm text-gray-600">
-                          {w.attempts ?? '—'}
-                        </td>
-                      </tr>
-                    ))}
-                    {!loading && webhooks.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="p-8 text-center">
-                          <div className="flex flex-col items-center gap-3 text-gray-500">
-                            <Webhook size={48} className="text-gray-300" />
-                            <div>
-                              <div className="font-medium text-gray-900 mb-1">
-                                Nenhum webhook encontrado
-                              </div>
-                              <div className="text-sm">
-                                Os webhooks aparecerão aqui quando recebidos
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-              <div className="p-4 border-t border-gray-200 text-xs text-gray-500 bg-gray-50">
-                {t('admin.billing.webhooks.mockNote')}
-              </div>
-            </Card>
-
-            {/* Mobile List */}
-            <div className="space-y-3 lg:hidden">
-              <h3 className="font-semibold text-gray-900 mb-4">Webhooks Recebidos</h3>
-
-              {loading && (
-                <div className="space-y-3">
-                  {Array.from({ length: 3 }).map((_, i) => (
-                    <Card key={i} className="p-4">
-                      <Skeleton lines={3} />
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {!loading && webhooks.map(w => (
-                <Card key={w.id} className="p-4">
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-mono text-xs text-gray-900 select-all mb-2">
-                        {w.id}
-                      </div>
-                      <div className="font-mono text-xs text-gray-600">
-                        {w.event}
-                      </div>
-                    </div>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
-                      w.status === 'processed' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                    }`}>
-                      {w.status}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4 text-sm">
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Recebido</div>
-                      <div className="text-xs">
-                        {new Date(w.received_at).toLocaleString(locale === 'pt' ? 'pt-BR' : 'en-US')}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="text-xs text-gray-500 mb-1">Latência</div>
-                      <div className="text-xs">{w.latency_ms != null ? `${w.latency_ms}ms` : '—'}</div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between text-xs text-gray-500 border-t border-gray-100 pt-3 mt-3">
-                    <div>Tentativas: {w.attempts ?? '—'}</div>
-                  </div>
-                </Card>
-              ))}
-
-              {!loading && webhooks.length === 0 && (
-                <Card className="p-8 text-center">
-                  <div className="flex flex-col items-center gap-3 text-gray-500">
-                    <Webhook size={48} className="text-gray-300" />
-                    <div>
-                      <div className="font-medium text-gray-900 mb-1">
-                        Nenhum webhook encontrado
-                      </div>
-                      <div className="text-sm">
-                        Os webhooks aparecerão aqui quando recebidos
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              )}
-
-              <div className="text-xs text-gray-500 mt-4">
-                {t('admin.billing.webhooks.mockNote')}
-              </div>
-            </div>
           </>
         )}
       </div>

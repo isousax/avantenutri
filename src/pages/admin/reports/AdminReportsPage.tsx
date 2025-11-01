@@ -24,7 +24,12 @@ const AdminReportsPage: React.FC = () => {
         await new Promise(r=> setTimeout(r, 400));
         if(cancelled) return;
         setStats(s => s.map((st,i)=> ({ ...st, value:  i*7 + 12 })));
-      } catch(e:any){ if(!cancelled) setError(e.message || 'Erro'); } finally { if(!cancelled) setLoading(false); }
+      } catch(e: unknown) {
+        if (!cancelled) {
+          const message = typeof e === 'object' && e !== null && 'message' in e ? (e as { message?: string }).message : undefined;
+          setError(message || 'Erro');
+        }
+      } finally { if(!cancelled) setLoading(false); }
     })();
     return () => { cancelled = true; };
   }, []);
@@ -55,8 +60,7 @@ const AdminReportsPage: React.FC = () => {
       <Card className="p-4 text-[11px] text-gray-600 space-y-2">
         <div className="font-medium text-xs">Próximos Passos (roadmap)</div>
         <ul className="list-disc pl-4 space-y-1">
-          <li>Seleção de intervalo (7d, 30d, 90d, custom)</li>
-          <li>Exportar CSV / PDF</li>
+          <li>Exportar PDF</li>
           <li>Gráficos de linha (usuários ativos, consultas)</li>
           <li>Coorte de retenção básica</li>
           <li>Heatmap de horários de consulta</li>

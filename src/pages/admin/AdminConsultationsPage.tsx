@@ -26,6 +26,8 @@ import {
   XCircle,
   PlayCircle,
   PauseCircle,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 
 interface Consultation {
@@ -37,7 +39,7 @@ interface Consultation {
   duration_min: number;
   urgency?: string;
   notes?: string;
-  user_name?: string;
+  user_display_name?: string;
   user_email?: string;
 }
 
@@ -88,10 +90,12 @@ const AdminConsultationsPage: React.FC = () => {
   // Consultations states
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<Consultation[]>([]);
+  const [rulesExpanded, setRulesExpanded] = useState(false);
+  const [logExpanded, setLogExpanded] = useState(false);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     total: 0,
-    pageSize: 20,
+    pageSize: 10,
     totalPages: 0,
   });
   const [filters, setFilters] = useState({
@@ -132,7 +136,7 @@ const AdminConsultationsPage: React.FC = () => {
   const [logPagination, setLogPagination] = useState<PaginationInfo>({
     page: 1,
     total: 0,
-    pageSize: 50,
+    pageSize: 10,
     totalPages: 0,
   });
   const [logFilters, setLogFilters] = useState({
@@ -231,7 +235,14 @@ const AdminConsultationsPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [authenticatedFetch, t, filters, pagination.page, pagination.pageSize, push]);
+  }, [
+    authenticatedFetch,
+    t,
+    filters,
+    pagination.page,
+    pagination.pageSize,
+    push,
+  ]);
 
   // Load availability rules
   const loadRules = useCallback(async () => {
@@ -282,7 +293,7 @@ const AdminConsultationsPage: React.FC = () => {
     logPagination.page,
     logPagination.pageSize,
     logFilters,
-    push
+    push,
   ]);
 
   // Load available slots
@@ -383,7 +394,9 @@ const AdminConsultationsPage: React.FC = () => {
         if (data.error === "overlap") {
           const conflict = data.conflict;
           setRuleError(
-            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${conflict.start_time}-${conflict.end_time}`
+            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${
+              conflict.start_time
+            }-${conflict.end_time}`
           );
         } else {
           setRuleError("Erro ao criar regra");
@@ -414,7 +427,9 @@ const AdminConsultationsPage: React.FC = () => {
         if (data.error === "overlap") {
           const conflict = data.conflict;
           setRuleError(
-            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${conflict.start_time}-${conflict.end_time}`
+            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${
+              conflict.start_time
+            }-${conflict.end_time}`
           );
         } else {
           setRuleError("Erro ao atualizar regra");
@@ -497,7 +512,9 @@ const AdminConsultationsPage: React.FC = () => {
         if (data.error === "overlap") {
           const conflict = data.conflict;
           setRuleError(
-            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${conflict.start_time}-${conflict.end_time}`
+            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${
+              conflict.start_time
+            }-${conflict.end_time}`
           );
         } else {
           setRuleError("Erro ao atualizar regra");
@@ -534,7 +551,9 @@ const AdminConsultationsPage: React.FC = () => {
         if (data.error === "overlap") {
           const conflict = data.conflict;
           setRuleError(
-            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${conflict.start_time}-${conflict.end_time}`
+            `Conflito com regra existente: ${weekdayNames[conflict.weekday]} ${
+              conflict.start_time
+            }-${conflict.end_time}`
           );
         } else {
           setRuleError("Erro ao duplicar regra");
@@ -561,29 +580,29 @@ const AdminConsultationsPage: React.FC = () => {
       from: "",
       to: "",
     });
-    setPagination(prev => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: 1 }));
   };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'scheduled':
-        return 'bg-blue-100 text-blue-700 border-blue-200';
-      case 'completed':
-        return 'bg-green-100 text-green-700 border-green-200';
-      case 'canceled':
-        return 'bg-red-100 text-red-700 border-red-200';
+      case "scheduled":
+        return "bg-blue-100 text-blue-700 border-blue-200";
+      case "completed":
+        return "bg-green-100 text-green-700 border-green-200";
+      case "canceled":
+        return "bg-red-100 text-red-700 border-red-200";
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200';
+        return "bg-gray-100 text-gray-700 border-gray-200";
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'scheduled':
+      case "scheduled":
         return <Clock size={14} />;
-      case 'completed':
+      case "completed":
         return <CheckCircle size={14} />;
-      case 'canceled':
+      case "canceled":
         return <XCircle size={14} />;
       default:
         return <Calendar size={14} />;
@@ -651,7 +670,10 @@ const AdminConsultationsPage: React.FC = () => {
                 noFocus
                 noBackground
               >
-                <RefreshCw size={16} className={loading ? "animate-spin" : ""} />
+                <RefreshCw
+                  size={16}
+                  className={loading ? "animate-spin" : ""}
+                />
               </Button>
             </div>
           </div>
@@ -667,7 +689,9 @@ const AdminConsultationsPage: React.FC = () => {
                 <Calendar size={16} className="text-blue-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Consultas</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Consultas
+                </h2>
               </div>
             </div>
           </div>
@@ -747,11 +771,17 @@ const AdminConsultationsPage: React.FC = () => {
               </div>
 
               <div className="flex items-end gap-2">
-                <Button type="submit" className="flex items-center gap-2 flex-1">
+                <Button
+                  type="submit"
+                  className="flex items-center gap-2 flex-1"
+                >
                   <Search size={14} />
                   Buscar
                 </Button>
-                {(filters.status || filters.userId || filters.from || filters.to) && (
+                {(filters.status ||
+                  filters.userId ||
+                  filters.from ||
+                  filters.to) && (
                   <Button
                     type="button"
                     variant="secondary"
@@ -776,7 +806,10 @@ const AdminConsultationsPage: React.FC = () => {
           {error && (
             <Card className="p-4 border-l-4 border-red-500 bg-red-50 mb-4">
               <div className="flex items-start gap-3">
-                <XCircle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
+                <XCircle
+                  size={20}
+                  className="text-red-500 mt-0.5 flex-shrink-0"
+                />
                 <div className="flex-1">
                   <h3 className="font-semibold text-red-800 mb-1">
                     Erro ao carregar consultas
@@ -793,11 +826,21 @@ const AdminConsultationsPage: React.FC = () => {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="p-4 text-left font-semibold text-gray-700">Data/Hora</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Usuário</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Tipo</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Status</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Ações</th>
+                    <th className="p-4 text-left font-semibold text-gray-700">
+                      Data/Hora
+                    </th>
+                    <th className="p-4 text-left font-semibold text-gray-700">
+                      Usuário
+                    </th>
+                    <th className="p-4 text-left font-semibold text-gray-700">
+                      Tipo
+                    </th>
+                    <th className="p-4 text-left font-semibold text-gray-700">
+                      Status
+                    </th>
+                    <th className="p-4 text-left font-semibold text-gray-700">
+                      Ações
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
@@ -812,71 +855,79 @@ const AdminConsultationsPage: React.FC = () => {
                       </td>
                     </tr>
                   )}
-                  {!loading && items.map((consultation) => (
-                    <tr key={consultation.id} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar size={14} className="text-gray-400" />
-                          <span className="text-sm text-gray-900">
-                            {fmtDate(consultation.scheduled_at, locale, {
-                              dateStyle: "short",
-                              timeStyle: "short",
-                            })}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                            <User size={14} />
+                  {!loading &&
+                    items.map((consultation) => (
+                      <tr
+                        key={consultation.id}
+                        className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors"
+                      >
+                        <td className="p-4">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-gray-400" />
+                            <span className="text-sm text-gray-900">
+                              {fmtDate(consultation.scheduled_at, locale, {
+                                dateStyle: "short",
+                                timeStyle: "short",
+                              })}
+                            </span>
                           </div>
-                          <div className="min-w-0">
-                            <div className="font-medium text-gray-900 truncate">
-                              {consultation.user_name || "Sem nome"}
+                        </td>
+                        <td className="p-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                              <User size={14} />
                             </div>
-                            <div className="text-xs text-gray-500 truncate">
-                              {consultation.user_email}
-                            </div>
-                            <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                              ID: {consultation.user_id.slice(0, 8)}...
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 truncate">
+                                {consultation.user_display_name || "Sem nome"}
+                              </div>
+                              <div className="text-xs text-gray-500 truncate">
+                                {consultation.user_email}
+                              </div>
+                              <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                                ID: {consultation.user_id.slice(0, 8)}...
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm text-gray-600 capitalize">
-                          {consultation.type}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusColor(consultation.status)}`}>
-                          {getStatusIcon(consultation.status)}
-                          <span className="text-xs font-medium capitalize">
-                            {consultation.status}
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm text-gray-600 capitalize">
+                            {consultation.type}
                           </span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          onClick={() =>
-                            handleViewQuestionnaire(
-                              consultation.user_id,
-                              consultation.user_name
-                            )
-                          }
-                          className="flex items-center gap-2"
-                          noBorder
-                          noFocus
-                          noBackground
-                        >
-                          <Eye size={14} />
-                          Questionário
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
+                        </td>
+                        <td className="p-4">
+                          <div
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${getStatusColor(
+                              consultation.status
+                            )}`}
+                          >
+                            {getStatusIcon(consultation.status)}
+                            <span className="text-xs font-medium capitalize">
+                              {consultation.status}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            onClick={() =>
+                              handleViewQuestionnaire(
+                                consultation.user_id,
+                                consultation.user_display_name
+                              )
+                            }
+                            className="flex items-center gap-2"
+                            noBorder
+                            noFocus
+                            noBackground
+                          >
+                            <Eye size={14} />
+                            Questionário
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
                   {!loading && items.length === 0 && (
                     <tr>
                       <td colSpan={5} className="p-8 text-center">
@@ -910,71 +961,78 @@ const AdminConsultationsPage: React.FC = () => {
                 ))}
               </div>
             )}
-            {!loading && items.map((consultation) => (
-              <Card key={consultation.id} className="p-4">
-                <div className="flex items-start justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-3 flex-1 min-w-0">
-                    <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
-                      <User size={16} />
+            {!loading &&
+              items.map((consultation) => (
+                <Card key={consultation.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3 mb-3">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div className="w-10 h-10 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full flex items-center justify-center text-white text-xs font-medium flex-shrink-0">
+                        <User size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="font-semibold text-gray-900 truncate text-sm">
+                          {consultation.user_display_name || "Sem nome"}
+                        </div>
+                        <div className="text-xs text-gray-500 truncate mt-0.5">
+                          {consultation.user_email}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-mono mt-0.5">
+                          ID: {consultation.user_id.slice(0, 8)}...
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="font-semibold text-gray-900 truncate text-sm">
-                        {consultation.user_name || "Sem nome"}
-                      </div>
-                      <div className="text-xs text-gray-500 truncate mt-0.5">
-                        {consultation.user_email}
-                      </div>
-                      <div className="text-[10px] text-gray-400 font-mono mt-0.5">
-                        ID: {consultation.user_id.slice(0, 8)}...
-                      </div>
+                    <div
+                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs ${getStatusColor(
+                        consultation.status
+                      )}`}
+                    >
+                      {getStatusIcon(consultation.status)}
+                      <span className="font-medium capitalize">
+                        {consultation.status}
+                      </span>
                     </div>
                   </div>
-                  <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs ${getStatusColor(consultation.status)}`}>
-                    {getStatusIcon(consultation.status)}
-                    <span className="font-medium capitalize">
-                      {consultation.status}
-                    </span>
-                  </div>
-                </div>
 
-                <div className="grid grid-cols-2 gap-4 text-sm mb-3">
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Data/Hora</div>
-                    <div className="flex items-center gap-1 text-gray-900">
-                      <Calendar size={12} />
-                      {fmtDate(consultation.scheduled_at, locale, {
-                        dateStyle: "short",
-                        timeStyle: "short",
-                      })}
+                  <div className="grid grid-cols-2 gap-4 text-sm mb-3">
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">
+                        Data/Hora
+                      </div>
+                      <div className="flex items-center gap-1 text-gray-900">
+                        <Calendar size={12} />
+                        {fmtDate(consultation.scheduled_at, locale, {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                      </div>
+                    </div>
+                    <div>
+                      <div className="text-xs text-gray-500 mb-1">Tipo</div>
+                      <div className="text-gray-900 capitalize">
+                        {consultation.type}
+                      </div>
                     </div>
                   </div>
-                  <div>
-                    <div className="text-xs text-gray-500 mb-1">Tipo</div>
-                    <div className="text-gray-900 capitalize">
-                      {consultation.type}
-                    </div>
-                  </div>
-                </div>
 
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    handleViewQuestionnaire(
-                      consultation.user_id,
-                      consultation.user_name
-                    )
-                  }
-                  className="w-full flex items-center gap-2"
-                  noBorder
-                  noFocus
-                  noBackground
-                >
-                  <Eye size={14} />
-                  Ver Questionário
-                </Button>
-              </Card>
-            ))}
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      handleViewQuestionnaire(
+                        consultation.user_id,
+                        consultation.user_display_name
+                      )
+                    }
+                    className="w-full flex items-center gap-2"
+                    noBorder
+                    noFocus
+                    noBackground
+                  >
+                    <Eye size={14} />
+                    Ver Questionário
+                  </Button>
+                </Card>
+              ))}
 
             {!loading && items.length === 0 && (
               <Card className="p-8 text-center">
@@ -997,9 +1055,16 @@ const AdminConsultationsPage: React.FC = () => {
           {items.length > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Mostrando <span className="font-semibold">{items.length}</span> consultas
+                Mostrando <span className="font-semibold">{items.length}</span>{" "}
+                consultas
                 {pagination.total > 0 && (
-                  <> de <span className="font-semibold">{pagination.total}</span> no total</>
+                  <>
+                    {" "}
+                    de <span className="font-semibold">
+                      {pagination.total}
+                    </span>{" "}
+                    no total
+                  </>
                 )}
               </p>
               <div className="flex items-center gap-2">
@@ -1032,372 +1097,476 @@ const AdminConsultationsPage: React.FC = () => {
 
         {/* Availability Rules Section */}
         <Card className="p-4 sm:p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 flex items-center justify-center">
                 <Settings size={16} className="text-green-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Regras de Disponibilidade</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Regras de Disponibilidade
+                </h2>
               </div>
             </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                setRulesExpanded(!rulesExpanded);
+              }}
+              className="flex items-center gap-2 p-0"
+              noBorder
+              noFocus
+              noBackground
+            >
+              {rulesExpanded ? (
+                <>
+                  <ChevronUp size={18} />
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={18} />
+                </>
+              )}
+            </Button>
           </div>
 
-          {/* Add Rule Form */}
-          <form onSubmit={createRule} className="mb-6">
-            <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Dia da Semana</label>
-                <select
-                  value={ruleForm.weekday}
-                  onChange={(e) =>
-                    setRuleForm((prev) => ({
-                      ...prev,
-                      weekday: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  {weekdayNames.map((name, index) => (
-                    <option key={index} value={index}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+          {rulesExpanded && (
+            <>
+              {/* Add Rule Form */}
+              <form onSubmit={createRule} className="mb-6 mt-6">
+                <div className="grid grid-cols-2 lg:grid-cols-6 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Dia da Semana
+                    </label>
+                    <select
+                      value={ruleForm.weekday}
+                      onChange={(e) =>
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          weekday: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      {weekdayNames.map((name, index) => (
+                        <option key={index} value={index}>
+                          {name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Início</label>
-                <input
-                  type="time"
-                  value={ruleForm.start_time}
-                  onChange={(e) =>
-                    setRuleForm((prev) => ({
-                      ...prev,
-                      start_time: e.target.value,
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Início
+                    </label>
+                    <input
+                      type="time"
+                      value={ruleForm.start_time}
+                      onChange={(e) =>
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          start_time: e.target.value,
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Fim</label>
-                <input
-                  type="time"
-                  value={ruleForm.end_time}
-                  onChange={(e) =>
-                    setRuleForm((prev) => ({
-                      ...prev,
-                      end_time: e.target.value,
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Fim
+                    </label>
+                    <input
+                      type="time"
+                      value={ruleForm.end_time}
+                      onChange={(e) =>
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          end_time: e.target.value,
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Duração (min)</label>
-                <input
-                  type="number"
-                  value={ruleForm.slot_duration_min}
-                  onChange={(e) =>
-                    setRuleForm((prev) => ({
-                      ...prev,
-                      slot_duration_min: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Duração (min)
+                    </label>
+                    <input
+                      type="number"
+                      value={ruleForm.slot_duration_min}
+                      onChange={(e) =>
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          slot_duration_min: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min="1"
+                    />
+                  </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Paralelas</label>
-                <input
-                  type="number"
-                  value={ruleForm.max_parallel}
-                  onChange={(e) =>
-                    setRuleForm((prev) => ({
-                      ...prev,
-                      max_parallel: Number(e.target.value),
-                    }))
-                  }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  min="1"
-                />
-              </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Paralelas
+                    </label>
+                    <input
+                      type="number"
+                      value={ruleForm.max_parallel}
+                      onChange={(e) =>
+                        setRuleForm((prev) => ({
+                          ...prev,
+                          max_parallel: Number(e.target.value),
+                        }))
+                      }
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      min="1"
+                    />
+                  </div>
 
-              <div className="flex items-end">
-                <Button type="submit" className="w-full flex items-center gap-2">
-                  <CheckCircle size={14} />
-                  Adicionar
-                </Button>
-              </div>
-            </div>
-          </form>
-
-          {ruleError && (
-            <Card className="p-4 border-l-4 border-red-500 bg-red-50 mb-4">
-              <div className="flex items-start gap-3">
-                <XCircle size={20} className="text-red-500 mt-0.5 flex-shrink-0" />
-                <div className="flex-1">
-                  <h3 className="font-semibold text-red-800 mb-1">
-                    Erro na regra
-                  </h3>
-                  <p className="text-red-700 text-sm">{ruleError}</p>
+                  <div className="flex items-end">
+                    <Button
+                      type="submit"
+                      className="w-full flex items-center gap-2"
+                    >
+                      <CheckCircle size={14} />
+                      Adicionar
+                    </Button>
+                  </div>
                 </div>
-              </div>
-            </Card>
-          )}
+              </form>
 
-          {/* Rules Table - Desktop */}
-          <div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="p-4 text-left font-semibold text-gray-700">Dia</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Horário</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Configurações</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Status</th>
-                    <th className="p-4 text-left font-semibold text-gray-700">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {rules
-                    .sort(
-                      (a, b) =>
-                        a.weekday - b.weekday ||
-                        a.start_time.localeCompare(b.start_time)
-                    )
-                    .map((rule) => {
-                      const isEditing = editingId === rule.id;
-                      return (
-                        <tr key={rule.id} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors">
-                          <td className="p-4">
-                            {isEditing ? (
-                              <select
-                                value={editDraft.weekday}
-                                onChange={(e) =>
-                                  setEditDraft((prev) => ({
-                                    ...prev,
-                                    weekday: Number(e.target.value),
-                                  }))
-                                }
-                                className="w-full border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
-                              >
-                                {weekdayNames.map((name, index) => (
-                                  <option key={index} value={index}>
-                                    {name}
-                                  </option>
-                                ))}
-                              </select>
-                            ) : (
-                              <span className="font-medium text-gray-900">
-                                {weekdayNames[rule.weekday]}  
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            {isEditing ? (
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="time"
-                                  value={editDraft.start_time}
-                                  onChange={(e) =>
-                                    setEditDraft((prev) => ({
-                                      ...prev,
-                                      start_time: e.target.value,
-                                    }))
-                                  }
-                                  className="w-24 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
-                                />
-                                <span className="text-gray-400">-</span>
-                                <input
-                                  type="time"
-                                  value={editDraft.end_time}
-                                  onChange={(e) =>
-                                    setEditDraft((prev) => ({
-                                      ...prev,
-                                      end_time: e.target.value,
-                                    }))
-                                  }
-                                  className="w-24 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
-                                />
+              {ruleError && (
+                <Card className="p-4 border-l-4 border-red-500 bg-red-50 mb-4">
+                  <div className="flex items-start gap-3">
+                    <XCircle
+                      size={20}
+                      className="text-red-500 mt-0.5 flex-shrink-0"
+                    />
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-red-800 mb-1">
+                        Erro na regra
+                      </h3>
+                      <p className="text-red-700 text-sm">{ruleError}</p>
+                    </div>
+                  </div>
+                </Card>
+              )}
+
+              {/* Rules Table - Desktop */}
+              <div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="p-4 text-left font-semibold text-gray-700">
+                          Dia
+                        </th>
+                        <th className="p-4 text-left font-semibold text-gray-700">
+                          Horário
+                        </th>
+                        <th className="p-4 text-left font-semibold text-gray-700">
+                          Configurações
+                        </th>
+                        <th className="p-4 text-left font-semibold text-gray-700">
+                          Status
+                        </th>
+                        <th className="p-4 text-left font-semibold text-gray-700">
+                          Ações
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rules
+                        .sort(
+                          (a, b) =>
+                            a.weekday - b.weekday ||
+                            a.start_time.localeCompare(b.start_time)
+                        )
+                        .map((rule) => {
+                          const isEditing = editingId === rule.id;
+                          return (
+                            <tr
+                              key={rule.id}
+                              className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors"
+                            >
+                              <td className="p-4">
+                                {isEditing ? (
+                                  <select
+                                    value={editDraft.weekday}
+                                    onChange={(e) =>
+                                      setEditDraft((prev) => ({
+                                        ...prev,
+                                        weekday: Number(e.target.value),
+                                      }))
+                                    }
+                                    className="w-full border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+                                  >
+                                    {weekdayNames.map((name, index) => (
+                                      <option key={index} value={index}>
+                                        {name}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <span className="font-medium text-gray-900">
+                                    {weekdayNames[rule.weekday]}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                {isEditing ? (
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="time"
+                                      value={editDraft.start_time}
+                                      onChange={(e) =>
+                                        setEditDraft((prev) => ({
+                                          ...prev,
+                                          start_time: e.target.value,
+                                        }))
+                                      }
+                                      className="w-24 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+                                    />
+                                    <span className="text-gray-400">-</span>
+                                    <input
+                                      type="time"
+                                      value={editDraft.end_time}
+                                      onChange={(e) =>
+                                        setEditDraft((prev) => ({
+                                          ...prev,
+                                          end_time: e.target.value,
+                                        }))
+                                      }
+                                      className="w-24 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+                                    />
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-600">
+                                    {rule.start_time} - {rule.end_time}
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                {isEditing ? (
+                                  <div className="flex items-center gap-2">
+                                    <input
+                                      type="number"
+                                      value={editDraft.slot_duration_min}
+                                      onChange={(e) =>
+                                        setEditDraft((prev) => ({
+                                          ...prev,
+                                          slot_duration_min: Number(
+                                            e.target.value
+                                          ),
+                                        }))
+                                      }
+                                      className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+                                      min="1"
+                                    />
+                                    <span className="text-gray-400">min /</span>
+                                    <input
+                                      type="number"
+                                      value={editDraft.max_parallel}
+                                      onChange={(e) =>
+                                        setEditDraft((prev) => ({
+                                          ...prev,
+                                          max_parallel: Number(e.target.value),
+                                        }))
+                                      }
+                                      className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
+                                      min="1"
+                                    />
+                                    <span className="text-gray-400">
+                                      paralelas
+                                    </span>
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-600">
+                                    {rule.slot_duration_min} min /{" "}
+                                    {rule.max_parallel} paralelas
+                                  </span>
+                                )}
+                              </td>
+                              <td className="p-4">
+                                <div
+                                  className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${
+                                    rule.active
+                                      ? "bg-green-100 text-green-700 border-green-200"
+                                      : "bg-gray-100 text-gray-700 border-gray-200"
+                                  }`}
+                                >
+                                  {rule.active ? (
+                                    <PlayCircle size={14} />
+                                  ) : (
+                                    <PauseCircle size={14} />
+                                  )}
+                                  <span className="text-xs font-medium">
+                                    {rule.active ? "Ativa" : "Inativa"}
+                                  </span>
+                                </div>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-2">
+                                  {!isEditing ? (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() =>
+                                          toggleRule(rule.id, rule.active)
+                                        }
+                                        className="flex items-center gap-1"
+                                        noBorder
+                                        noFocus
+                                        noBackground
+                                      >
+                                        {rule.active ? (
+                                          <PauseCircle size={14} />
+                                        ) : (
+                                          <PlayCircle size={14} />
+                                        )}
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => startEdit(rule)}
+                                        className="flex items-center gap-1"
+                                        noBorder
+                                        noFocus
+                                        noBackground
+                                      >
+                                        <Edit size={14} />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => duplicateRule(rule)}
+                                        className="flex items-center gap-1"
+                                        noBorder
+                                        noFocus
+                                        noBackground
+                                      >
+                                        <Copy size={14} />
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={() => deleteRule(rule.id)}
+                                        className="flex items-center gap-1 text-red-600 hover:text-red-700"
+                                        noBorder
+                                        noFocus
+                                        noBackground
+                                      >
+                                        <Trash2 size={14} />
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        type="button"
+                                        onClick={() => saveEdit(rule.id)}
+                                        className="flex items-center gap-1"
+                                      >
+                                        <CheckCircle size={14} />
+                                        Salvar
+                                      </Button>
+                                      <Button
+                                        type="button"
+                                        variant="secondary"
+                                        onClick={cancelEdit}
+                                        className="flex items-center gap-1"
+                                        noBorder
+                                        noFocus
+                                        noBackground
+                                      >
+                                        <XCircle size={14} />
+                                        Cancelar
+                                      </Button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      {rules.length === 0 && (
+                        <tr>
+                          <td colSpan={5} className="p-8 text-center">
+                            <div className="flex flex-col items-center gap-3 text-gray-500">
+                              <Settings size={48} className="text-gray-300" />
+                              <div>
+                                <div className="font-medium text-gray-900 mb-1">
+                                  Nenhuma regra encontrada
+                                </div>
+                                <div className="text-sm">
+                                  Adicione uma regra para começar
+                                </div>
                               </div>
-                            ) : (
-                              <span className="text-gray-600">
-                                {rule.start_time} - {rule.end_time}
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            {isEditing ? (
-                              <div className="flex items-center gap-2">
-                                <input
-                                  type="number"
-                                  value={editDraft.slot_duration_min}
-                                  onChange={(e) =>
-                                    setEditDraft((prev) => ({
-                                      ...prev,
-                                      slot_duration_min: Number(e.target.value),
-                                    }))
-                                  }
-                                  className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
-                                  min="1"
-                                />
-                                <span className="text-gray-400">min /</span>
-                                <input
-                                  type="number"
-                                  value={editDraft.max_parallel}
-                                  onChange={(e) =>
-                                    setEditDraft((prev) => ({
-                                      ...prev,
-                                      max_parallel: Number(e.target.value),
-                                    }))
-                                  }
-                                  className="w-16 border border-gray-300 rounded-lg px-2 py-1 text-sm focus:ring-1 focus:ring-blue-500"
-                                  min="1"
-                                />
-                                <span className="text-gray-400">paralelas</span>
-                              </div>
-                            ) : (
-                              <span className="text-gray-600">
-                                {rule.slot_duration_min} min / {rule.max_parallel} paralelas
-                              </span>
-                            )}
-                          </td>
-                          <td className="p-4">
-                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${
-                              rule.active 
-                                ? 'bg-green-100 text-green-700 border-green-200' 
-                                : 'bg-gray-100 text-gray-700 border-gray-200'
-                            }`}>
-                              {rule.active ? <PlayCircle size={14} /> : <PauseCircle size={14} />}
-                              <span className="text-xs font-medium">
-                                {rule.active ? "Ativa" : "Inativa"}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="p-4">
-                            <div className="flex items-center gap-2">
-                              {!isEditing ? (
-                                <>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => toggleRule(rule.id, rule.active)}
-                                    className="flex items-center gap-1"
-                                    noBorder
-                                    noFocus
-                                    noBackground
-                                  >
-                                    {rule.active ? <PauseCircle size={14} /> : <PlayCircle size={14} />}
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => startEdit(rule)}
-                                    className="flex items-center gap-1"
-                                    noBorder
-                                    noFocus
-                                    noBackground
-                                  >
-                                    <Edit size={14} />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => duplicateRule(rule)}
-                                    className="flex items-center gap-1"
-                                    noBorder
-                                    noFocus
-                                    noBackground
-                                  >
-                                    <Copy size={14} />
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={() => deleteRule(rule.id)}
-                                    className="flex items-center gap-1 text-red-600 hover:text-red-700"
-                                    noBorder
-                                    noFocus
-                                    noBackground
-                                  >
-                                    <Trash2 size={14} />
-                                  </Button>
-                                </>
-                              ) : (
-                                <>
-                                  <Button
-                                    type="button"
-                                    onClick={() => saveEdit(rule.id)}
-                                    className="flex items-center gap-1"
-                                  >
-                                    <CheckCircle size={14} />
-                                    Salvar
-                                  </Button>
-                                  <Button
-                                    type="button"
-                                    variant="secondary"
-                                    onClick={cancelEdit}
-                                    className="flex items-center gap-1"
-                                    noBorder
-                                    noFocus
-                                    noBackground
-                                  >
-                                    <XCircle size={14} />
-                                    Cancelar
-                                  </Button>
-                                </>
-                              )}
                             </div>
                           </td>
                         </tr>
-                      );
-                    })}
-                  {rules.length === 0 && (
-                    <tr>
-                      <td colSpan={5} className="p-8 text-center">
-                        <div className="flex flex-col items-center gap-3 text-gray-500">
-                          <Settings size={48} className="text-gray-300" />
-                          <div>
-                            <div className="font-medium text-gray-900 mb-1">
-                              Nenhuma regra encontrada
-                            </div>
-                            <div className="text-sm">
-                              Adicione uma regra para começar
-                            </div>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </Card>
 
         {/* Availability Log Section */}
         <Card className="p-4 sm:p-6 mb-6">
-          <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 flex items-center justify-center">
                 <Activity size={16} className="text-orange-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Log de Disponibilidade</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Log de Disponibilidade
+                </h2>
               </div>
             </div>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={(e) => {
+                e.stopPropagation();
+                setLogExpanded(!logExpanded);
+              }}
+              className="flex items-center gap-2 p-0"
+              noBorder
+              noFocus
+              noBackground
+            >
+              {logExpanded ? (
+                <>
+                  <ChevronUp size={18} />
+                </>
+              ) : (
+                <>
+                  <ChevronDown size={18} />
+                </>
+              )}
+            </Button>
           </div>
 
+          
+          {logExpanded && (
+            <>
+
           {/* Log Filters */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6 mt-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Filtrar por Regra</label>
+              <label className="text-sm font-medium text-gray-700">
+                Filtrar por Regra
+              </label>
               <select
                 value={logFilters.ruleId}
                 onChange={(e) =>
@@ -1411,14 +1580,17 @@ const AdminConsultationsPage: React.FC = () => {
                 <option value="">Todas as regras</option>
                 {rules.map((rule) => (
                   <option key={rule.id} value={rule.id}>
-                    {weekdayNames[rule.weekday]} {rule.start_time}-{rule.end_time}
+                    {weekdayNames[rule.weekday]} {rule.start_time}-
+                    {rule.end_time}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Ordenar por</label>
+              <label className="text-sm font-medium text-gray-700">
+                Ordenar por
+              </label>
               <select
                 value={logFilters.sort}
                 onChange={(e) =>
@@ -1436,7 +1608,9 @@ const AdminConsultationsPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Direção</label>
+              <label className="text-sm font-medium text-gray-700">
+                Direção
+              </label>
               <select
                 value={logFilters.direction}
                 onChange={(e) =>
@@ -1458,11 +1632,21 @@ const AdminConsultationsPage: React.FC = () => {
             <table className="w-full text-sm">
               <thead>
                 <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="p-4 text-left font-semibold text-gray-700">Data/Hora</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Ação</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Dia</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Horário</th>
-                  <th className="p-4 text-left font-semibold text-gray-700">Configurações</th>
+                  <th className="p-4 text-left font-semibold text-gray-700">
+                    Data/Hora
+                  </th>
+                  <th className="p-4 text-left font-semibold text-gray-700">
+                    Ação
+                  </th>
+                  <th className="p-4 text-left font-semibold text-gray-700">
+                    Dia
+                  </th>
+                  <th className="p-4 text-left font-semibold text-gray-700">
+                    Horário
+                  </th>
+                  <th className="p-4 text-left font-semibold text-gray-700">
+                    Configurações
+                  </th>
                 </tr>
               </thead>
               <tbody>
@@ -1477,51 +1661,60 @@ const AdminConsultationsPage: React.FC = () => {
                     </td>
                   </tr>
                 )}
-                {!logLoading && logEntries.map((entry) => {
-                  const actionColors: Record<string, string> = {
-                    create: "bg-green-100 text-green-700 border-green-200",
-                    update: "bg-blue-100 text-blue-700 border-blue-200",
-                    activate: "bg-emerald-100 text-emerald-700 border-emerald-200",
-                    deactivate: "bg-amber-100 text-amber-700 border-amber-200",
-                    delete: "bg-red-100 text-red-700 border-red-200",
-                  };
+                {!logLoading &&
+                  logEntries.map((entry) => {
+                    const actionColors: Record<string, string> = {
+                      create: "bg-green-100 text-green-700 border-green-200",
+                      update: "bg-blue-100 text-blue-700 border-blue-200",
+                      activate:
+                        "bg-emerald-100 text-emerald-700 border-emerald-200",
+                      deactivate:
+                        "bg-amber-100 text-amber-700 border-amber-200",
+                      delete: "bg-red-100 text-red-700 border-red-200",
+                    };
 
-                  return (
-                    <tr key={entry.id} className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4 text-sm text-gray-600">
-                        {fmtDate(entry.created_at, locale, {
-                          dateStyle: "short",
-                          timeStyle: "short",
-                        })}
-                      </td>
-                      <td className="p-4">
-                        <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border capitalize ${
-                          actionColors[entry.action] || "bg-gray-100 text-gray-700 border-gray-200"
-                        }`}>
-                          <Activity size={12} />
-                          <span className="text-xs font-medium">
-                            {entry.action}
+                    return (
+                      <tr
+                        key={entry.id}
+                        className="border-b border-gray-100 last:border-none hover:bg-gray-50/50 transition-colors"
+                      >
+                        <td className="p-4 text-sm text-gray-600">
+                          {fmtDate(entry.created_at, locale, {
+                            dateStyle: "short",
+                            timeStyle: "short",
+                          })}
+                        </td>
+                        <td className="p-4">
+                          <div
+                            className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border capitalize ${
+                              actionColors[entry.action] ||
+                              "bg-gray-100 text-gray-700 border-gray-200"
+                            }`}
+                          >
+                            <Activity size={12} />
+                            <span className="text-xs font-medium">
+                              {entry.action}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm text-gray-600">
+                            {weekdayNames[entry.weekday]}
                           </span>
-                        </div>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm text-gray-600">
-                          {weekdayNames[entry.weekday]}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm text-gray-600">
-                          {entry.start_time} - {entry.end_time}
-                        </span>
-                      </td>
-                      <td className="p-4">
-                        <span className="text-sm text-gray-600">
-                          {entry.slot_duration_min}m / {entry.max_parallel}x
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm text-gray-600">
+                            {entry.start_time} - {entry.end_time}
+                          </span>
+                        </td>
+                        <td className="p-4">
+                          <span className="text-sm text-gray-600">
+                            {entry.slot_duration_min}m / {entry.max_parallel}x
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 {!logLoading && logEntries.length === 0 && (
                   <tr>
                     <td colSpan={5} className="p-8 text-center">
@@ -1547,9 +1740,18 @@ const AdminConsultationsPage: React.FC = () => {
           {logEntries.length > 0 && (
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-6 border-t border-gray-200">
               <p className="text-sm text-gray-600">
-                Mostrando <span className="font-semibold">{logEntries.length}</span> registros
+                Mostrando{" "}
+                <span className="font-semibold">{logEntries.length}</span>{" "}
+                registros
                 {logPagination.total > 0 && (
-                  <> de <span className="font-semibold">{logPagination.total}</span> no total</>
+                  <>
+                    {" "}
+                    de{" "}
+                    <span className="font-semibold">
+                      {logPagination.total}
+                    </span>{" "}
+                    no total
+                  </>
                 )}
               </p>
               <div className="flex items-center gap-2">
@@ -1565,7 +1767,8 @@ const AdminConsultationsPage: React.FC = () => {
                 </Button>
                 <span className="px-3 py-1 bg-gray-100 rounded-lg text-sm font-medium">
                   Página {logPagination.page}
-                  {logPagination.totalPages > 0 && ` de ${logPagination.totalPages}`}
+                  {logPagination.totalPages > 0 &&
+                    ` de ${logPagination.totalPages}`}
                 </span>
                 <Button
                   type="button"
@@ -1580,6 +1783,8 @@ const AdminConsultationsPage: React.FC = () => {
               </div>
             </div>
           )}
+          </>
+          )}
         </Card>
 
         {/* Available Slots Section */}
@@ -1590,7 +1795,9 @@ const AdminConsultationsPage: React.FC = () => {
                 <Clock size={16} className="text-purple-600" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-gray-900">Slots Disponíveis</h2>
+                <h2 className="text-lg font-semibold text-gray-900">
+                  Slots Disponíveis
+                </h2>
                 <p className="text-sm text-gray-600 mt-0.5">
                   Visualize slots de agendamento disponíveis
                 </p>
@@ -1600,7 +1807,9 @@ const AdminConsultationsPage: React.FC = () => {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Data Inicial</label>
+              <label className="text-sm font-medium text-gray-700">
+                Data Inicial
+              </label>
               <input
                 type="date"
                 value={slotsRange.from}
@@ -1615,7 +1824,9 @@ const AdminConsultationsPage: React.FC = () => {
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">Data Final</label>
+              <label className="text-sm font-medium text-gray-700">
+                Data Final
+              </label>
               <input
                 type="date"
                 value={slotsRange.to}
@@ -1656,7 +1867,9 @@ const AdminConsultationsPage: React.FC = () => {
               {slots.map((day) => (
                 <Card key={day.date} className="p-4">
                   <h3 className="font-medium text-gray-900 mb-3">
-                    {new Date(day.date.includes('T') ? day.date : `${day.date}T00:00:00`).toLocaleDateString("pt-BR", {
+                    {new Date(
+                      day.date.includes("T") ? day.date : `${day.date}T00:00:00`
+                    ).toLocaleDateString("pt-BR", {
                       weekday: "long",
                       year: "numeric",
                       month: "long",
@@ -1695,21 +1908,24 @@ const AdminConsultationsPage: React.FC = () => {
             </div>
           )}
 
-          {!loadingSlots && slots.length === 0 && slotsRange.from && slotsRange.to && (
-            <Card className="p-8 text-center">
-              <div className="flex flex-col items-center gap-3 text-gray-500">
-                <Clock size={48} className="text-gray-300" />
-                <div>
-                  <div className="font-medium text-gray-900 mb-1">
-                    Nenhum slot encontrado
-                  </div>
-                  <div className="text-sm">
-                    Tente ajustar o período de busca
+          {!loadingSlots &&
+            slots.length === 0 &&
+            slotsRange.from &&
+            slotsRange.to && (
+              <Card className="p-8 text-center">
+                <div className="flex flex-col items-center gap-3 text-gray-500">
+                  <Clock size={48} className="text-gray-300" />
+                  <div>
+                    <div className="font-medium text-gray-900 mb-1">
+                      Nenhum slot encontrado
+                    </div>
+                    <div className="text-sm">
+                      Tente ajustar o período de busca
+                    </div>
                   </div>
                 </div>
-              </div>
-            </Card>
-          )}
+              </Card>
+            )}
         </Card>
       </div>
 
