@@ -74,6 +74,9 @@ export const ALIMENTOS: Alimento[] = [
   { id: "repolho", nome: "Repolho", categoria: "Verduras & Legumes", emoji: "🥬", calorias: 25, proteina: 1.3, carboidratos: 5.8, gordura: 0.1, porcaoPadrao: 100, porcaoDescricao: "1 xícara picada" },
   { id: "abobrinha", nome: "Abobrinha", categoria: "Verduras & Legumes", emoji: "🥒", calorias: 17, proteina: 1.2, carboidratos: 3.1, gordura: 0.3, porcaoPadrao: 100, porcaoDescricao: "½ unidade" },
   { id: "cogumelo", nome: "Cogumelo Paris", categoria: "Verduras & Legumes", emoji: "🍄", calorias: 22, proteina: 3.1, carboidratos: 3.3, gordura: 0.3, porcaoPadrao: 100, porcaoDescricao: "5–6 unidades" },
+  { id: "vinagrete", nome: "Vinagrete", categoria: "Verduras & Legumes", emoji: "🥗", calorias: 35, proteina: 1, carboidratos: 7, gordura: 0.2, porcaoPadrao: 50, porcaoDescricao: "2 colheres de sopa" },
+  { id: "salada_cozida", nome: "Salada de Legumes Cozidos", categoria: "Verduras & Legumes", emoji: "🥦", calorias: 65, proteina: 2, carboidratos: 13, gordura: 0.5, porcaoPadrao: 100, porcaoDescricao: "1 concha média" },
+
 
   // CEREAIS & GRÃOS 🌾
   { id: "arroz_branco", nome: "Arroz Branco (cozido)", categoria: "Cereais & Grãos", emoji: "🍚", calorias: 130, proteina: 2.7, carboidratos: 28, gordura: 0.3, porcaoPadrao: 150, porcaoDescricao: "1 xícara" },
@@ -87,6 +90,11 @@ export const ALIMENTOS: Alimento[] = [
   { id: "tapioca", nome: "Tapioca (goma pronta)", categoria: "Cereais & Grãos", emoji: "🫓", calorias: 358, proteina: 0, carboidratos: 88, gordura: 0, porcaoPadrao: 50, porcaoDescricao: "1 receita (50g)" },
   { id: "mandioca", nome: "Mandioca (cozida)", categoria: "Cereais & Grãos", emoji: "🍠", calorias: 160, proteina: 1.4, carboidratos: 38, gordura: 0.3, porcaoPadrao: 100, porcaoDescricao: "1 pedaço (100g)" },
   { id: "milho_cozido", nome: "Milho Verde (cozido)", categoria: "Cereais & Grãos", emoji: "🌽", calorias: 96, proteina: 3.4, carboidratos: 21, gordura: 1.5, porcaoPadrao: 100, porcaoDescricao: "½ espiga" },
+  { id: "torrada", nome: "Torrada Tradicional", categoria: "Cereais & Grãos", emoji: "🍞", calorias: 407, proteina: 11, carboidratos: 75, gordura: 7, porcaoPadrao: 30, porcaoDescricao: "3 unidades" },
+  { id: "bolacha_salgada", nome: "Bolacha Salgada (tipo água e sal)", categoria: "Cereais & Grãos", emoji: "🍪", calorias: 430, proteina: 9, carboidratos: 70, gordura: 14, porcaoPadrao: 30, porcaoDescricao: "6 unidades" },
+  { id: "rosquinha", nome: "Rosquinha Doce", categoria: "Cereais & Grãos", emoji: "🍩", calorias: 440, proteina: 6, carboidratos: 74, gordura: 14, porcaoPadrao: 30, porcaoDescricao: "3 unidades pequenas" },
+  { id: "bolo_trigo", nome: "Bolo de Trigo Simples", categoria: "Cereais & Grãos", emoji: "🍰", calorias: 297, proteina: 5, carboidratos: 52, gordura: 7, porcaoPadrao: 60, porcaoDescricao: "1 fatia média" },
+
 
   // LEGUMINOSAS 🫘
   { id: "feijao_preto", nome: "Feijão Preto (cozido)", categoria: "Leguminosas", emoji: "🫘", calorias: 132, proteina: 8.9, carboidratos: 24, gordura: 0.5, porcaoPadrao: 100, porcaoDescricao: "½ xícara" },
@@ -95,9 +103,14 @@ export const ALIMENTOS: Alimento[] = [
   { id: "grao_de_bico", nome: "Grão-de-bico (cozido)", categoria: "Leguminosas", emoji: "🧆", calorias: 164, proteina: 8.9, carboidratos: 27.4, gordura: 2.6, porcaoPadrao: 100, porcaoDescricao: "½ xícara" },
   { id: "soja_cozida", nome: "Soja (cozida)", categoria: "Leguminosas", emoji: "🌱", calorias: 173, proteina: 16.6, carboidratos: 9.9, gordura: 9, porcaoPadrao: 100, porcaoDescricao: "½ xícara" },
   { id: "ervilha", nome: "Ervilha (cozida)", categoria: "Leguminosas", emoji: "🟢", calorias: 84, proteina: 5.4, carboidratos: 14.5, gordura: 0.4, porcaoPadrao: 100, porcaoDescricao: "½ xícara" },
+  { id: "batata_doce", nome: "Batata Doce (cozida)", categoria: "Leguminosas", emoji: "🍠", calorias: 86, proteina: 1.6, carboidratos: 20, gordura: 0.1, porcaoPadrao: 130, porcaoDescricao: "1 unidade média" },
+  { id: "cara", nome: "Cará (cozido)", categoria: "Leguminosas", emoji: "🥔", calorias: 118, proteina: 1.5, carboidratos: 28, gordura: 0.2, porcaoPadrao: 100, porcaoDescricao: "1 pedaço médio" },
+  { id: "inhame", nome: "Inhame (cozido)", categoria: "Leguminosas", emoji: "🥔", calorias: 97, proteina: 2, carboidratos: 23, gordura: 0.1, porcaoPadrao: 100, porcaoDescricao: "1 pedaço médio" },
+  { id: "macaxeira", nome: "Macaxeira / Mandioca (cozida)", categoria: "Leguminosas", emoji: "🍠", calorias: 125, proteina: 1, carboidratos: 30, gordura: 0.3, porcaoPadrao: 120, porcaoDescricao: "1 pedaço médio" },
+
 
   // CARNES & PEIXES 🥩🐟
-  { id: "frango_peito", nome: "Peito de Frango (grelhado)", categoria: "Carnes & Peixes", emoji: "🐓", calorias: 165, proteina: 31, carboidratos: 0, gordura: 3.6, porcaoPadrao: 120, porcaoDescricao: "1 filé médio" },
+  { id: "frango_peito", nome: "Peito de Frango (grelhado)", categoria:"Carnes & Peixes", emoji:"🐓", calorias :165 , proteina :31 , carboidratos :0 , gordura :3.6 , porcaoPadrao :120 , porcaoDescricao :"1 filé médio" },
   { id: "carne_bovina", nome: "Carne Bovina Magra (grelhada)", categoria: "Carnes & Peixes", emoji: "🥩", calorias: 250, proteina: 26, carboidratos: 0, gordura: 15, porcaoPadrao: 100, porcaoDescricao: "1 bife médio" },
   { id: "peixe_tilapia", nome: "Tilápia (grelhada)", categoria: "Carnes & Peixes", emoji: "🐟", calorias: 128, proteina: 23, carboidratos: 0, gordura: 2.6, porcaoPadrao: 120, porcaoDescricao: "1 filé" },
   { id: "salmão", nome: "Salmão (grelhado)", categoria: "Carnes & Peixes", emoji: "🐠", calorias: 208, proteina: 20, carboidratos: 0, gordura: 13, porcaoPadrao: 120, porcaoDescricao: "1 filé" },
@@ -120,6 +133,7 @@ export const ALIMENTOS: Alimento[] = [
 
   // OVOS & LATICÍNIOS 🍳🥛
   { id: "ovo", nome: "Ovo de Galinha (cozido)", categoria: "Ovos & Laticínios", emoji: "🥚", calorias: 155, proteina: 13, carboidratos: 1.1, gordura: 11, porcaoPadrao: 60, porcaoDescricao: "1 unidade grande" },
+  { id: "ovo_frito", nome: "Ovo de Galinha (frito)", categoria: "Ovos & Laticínios", emoji: "🍳", calorias: 196, proteina: 13, carboidratos: 1, gordura: 15, porcaoPadrao: 60, porcaoDescricao: "1 unidade" },
   { id: "leite_integral", nome: "Leite Integral", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 61, proteina: 3.2, carboidratos: 4.8, gordura: 3.3, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
   { id: "leite_desnatado", nome: "Leite Desnatado", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 34, proteina: 3.4, carboidratos: 5, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
   { id: "iogurte_natural", nome: "Iogurte Natural Integral", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 61, proteina: 3.5, carboidratos: 4.7, gordura: 3.3, porcaoPadrao: 170, porcaoDescricao: "1 pote" },
