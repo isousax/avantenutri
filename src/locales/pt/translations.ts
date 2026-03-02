@@ -1092,7 +1092,7 @@ export const ptTranslations = {
   'dashboard.overview': 'Visão Geral',
   'dashboard.overviewFull': 'Visão Geral',
   'dashboard.pdf.footer': 'Rodapé',
-  'dashboard.pdf.headerText': 'Texto do Cabeçalho',
+  'dashboard.pdf.headerText': 'Plano Nutricional Personalizado',
   'dashboard.pdf.instructions': 'Instruções',
   'dashboard.pdf.nutritionistName': 'Nome do Nutricionista',
   'dashboard.pdf.nutritionistRole': 'Função do Nutricionista',

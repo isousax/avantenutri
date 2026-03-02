@@ -1080,7 +1080,7 @@ export const enTranslations = {
   'dashboard.overview': 'Overview',
   'dashboard.overviewFull': 'Overview',
   'dashboard.pdf.footer': 'Footer',
-  'dashboard.pdf.headerText': 'HeaderText',
+  'dashboard.pdf.headerText': 'Personalized Nutrition Plan',
   'dashboard.pdf.instructions': 'Instructions',
   'dashboard.pdf.nutritionistName': 'NutritionistName',
   'dashboard.pdf.nutritionistRole': 'NutritionistRole',
