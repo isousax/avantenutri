@@ -715,19 +715,29 @@ export async function exportDietPdf(
       return;
     }
 
+    // Build table data and collect observations separately to avoid multi-line cells
+    const observations: string[] = [];
     const tableData = itens.map((item) => {
       const alimento = ALIMENTOS.find((a) => a.id === item.alimentoId);
-      const nome =
-        alimento?.nome || item.alimentoId || "Alimento não encontrado";
+      const nome = alimento?.nome || item.alimentoId || "Alimento não encontrado";
       const quantidade = item.quantidade || 0;
+      const unidade = alimento?.porcaoUnidade || "g";
+
+      // If there is an observation, register it and annotate the name with a footnote index
+      let annotatedName = nome;
+      if (item.observacao && String(item.observacao).trim() !== "") {
+        observations.push(String(item.observacao).trim());
+        const idx = observations.length; // 1-based
+        annotatedName = `${nome} [${idx}]`;
+      }
+
       const nut = alimento
         ? calcularNutricao(alimento, quantidade, alimento.porcaoPadrao)
         : null;
 
-      // Layout mais limpo com menos informações por linha
       return [
-        { content: nome, styles: { fontStyle: "bold" } },
-        `${quantidade}g`,
+        { content: annotatedName, styles: { fontStyle: "bold" } },
+        `${quantidade}${unidade}`,
         nut ? `${Math.round(nut.calorias)} kcal` : "-",
         nut ? `${nut.proteina}g` : "-",
         nut ? `${nut.carboidratos}g` : "-",
@@ -787,6 +797,43 @@ export async function exportDietPdf(
 
     const lastY = (pdf.lastAutoTable?.finalY ?? currentY) as number;
     currentY = lastY + 8;
+
+    // Render observations legend below the table (if any)
+    if (observations.length > 0) {
+      // space before legend
+      if (currentY > pageHeight - marginMm - 40) {
+        pdf.addPage();
+        drawWatermarkOnPage();
+        currentY = marginMm + 5;
+      }
+
+      pdf.setFontSize(10);
+      pdf.setFont("helvetica", "bold");
+      pdf.setTextColor(colors.primary[0], colors.primary[1], colors.primary[2]);
+      pdf.text("Observações:", marginMm + 5, currentY);
+      currentY += 6;
+
+      pdf.setFont("helvetica", "normal");
+      pdf.setFontSize(9);
+      pdf.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
+
+      observations.forEach((note, i) => {
+        // handle page break for long legend
+        const lines = pdf.splitTextToSize(`[${i + 1}] ${note}`, pageWidth - marginMm * 2 - 10);
+        lines.forEach((line) => {
+          if (currentY > pageHeight - marginMm - 10) {
+            pdf.addPage();
+            drawWatermarkOnPage();
+            currentY = marginMm + 5;
+          }
+          pdf.text(line, marginMm + 8, currentY);
+          currentY += 4.5;
+        });
+        currentY += 2;
+      });
+
+      currentY += 6;
+    }
 
     // Totais da refeição (se habilitado)
     if (showNutritionPerMeal && itens.length > 0) {
@@ -876,6 +923,7 @@ export async function exportDietPdf(
               const altNome =
                 altAlimento?.nome || alt.alimentoId || "Alternativa";
               const quantidade = alt.quantidade || 0;
+              const altUnidade = altAlimento?.porcaoUnidade || 'g';
               const nut = altAlimento
                 ? calcularNutricao(
                     altAlimento,
@@ -889,22 +937,20 @@ export async function exportDietPdf(
               pdf.setTextColor(colors.dark[0], colors.dark[1], colors.dark[2]);
               pdf.setFont("helvetica", "normal");
               pdf.text(
-                `   • ${altNome} - ${quantidade}g (${kcal} kcal)`,
+                `   • ${altNome} - ${quantidade}${altUnidade} (${kcal} kcal)`,
                 marginMm + 10,
                 currentY
               );
               currentY += 4;
             });
 
-            currentY += 3;
+            currentY += 5;
           }
         });
 
-        currentY += 5;
+        currentY += 10;
       }
     }
-
-    currentY += 10;
   });
 
   // Página de resumo nutricional (nova)

@@ -3,6 +3,8 @@ import { formatDate as fmtDate } from "../../../i18n/utils";
 import StructuredDietView from "../../../components/diet/StructuredDietView";
 import { copyDietJson } from "../../../utils/structuredDietExport";
 import type { StructuredDietData } from "../../../types/structuredDiet";
+import StructuredDietBuilder from "../../../components/diet/StructuredDietBuilder";
+import { exportDietPdf } from "../../../utils/structuredDietPdf";
 
 export interface PlanVersion {
   id: string | number;
@@ -28,7 +30,13 @@ function isStructuredDietData(x: unknown): x is StructuredDietData {
   return d.versao === 1 && Array.isArray(d.meals);
 }
 
-const AdminVersionsSelector: React.FC<{ detail: PlanDetail }> = ({ detail }) => {
+interface Props {
+  detail: PlanDetail;
+  showAlternatives?: boolean;
+  onToggleAlternatives?: React.Dispatch<React.SetStateAction<boolean>>;
+}
+
+const AdminVersionsSelector: React.FC<Props> = ({ detail, showAlternatives = true, onToggleAlternatives }) => {
   const [selectedId, setSelectedId] = useState<string | null>(() =>
     detail.versions.length ? String(detail.versions[detail.versions.length - 1].id) : null
   );
@@ -80,7 +88,59 @@ const AdminVersionsSelector: React.FC<{ detail: PlanDetail }> = ({ detail }) => 
             <div className="space-y-1">
               <StructuredDietView data={sel.data} compact />
               <div className="flex gap-2 flex-wrap text-[10px] items-center">
-                <button type="button" className="px-2 py-1 bg-blue-600 text-white rounded" onClick={() => console.log("Baixar PDF", { alert: "Função desabilitada temporariamente" })}>
+                <button
+                  type="button"
+                  className="px-2 py-1 bg-blue-600 text-white rounded"
+                  onClick={async () => {
+                    try {
+                      await exportDietPdf(sel.data as StructuredDietData, {
+                        filename: `${detail.name}_v${sel.version_number}.pdf`.replace(/[^a-z0-9]/gi, "_"),
+                        title: `${detail.name} - v${sel.version_number}`,
+                        showAlternatives: true,
+                        showPageNumbers: true,
+                        headerText: "Plano Nutricional Personalizado",
+                        footerText: "Avante Nutri - Nutrindo hábitos, transformando vidas",
+                        watermarkText: "Avante Nutri",
+                        watermarkRepeat: true,
+                        watermarkOpacity: 0.05,
+                        cover: {
+                          title: `${detail.name}`,
+                          subtitle: `Versão ${sel.version_number}`,
+                          showTotals: true,
+                          notes: "Seguir o plano alimentar conforme orientado, com boa hidratação e prática regular de exercícios.",
+                          date: new Date(),
+                          clientInfo: {
+                            name: "Paciente",
+                            age: 1,
+                            gender: "Sexo",
+                            weight: 1,
+                            height: 1,
+                            goal: "Objetivo",
+                            nutritionist: "Dra. Andreina Cawanne",
+                            crn: "43669/P",
+                          },
+                          showMacronutrientChart: true,
+                          signature: {
+                            name: "Dra. Andreina Cawanne",
+                            role: "Nutricionista",
+                            license: "CRN-PE 43669",
+                          },
+                        },
+                        company: {
+                          logoUrl: "/logoName.png",
+                          logoheader: "/logoHeader.png",
+                          name: "Souza Cawanne Nutrição",
+                          contact: "souzacawanne@gmail.com",
+                          address: "Online",
+                        },
+                      });
+                    } catch (err) {
+                      // eslint-disable-next-line no-console
+                      console.error("Erro ao gerar PDF:", err);
+                      alert("Falha ao gerar PDF");
+                    }
+                  }}
+                >
                   Baixar PDF
                 </button>
                 <button type="button" className="px-2 py-1 bg-amber-600 text-white rounded" onClick={() => copyDietJson(sel.data as StructuredDietData)}>
@@ -91,6 +151,17 @@ const AdminVersionsSelector: React.FC<{ detail: PlanDetail }> = ({ detail }) => 
           )}
           {Boolean(sel.data) && !isStructuredDietData(sel.data) && (
             <pre className="bg-gray-900 text-gray-100 p-2 rounded overflow-x-auto text-[10px] max-h-40">{`${JSON.stringify(sel.data, null, 2)}`}</pre>
+          )}
+          {showAlternatives && isStructuredDietData(sel.data) && (
+            <div className="mt-4">
+              <StructuredDietBuilder
+                value={sel.data}
+                onChange={() => { /* no-op in history view */ }}
+                compact={true}
+                showAlternatives={showAlternatives}
+                onToggleAlternatives={onToggleAlternatives ?? (() => {})}
+              />
+            </div>
           )}
         </div>
       )}

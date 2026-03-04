@@ -198,6 +198,27 @@ const DietasTab: React.FC = () => {
     }
   }, [detailId, detail]);
 
+  // Prefill structured revision data from the latest version when detail loads
+  useEffect(() => {
+    if (!detail) {
+      setRevStructuredData(null);
+      return;
+    }
+    // don't overwrite if user already started editing
+    if (revStructuredData) return;
+    const dv = detail.versions?.[detail.versions.length - 1]?.data as unknown;
+    if (isStructured(dv)) {
+      try {
+        // deep clone to avoid mutating the original detail object
+        setRevStructuredData(JSON.parse(JSON.stringify(dv)));
+      } catch {
+        setRevStructuredData(dv as StructuredDietData);
+      }
+    } else {
+      setRevStructuredData(null);
+    }
+  }, [detail, revStructuredData]);
+
   // Busca de pacientes para o modal
   useEffect(() => {
     if (!targetUserQuery) {
@@ -502,6 +523,14 @@ const DietasTab: React.FC = () => {
     } finally {
       setRevising(false);
     }
+  };
+
+  // Clear revision inputs and reset builder to an empty structured diet
+  const clearRevisionForm = () => {
+    setRevNotes("");
+    setRevPatchJson("{}");
+    setRevStructuredData({ versao: 1, meals: [] });
+    setExportShowAlternatives(true);
   };
 
   return (
@@ -840,7 +869,8 @@ const DietasTab: React.FC = () => {
                                   variant="secondary"
                                   className="flex-1 text-sm flex items-center justify-center"
                                   noFocus
-                                  onClick={() => openDetail(p.id)}
+                                  onClick={() => openDetail(p.id)
+}
                                 >
                                   <svg
                                     className="w-4 h-4 mr-2"
@@ -1711,7 +1741,7 @@ const DietasTab: React.FC = () => {
                     {mostrarDetalhes && (
                       <div className="border-t border-gray-200">
                         <div className="max-h-96 overflow-y-auto p-1">
-                          <AdminVersionsSelector detail={detail} />
+                          <AdminVersionsSelector detail={detail} showAlternatives={exportShowAlternatives} onToggleAlternatives={setExportShowAlternatives} />
                         </div>
                       </div>
                     )}
@@ -1889,6 +1919,8 @@ const DietasTab: React.FC = () => {
                                 value={revStructuredData}
                                 onChange={setRevStructuredData}
                                 compact={true}
+                                showAlternatives={exportShowAlternatives}
+                                onToggleAlternatives={setExportShowAlternatives}
                               />
                             </div>
                           </div>
@@ -1897,11 +1929,7 @@ const DietasTab: React.FC = () => {
                         <div className="flex gap-3 pt-4 border-t border-gray-200">
                           <button
                             type="button"
-                            onClick={() => {
-                              setRevNotes("");
-                              setRevPatchJson("{}");
-                              setRevStructuredData(null);
-                            }}
+                            onClick={clearRevisionForm}
                             className="flex items-center justify-center px-4 py-3 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition-colors"
                           >
                             Limpar

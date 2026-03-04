@@ -10,6 +10,7 @@ export interface Alimento {
   gordura: number;         // g por 100g
   porcaoPadrao: number;    // gramas da porção padrão
   porcaoDescricao: string; // texto da porção (ex: “1 unidade média”)
+  porcaoUnidade?: 'g' | 'ml'; // unidade da porção (opcional, ex: 'ml' para líquidos)
 }
 
 export const CATEGORIAS_ALIMENTOS = [
@@ -27,6 +28,8 @@ export const CATEGORIAS_ALIMENTOS = [
   "Sementes & Oleaginosas",
 ] as const;
 export type CategoriaAlimento = (typeof CATEGORIAS_ALIMENTOS)[number];
+
+export type UnidadePorcao = 'g' | 'ml';
 
 // Base de dados local de alimentos
 export const ALIMENTOS: Alimento[] = [
@@ -134,8 +137,8 @@ export const ALIMENTOS: Alimento[] = [
   // OVOS & LATICÍNIOS 🍳🥛
   { id: "ovo", nome: "Ovo de Galinha (cozido)", categoria: "Ovos & Laticínios", emoji: "🥚", calorias: 155, proteina: 13, carboidratos: 1.1, gordura: 11, porcaoPadrao: 60, porcaoDescricao: "1 unidade grande" },
   { id: "ovo_frito", nome: "Ovo de Galinha (frito)", categoria: "Ovos & Laticínios", emoji: "🍳", calorias: 196, proteina: 13, carboidratos: 1, gordura: 15, porcaoPadrao: 60, porcaoDescricao: "1 unidade" },
-  { id: "leite_integral", nome: "Leite Integral", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 61, proteina: 3.2, carboidratos: 4.8, gordura: 3.3, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "leite_desnatado", nome: "Leite Desnatado", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 34, proteina: 3.4, carboidratos: 5, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
+  { id: "leite_integral", nome: "Leite Integral", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 61, proteina: 3.2, carboidratos: 4.8, gordura: 3.3, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "leite_desnatado", nome: "Leite Desnatado", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 34, proteina: 3.4, carboidratos: 5, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
   { id: "iogurte_natural", nome: "Iogurte Natural Integral", categoria: "Ovos & Laticínios", emoji: "🥛", calorias: 61, proteina: 3.5, carboidratos: 4.7, gordura: 3.3, porcaoPadrao: 170, porcaoDescricao: "1 pote" },
   { id: "queijo_minas", nome: "Queijo Minas Frescal", categoria: "Ovos & Laticínios", emoji: "🧀", calorias: 264, proteina: 17, carboidratos: 3, gordura: 20, porcaoPadrao: 30, porcaoDescricao: "1 fatia média" },
   { id: "queijo_prato", nome: "Queijo Prato", categoria: "Ovos & Laticínios", emoji: "🧀", calorias: 356, proteina: 25, carboidratos: 1.3, gordura: 27, porcaoPadrao: 30, porcaoDescricao: "1 fatia" },
@@ -170,28 +173,28 @@ export const ALIMENTOS: Alimento[] = [
   { id: "semente_abobora", nome: "Semente de Abóbora", categoria: "Sementes & Oleaginosas", emoji: "🎃", calorias: 559, proteina: 30, carboidratos: 10, gordura: 49, porcaoPadrao: 20, porcaoDescricao: "1 colher de sopa" },
 
   // BEBIDAS 🥤
-  { id: "agua", nome: "Água", categoria: "Bebidas", emoji: "💧", calorias: 0, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "suco_laranja", nome: "Suco de Laranja Natural", categoria: "Bebidas", emoji: "🧃", calorias: 45, proteina: 0.7, carboidratos: 10, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "cafe_preto", nome: "Café Preto (sem açúcar)", categoria: "Bebidas", emoji: "☕", calorias: 2, proteina: 0.3, carboidratos: 0, gordura: 0, porcaoPadrao: 150, porcaoDescricao: "1 xícara" },
-  { id: "cha_verde", nome: "Chá Verde (sem açúcar)", categoria: "Bebidas", emoji: "🍵", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 xícara" },
-  { id: "leite_chocolate", nome: "Leite com Chocolate", categoria: "Bebidas", emoji: "🥛", calorias: 83, proteina: 3.4, carboidratos: 11, gordura: 2.5, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "refrigerante", nome: "Refrigerante Cola (com açúcar)", categoria: "Bebidas", emoji: "🥤", calorias: 42, proteina: 0, carboidratos: 10.6, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml" },
-  { id: "suco_uva", nome: "Suco de Uva Integral", categoria: "Bebidas", emoji: "🍷", calorias: 60, proteina: 0.2, carboidratos: 15, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml" },
-  { id: "cerveja", nome: "Cerveja Pilsen", categoria: "Bebidas", emoji: "🍺", calorias: 43, proteina: 0.5, carboidratos: 3.6, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml" },
-  { id: "vinho_tinto", nome: "Vinho Tinto", categoria: "Bebidas", emoji: "🍷", calorias: 85, proteina: 0.1, carboidratos: 2.6, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml" },
-  { id: "agua_coco", nome: "Água de Coco", categoria: "Bebidas", emoji: "🥥", calorias: 19, proteina: 0.2, carboidratos: 4.5, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "refrigerante_zero", nome: "Refrigerante Cola (zero açúcar)", categoria: "Bebidas", emoji: "🥤", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 350, porcaoDescricao: "1 lata" },
-  { id: "suco_limao", nome: "Suco de Limão Natural", categoria: "Bebidas", emoji: "🍋", calorias: 22, proteina: 0.4, carboidratos: 6, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "suco_abacaxi", nome: "Suco de Abacaxi Natural", categoria: "Bebidas", emoji: "🍍", calorias: 48, proteina: 0.4, carboidratos: 12, gordura: 0.1, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "suco_maracuja", nome: "Suco de Maracujá Natural", categoria: "Bebidas", emoji: "🍹", calorias: 45, proteina: 0.3, carboidratos: 11, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "cha_preto", nome: "Chá Preto (sem açúcar)", categoria: "Bebidas", emoji: "🍵", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 xícara" },
-  { id: "cha_ervas", nome: "Chá de Ervas (sem açúcar)", categoria: "Bebidas", emoji: "🍵", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 xícara" },
-  { id: "cafe_com_leite", nome: "Café com Leite Integral", categoria: "Bebidas", emoji: "☕", calorias: 35, proteina: 1.7, carboidratos: 3.5, gordura: 1.8, porcaoPadrao: 200, porcaoDescricao: "1 xícara grande" },
-  { id: "cappuccino", nome: "Cappuccino Tradicional", categoria: "Bebidas", emoji: "☕", calorias: 80, proteina: 4, carboidratos: 9, gordura: 3, porcaoPadrao: 200, porcaoDescricao: "1 xícara grande" },
-  { id: "energetico", nome: "Energético Tradicional", categoria: "Bebidas", emoji: "⚡", calorias: 45, proteina: 0, carboidratos: 11, gordura: 0, porcaoPadrao: 250, porcaoDescricao: "1 lata pequena" },
-  { id: "isotonico", nome: "Isotônico", categoria: "Bebidas", emoji: "🏃", calorias: 26, proteina: 0, carboidratos: 6.5, gordura: 0, porcaoPadrao: 500, porcaoDescricao: "1 garrafa" },
-  { id: "agua_tonica", nome: "Água Tônica", categoria: "Bebidas", emoji: "🥤", calorias: 34, proteina: 0, carboidratos: 8.6, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
-  { id: "agua_com_gas", nome: "Água com Gás", categoria: "Bebidas", emoji: "💧", calorias: 0, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 copo" },
+  { id: "agua", nome: "Água", categoria: "Bebidas", emoji: "💧", calorias: 0, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "suco_laranja", nome: "Suco de Laranja Natural", categoria: "Bebidas", emoji: "🧃", calorias: 45, proteina: 0.7, carboidratos: 10, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "cafe_preto", nome: "Café Preto (sem açúcar)", categoria: "Bebidas", emoji: "☕", calorias: 2, proteina: 0.3, carboidratos: 0, gordura: 0, porcaoPadrao: 150, porcaoDescricao: "1 xícara", porcaoUnidade: 'ml' },
+  { id: "cha_verde", nome: "Chá Verde (sem açúcar)", categoria: "Bebidas", emoji: "🍵", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 xícara", porcaoUnidade: 'ml' },
+  { id: "leite_chocolate", nome: "Leite com Chocolate", categoria: "Bebidas", emoji: "🥛", calorias: 83, proteina: 3.4, carboidratos: 11, gordura: 2.5, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "refrigerante", nome: "Refrigerante Cola (com açúcar)", categoria: "Bebidas", emoji: "🥤", calorias: 42, proteina: 0, carboidratos: 10.6, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml", porcaoUnidade: 'ml' },
+  { id: "suco_uva", nome: "Suco de Uva Integral", categoria: "Bebidas", emoji: "🍷", calorias: 60, proteina: 0.2, carboidratos: 15, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml", porcaoUnidade: 'ml' },
+  { id: "cerveja", nome: "Cerveja Pilsen", categoria: "Bebidas", emoji: "🍺", calorias: 43, proteina: 0.5, carboidratos: 3.6, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml", porcaoUnidade: 'ml' },
+  { id: "vinho_tinto", nome: "Vinho Tinto", categoria: "Bebidas", emoji: "🍷", calorias: 85, proteina: 0.1, carboidratos: 2.6, gordura: 0, porcaoPadrao: 100, porcaoDescricao: "100 ml", porcaoUnidade: 'ml' },
+  { id: "agua_coco", nome: "Água de Coco", categoria: "Bebidas", emoji: "🥥", calorias: 19, proteina: 0.2, carboidratos: 4.5, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "refrigerante_zero", nome: "Refrigerante Cola (zero açúcar)", categoria: "Bebidas", emoji: "🥤", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 350, porcaoDescricao: "1 lata", porcaoUnidade: 'ml' },
+  { id: "suco_limao", nome: "Suco de Limão Natural", categoria: "Bebidas", emoji: "🍋", calorias: 22, proteina: 0.4, carboidratos: 6, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "suco_abacaxi", nome: "Suco de Abacaxi Natural", categoria: "Bebidas", emoji: "🍍", calorias: 48, proteina: 0.4, carboidratos: 12, gordura: 0.1, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "suco_maracuja", nome: "Suco de Maracujá Natural", categoria: "Bebidas", emoji: "🍹", calorias: 45, proteina: 0.3, carboidratos: 11, gordura: 0.2, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "cha_preto", nome: "Chá Preto (sem açúcar)", categoria: "Bebidas", emoji: "🍵", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 xícara", porcaoUnidade: 'ml' },
+  { id: "cha_ervas", nome: "Chá de Ervas (sem açúcar)", categoria: "Bebidas", emoji: "🍵", calorias: 1, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 xícara", porcaoUnidade: 'ml' },
+  { id: "cafe_com_leite", nome: "Café com Leite Integral", categoria: "Bebidas", emoji: "☕", calorias: 35, proteina: 1.7, carboidratos: 3.5, gordura: 1.8, porcaoPadrao: 200, porcaoDescricao: "1 xícara grande", porcaoUnidade: 'ml' },
+  { id: "cappuccino", nome: "Cappuccino Tradicional", categoria: "Bebidas", emoji: "☕", calorias: 80, proteina: 4, carboidratos: 9, gordura: 3, porcaoPadrao: 200, porcaoDescricao: "1 xícara grande", porcaoUnidade: 'ml' },
+  { id: "energetico", nome: "Energético Tradicional", categoria: "Bebidas", emoji: "⚡", calorias: 45, proteina: 0, carboidratos: 11, gordura: 0, porcaoPadrao: 250, porcaoDescricao: "1 lata pequena", porcaoUnidade: 'ml' },
+  { id: "isotonico", nome: "Isotônico", categoria: "Bebidas", emoji: "🏃", calorias: 26, proteina: 0, carboidratos: 6.5, gordura: 0, porcaoPadrao: 500, porcaoDescricao: "1 garrafa", porcaoUnidade: 'ml' },
+  { id: "agua_tonica", nome: "Água Tônica", categoria: "Bebidas", emoji: "🥤", calorias: 34, proteina: 0, carboidratos: 8.6, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
+  { id: "agua_com_gas", nome: "Água com Gás", categoria: "Bebidas", emoji: "💧", calorias: 0, proteina: 0, carboidratos: 0, gordura: 0, porcaoPadrao: 200, porcaoDescricao: "1 copo", porcaoUnidade: 'ml' },
 
   // DOCES & AÇÚCARES 🍭
   { id: "chocolate_amargo", nome: "Chocolate 70% Cacau", categoria: "Doces & Açúcares", emoji: "🍫", calorias: 546, proteina: 7.8, carboidratos: 46, gordura: 31, porcaoPadrao: 20, porcaoDescricao: "2 quadrados" },

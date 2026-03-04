@@ -46,6 +46,9 @@ function computeTotals(data: StructuredDietData) {
   };
 }
 
+// helper to display unit for a food portion
+const getPorcaoUnidade = (alimento: any) => (alimento?.porcaoUnidade ? alimento.porcaoUnidade : 'g');
+
 const StructuredDietBuilder: React.FC<BuilderProps> = ({
   value,
   onChange,
@@ -586,7 +589,7 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
                                   }
                                   className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
                                 />
-                                <span className="text-xs text-gray-600">g</span>
+                                <span className="ml-2 text-xs text-gray-600">{getPorcaoUnidade(alimento)}</span>
                               </div>
                             </div>
 
@@ -656,7 +659,7 @@ const StructuredDietBuilder: React.FC<BuilderProps> = ({
                                             className="w-12 px-1 py-0.5 border border-gray-300 rounded text-xs"
                                           />
                                           <span className="text-xs text-gray-500">
-                                            g
+                                            {getPorcaoUnidade(altAlimento)}
                                           </span>
                                         </div>
                                         <button
