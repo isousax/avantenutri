@@ -4,7 +4,7 @@ import { useI18n } from '../../i18n/utils';
 const stats: { titleKey: import('../../types/i18n').TranslationKey; value: string }[] = [
   { titleKey: 'home.stats.patients.title', value: "+1.000" },
   { titleKey: 'home.stats.satisfaction.title', value: "98%" },
-  { titleKey: 'home.stats.crn.title', value: "43669/P" },
+  { titleKey: 'home.stats.crn.title', value: "43669" },
 ];
 
 const StatsSectionSimple: React.FC = () => {

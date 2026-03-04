@@ -117,7 +117,7 @@ const AdminVersionsSelector: React.FC<Props> = ({ detail, showAlternatives = tru
                             height: 1,
                             goal: "Objetivo",
                             nutritionist: "Dra. Andreina Cawanne",
-                            crn: "43669/P",
+                            crn: "43669",
                           },
                           showMacronutrientChart: true,
                           signature: {

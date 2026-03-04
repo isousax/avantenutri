@@ -807,7 +807,7 @@ const BlogPage: React.FC = () => {
                 </div>
                 <div>
                   <p className="font-medium text-gray-900">Andreina Cawwane</p>
-                  <p className="text-sm text-gray-500">Nutricionista 43669/P</p>
+                  <p className="text-sm text-gray-500">Nutricionista 43669</p>
                 </div>
               </div>
             </Card>

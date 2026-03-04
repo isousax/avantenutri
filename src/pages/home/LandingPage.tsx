@@ -257,7 +257,7 @@ const LandingPage: React.FC = () => {
               </h2>
 
               <p className="text-gray-500 mb-5 text-sm">
-                {t("landing.about.crn", { crn: "43669/P" })}
+                {t("landing.about.crn", { crn: "43669" })}
               </p>
 
               <p className="text-gray-700 mb-6 leading-relaxed sm:text-lg">

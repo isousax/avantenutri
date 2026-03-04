@@ -824,7 +824,7 @@ const DashboardPage: React.FC = () => {
                 height,
                 goal,
                 nutritionist: "Dra. Andreina Cawanne",
-                crn: "43669/P",
+                crn: "43669",
               },
               showMacronutrientChart: true,
               signature: {
