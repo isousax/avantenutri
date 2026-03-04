@@ -164,7 +164,7 @@ const BlogPostPage: React.FC = () => {
         title={seoTitle}
         description={finalDesc}
         type="article"
-        authorName="Andreina Cawwane"
+        authorName="Andreina Cawanne"
         publishedTimeISO={
           publishDate ? new Date(publishDate).toISOString() : undefined
         }
@@ -365,7 +365,7 @@ const BlogPostPage: React.FC = () => {
                         </div>
                         <div>
                           <p className="font-semibold text-white">
-                            Andreina Cawwane
+                            Andreina Cawanne
                           </p>
                           <p className="text-green-200 text-xs">
                             {publishDate &&
@@ -410,7 +410,7 @@ const BlogPostPage: React.FC = () => {
                       </div>
                       <div>
                         <p className="font-semibold text-white text-sm">
-                          Andreina Cawwane
+                          Andreina Cawanne
                         </p>
                         <p className="text-green-200 text-[11px]">
                           {publishDate &&
